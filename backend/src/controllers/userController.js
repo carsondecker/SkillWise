@@ -20,7 +20,7 @@ const userController = {
   // TODO: Delete user account
   deleteAccount: async (req, res, next) => {
     // Implementation needed
-  }
+  },
 };
 
 module.exports = userController;

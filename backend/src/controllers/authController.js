@@ -7,7 +7,7 @@ const authController = {
     // Implementation needed
   },
 
-  // TODO: Add register endpoint  
+  // TODO: Add register endpoint
   register: async (req, res, next) => {
     // Implementation needed
   },
@@ -20,7 +20,7 @@ const authController = {
   // TODO: Add refresh token endpoint
   refreshToken: async (req, res, next) => {
     // Implementation needed
-  }
+  },
 };
 
 module.exports = authController;

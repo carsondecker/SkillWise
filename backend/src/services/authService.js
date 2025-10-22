@@ -25,7 +25,7 @@ const authService = {
   resetPassword: async (email) => {
     // Implementation needed
     throw new Error('Not implemented');
-  }
+  },
 };
 
 module.exports = authService;
