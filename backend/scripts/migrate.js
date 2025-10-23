@@ -34,7 +34,7 @@ async function runMigrations() {
         // TODO: Check if migration already executed
         const result = await pool.query(
           'SELECT * FROM migrations WHERE filename = $1',
-          [file]
+          [file],
         );
 
         if (result.rows.length === 0) {

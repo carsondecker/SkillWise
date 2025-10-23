@@ -5,6 +5,7 @@
 Before starting development, ensure you have the following installed:
 
 ### Required Software
+
 - **Node.js** (v18 or later) - [Download here](https://nodejs.org/)
 - **npm** (comes with Node.js) or **yarn**
 - **Docker** - [Download here](https://www.docker.com/products/docker-desktop/)
@@ -13,6 +14,7 @@ Before starting development, ensure you have the following installed:
 - **PostgreSQL** (optional - can use Docker instead)
 
 ### Development Tools (Recommended)
+
 - **VS Code** with extensions:
   - ES7+ React/Redux/React-Native snippets
   - Prettier - Code formatter
@@ -24,6 +26,7 @@ Before starting development, ensure you have the following installed:
 ## Project Setup
 
 ### 1. Clone the Repository
+
 ```bash
 git clone <repository-url>
 cd skillwise
@@ -32,14 +35,18 @@ cd skillwise
 ### 2. Environment Configuration
 
 #### Frontend Environment
+
 Create `frontend/.env` file:
+
 ```env
 REACT_APP_API_URL=http://localhost:3001/api
 REACT_APP_ENVIRONMENT=development
 ```
 
 #### Backend Environment
+
 Create `backend/.env` file:
+
 ```env
 # Server Configuration
 NODE_ENV=development
@@ -86,6 +93,7 @@ SENTRY_DSN=your-sentry-dsn-url
 ### 3. Docker Setup (Recommended)
 
 #### Create `docker-compose.yml` in root directory:
+
 ```yaml
 version: '3.8'
 
@@ -98,12 +106,12 @@ services:
       POSTGRES_USER: skillwise_user
       POSTGRES_PASSWORD: skillwise_pass
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/database/migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U skillwise_user -d skillwise_db"]
+      test: ['CMD-SHELL', 'pg_isready -U skillwise_user -d skillwise_db']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -114,7 +122,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://skillwise_user:skillwise_pass@database:5432/skillwise_db
@@ -132,7 +140,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - REACT_APP_API_URL=http://localhost:3001/api
     volumes:
@@ -146,7 +154,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
 
@@ -156,6 +164,7 @@ volumes:
 ```
 
 #### Start Development Environment
+
 ```bash
 # Start all services
 docker-compose up -d
@@ -172,6 +181,7 @@ docker-compose down
 If you prefer not to use Docker:
 
 #### Backend Setup
+
 ```bash
 cd backend
 
@@ -188,6 +198,7 @@ npm run dev
 ```
 
 #### Frontend Setup
+
 ```bash
 cd frontend
 
@@ -201,7 +212,9 @@ npm start
 ## Package.json Scripts
 
 ### Backend Scripts
+
 Create `backend/package.json`:
+
 ```json
 {
   "name": "skillwise-backend",
@@ -246,7 +259,9 @@ Create `backend/package.json`:
 ```
 
 ### Frontend Scripts
+
 Create `frontend/package.json`:
+
 ```json
 {
   "name": "skillwise-frontend",
@@ -287,11 +302,7 @@ Create `frontend/package.json`:
     "@axe-core/react": "^4.7.2"
   },
   "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
+    "production": [">0.2%", "not dead", "not op_mini all"],
     "development": [
       "last 1 chrome version",
       "last 1 firefox version",
@@ -304,6 +315,7 @@ Create `frontend/package.json`:
 ## Development Workflow
 
 ### 1. Daily Development
+
 ```bash
 # Start development environment
 docker-compose up -d
@@ -324,14 +336,17 @@ docker-compose down
 ### 2. Testing Setup
 
 #### Backend Testing (Jest + Supertest)
+
 Create `backend/tests/setup.js`:
+
 ```javascript
 const { Pool } = require('pg');
 
 // Test database setup
 const testDb = new Pool({
-  connectionString: process.env.TEST_DATABASE_URL || 
-    'postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_test_db'
+  connectionString:
+    process.env.TEST_DATABASE_URL ||
+    'postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_test_db',
 });
 
 beforeAll(async () => {
@@ -347,7 +362,9 @@ afterAll(async () => {
 ```
 
 #### Frontend Testing (React Testing Library)
+
 Create `frontend/src/setupTests.js`:
+
 ```javascript
 import '@testing-library/jest-dom';
 import { configure } from '@testing-library/react';
@@ -360,7 +377,9 @@ global.fetch = jest.fn();
 ```
 
 #### E2E Testing (Cypress)
+
 Create `frontend/cypress.config.js`:
+
 ```javascript
 const { defineConfig } = require('cypress');
 
@@ -378,7 +397,9 @@ module.exports = defineConfig({
 ### 3. Code Quality Tools
 
 #### ESLint Configuration
+
 Create `.eslintrc.js` in both frontend and backend:
+
 ```javascript
 module.exports = {
   env: {
@@ -397,15 +418,17 @@ module.exports = {
   rules: {
     'no-unused-vars': 'warn',
     'no-console': 'warn',
-    'indent': ['error', 2],
-    'quotes': ['error', 'single'],
-    'semi': ['error', 'always'],
+    indent: ['error', 2],
+    quotes: ['error', 'single'],
+    semi: ['error', 'always'],
   },
 };
 ```
 
 #### Prettier Configuration
+
 Create `.prettierrc`:
+
 ```json
 {
   "semi": true,
@@ -419,6 +442,7 @@ Create `.prettierrc`:
 ### 4. Git Workflow
 
 #### Git Hooks (Husky)
+
 ```bash
 # Install husky for git hooks
 npm install --save-dev husky lint-staged
@@ -428,6 +452,7 @@ npx husky add .husky/pre-commit "lint-staged"
 ```
 
 Create `.lintstagedrc`:
+
 ```json
 {
   "*.{js,jsx}": ["eslint --fix", "prettier --write"],
@@ -440,6 +465,7 @@ Create `.lintstagedrc`:
 ### Common Issues
 
 #### Port Already in Use
+
 ```bash
 # Find process using port
 lsof -ti:3000
@@ -450,6 +476,7 @@ kill -9 <PID>
 ```
 
 #### Database Connection Issues
+
 ```bash
 # Check if PostgreSQL is running
 brew services list | grep postgresql
@@ -462,6 +489,7 @@ docker-compose up -d database
 ```
 
 #### Node Modules Issues
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -472,6 +500,7 @@ npm install
 ```
 
 #### Docker Issues
+
 ```bash
 # Clean up Docker
 docker-compose down -v
@@ -493,6 +522,7 @@ docker-compose up -d
 ### Production Deployment Preparation
 
 #### Environment Variables for Production
+
 - Change all secret keys
 - Use production database URLs
 - Enable HTTPS
@@ -500,6 +530,7 @@ docker-compose up -d
 - Set up proper logging and monitoring
 
 #### Build Commands
+
 ```bash
 # Frontend production build
 cd frontend && npm run build

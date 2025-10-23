@@ -18,8 +18,8 @@ const auth = async (req, res, next) => {
         new AppError(
           'You are not logged in! Please log in to get access.',
           401,
-          'NO_TOKEN'
-        )
+          'NO_TOKEN',
+        ),
       );
     }
 
@@ -33,16 +33,16 @@ const auth = async (req, res, next) => {
         new AppError(
           'Invalid token. Please log in again.',
           401,
-          'INVALID_TOKEN'
-        )
+          'INVALID_TOKEN',
+        ),
       );
     } else if (error.name === 'TokenExpiredError') {
       return next(
         new AppError(
           'Your token has expired! Please log in again.',
           401,
-          'TOKEN_EXPIRED'
-        )
+          'TOKEN_EXPIRED',
+        ),
       );
     }
     return next(error);
@@ -56,8 +56,8 @@ const restrictTo = (...roles) => {
         new AppError(
           'You do not have permission to perform this action',
           403,
-          'INSUFFICIENT_PERMISSIONS'
-        )
+          'INSUFFICIENT_PERMISSIONS',
+        ),
       );
     }
     next();

@@ -6,7 +6,7 @@ const userService = {
   getUserById: async (userId) => {
     const { rows } = await db.query(
       'SELECT id, first_name, last_name, email, created_at, updated_at FROM users WHERE id = $1',
-      [userId]
+      [userId],
     );
     return rows[0];
   },
@@ -38,7 +38,7 @@ const userService = {
       `UPDATE users SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $${paramCount} 
        RETURNING id, first_name, last_name, email, created_at, updated_at`,
-      values
+      values,
     );
 
     return rows[0];
@@ -54,7 +54,7 @@ const userService = {
     // This would integrate with user_statistics table
     const { rows } = await db.query(
       'SELECT * FROM user_statistics WHERE user_id = $1',
-      [userId]
+      [userId],
     );
     return rows[0] || null;
   },

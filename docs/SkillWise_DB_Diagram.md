@@ -1,11 +1,11 @@
-
 # SkillWise Database Diagram (PostgreSQL)
 
 > This is a **database diagram + column catalog** students can use to implement their own Postgres schema.  
 > It includes three handy formats:
-> 1) **Mermaid ER diagram** (renders on GitHub/VS Code extensions)  
-> 2) **DBML** (paste into https://dbdiagram.io)  
-> 3) **Readable column tables** (source of truth)
+>
+> 1. **Mermaid ER diagram** (renders on GitHub/VS Code extensions)
+> 2. **DBML** (paste into https://dbdiagram.io)
+> 3. **Readable column tables** (source of truth)
 
 ---
 
@@ -160,6 +160,7 @@ erDiagram
     unique team_user (team_id, user_id)
   }
 ```
+
 ---
 
 ## 2) DBML (dbdiagram.io import)
@@ -337,7 +338,6 @@ Table team_members {
 
 ## 4) How to use
 
-- **Option A (Mermaid):** Paste the Mermaid block into a Markdown file in your repo; many IDEs render it.  
-- **Option B (DBML):** Paste the DBML into dbdiagram.io to export PNG/SVG/PDF.  
+- **Option A (Mermaid):** Paste the Mermaid block into a Markdown file in your repo; many IDEs render it.
+- **Option B (DBML):** Paste the DBML into dbdiagram.io to export PNG/SVG/PDF.
 - **Option C (Tables below):** Build your own CREATE TABLE statements from the column catalog.
-

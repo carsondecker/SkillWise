@@ -30,7 +30,7 @@ class Challenge {
       return result.rows;
     } catch (error) {
       throw new Error(
-        `Error finding challenges by difficulty: ${error.message}`
+        `Error finding challenges by difficulty: ${error.message}`,
       );
     }
   }

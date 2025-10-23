@@ -47,7 +47,7 @@ app.use(
         statusCode: res.statusCode,
       }),
     },
-  })
+  }),
 );
 
 // Security middleware
@@ -62,7 +62,7 @@ app.use(
         imgSrc: ["'self'", 'data:', 'https:'],
       },
     },
-  })
+  }),
 );
 
 // CORS configuration
@@ -72,7 +72,7 @@ app.use(
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  })
+  }),
 );
 
 // Rate limiting
@@ -82,7 +82,7 @@ const limiter = rateLimit({
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: Math.ceil(
-      (parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000) / 1000
+      (parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000) / 1000,
     ),
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
@@ -96,14 +96,14 @@ app.use(
   express.json({
     limit: '10mb',
     strict: true,
-  })
+  }),
 );
 
 app.use(
   express.urlencoded({
     extended: true,
     limit: '10mb',
-  })
+  }),
 );
 
 // Health check endpoint

@@ -10,7 +10,7 @@ const SignupPage = () => {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -19,15 +19,15 @@ const SignupPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -42,14 +42,14 @@ const SignupPage = () => {
     try {
       setIsLoading(true);
       setError('');
-      
+
       const result = await register({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       });
-      
+
       if (result.success) {
         // Registration successful - user is now logged in
         navigate('/dashboard');
