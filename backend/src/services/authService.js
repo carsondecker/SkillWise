@@ -1,6 +1,7 @@
 // TODO: Implement authentication business logic
 const jwt = require('../utils/jwt');
 const bcrypt = require('bcryptjs');
+const userService = require('./userService');
 
 const authService = {
   // TODO: Implement user login logic
@@ -11,8 +12,15 @@ const authService = {
 
   // TODO: Implement user registration
   register: async (userData) => {
-    // Implementation needed
-    throw new Error('Not implemented');
+    const { email, password, firstName, lastName } = userData;
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = userService.createUser({
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+    });
+    return user;
   },
 
   // TODO: Implement token refresh

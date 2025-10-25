@@ -1,4 +1,3 @@
-// TODO: Implement authentication controller with login, register, logout, refresh token endpoints
 const authService = require('../services/authService');
 
 const authController = {
@@ -9,7 +8,18 @@ const authController = {
 
   // TODO: Add register endpoint
   register: async (req, res, next) => {
-    // Implementation needed
+    try {
+      const { email, password, firstName, lastName } = req.body;
+      const newUser = await authService.register({
+        email,
+        password,
+        firstName,
+        lastName,
+      });
+      return res.status(201).json({ status: 'success', data: newUser });
+    } catch (error) {
+      next(error);
+    }
   },
 
   // TODO: Add logout endpoint

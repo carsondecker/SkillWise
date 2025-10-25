@@ -11,6 +11,17 @@ const userService = {
     return rows[0];
   },
 
+  createUser: async (userData) => {
+    const { firstName, lastName, email, passwordHash } = userData;
+    const { rows } = await db.query(
+      `INSERT INTO users (first_name, last_name, email, password_hash) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING id, first_name, last_name, email, created_at, updated_at`,
+      [firstName, lastName, email, passwordHash],
+    );
+    return rows[0];
+  },
+
   // TODO: Update user profile
   updateProfile: async (userId, profileData) => {
     const fields = [];
