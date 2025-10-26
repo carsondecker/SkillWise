@@ -1,6 +1,6 @@
 // TODO: Implement user management controller for profile, settings, statistics
 const userService = require('../services/userService');
-import bcrypt from 'bcryptjs';
+const bcrypt = require('bcryptjs');
 
 const userController = {
   // TODO: Get user profile

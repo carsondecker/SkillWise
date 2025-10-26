@@ -2,6 +2,7 @@
 const jwt = require('../utils/jwt');
 const bcrypt = require('bcryptjs');
 const userService = require('./userService');
+const { AppError } = require('../middleware/errorHandler');
 
 const authService = {
   // TODO: Implement user login logic
@@ -12,15 +13,23 @@ const authService = {
 
   // TODO: Implement user registration
   register: async (userData) => {
-    const { email, password, firstName, lastName } = userData;
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = userService.createUser({
-      email,
-      passwordHash,
-      firstName,
-      lastName,
-    });
-    return user;
+    try {
+      const { email, password, firstName, lastName } = userData;
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = userService.createUser({
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+      });
+      return user;
+    }
+    catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError('Error registering user: ' + err.message, 500);
+    }
   },
 
   // TODO: Implement token refresh

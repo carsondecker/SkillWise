@@ -85,7 +85,7 @@ const validate = (schema) => {
 
         return next(
           new AppError(
-            `Validation error: ${errors.map((e) => e.message).join(', ')}`,
+            `Validation error: ${errors.map((e) => `${e.field}: ${e.message}`).join(', ')}`,
             400,
             'VALIDATION_ERROR',
           ),

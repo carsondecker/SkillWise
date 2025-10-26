@@ -6,7 +6,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "dev:all": "docker-compose up -d && echo 'Dev environment is up! Frontend: http://localhost:3000 | Backend: http://localhost:3001/api'",
+    "dev:all": "docker-compose up -d && echo \"Dev environment is up! Frontend: http://localhost:3000 | Backend: http://localhost:3001/api\"",
     "down": "docker-compose down -v",
     "logs": "docker-compose logs -f",
     "logs:backend": "docker-compose logs -f backend",

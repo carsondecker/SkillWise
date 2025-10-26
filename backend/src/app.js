@@ -66,6 +66,7 @@ app.use(
 );
 
 // CORS configuration
+/*
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
@@ -74,6 +75,8 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   }),
 );
+*/
+app.use(cors()); // Temporary: Allow all origins for development
 
 // Rate limiting
 const limiter = rateLimit({

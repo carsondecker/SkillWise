@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const { successWithData } = require('../utils/responses');
 
 const authController = {
   // TODO: Add login endpoint
@@ -16,7 +17,7 @@ const authController = {
         firstName,
         lastName,
       });
-      return res.status(201).json({ status: 'success', data: newUser });
+      return successWithData(res, 201, newUser);
     } catch (error) {
       next(error);
     }
