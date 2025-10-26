@@ -8,7 +8,9 @@ class AppError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
-    this.success = (`${statusCode}`.startsWith('4') ||  `${statusCode}`.startsWith('5'));
+    this.success = !(
+      `${statusCode}`.startsWith('4') || `${statusCode}`.startsWith('5')
+    );
     this.isOperational = true;
 
     Error.captureStackTrace(this, this.constructor);
@@ -59,7 +61,7 @@ const sendErrorDev = (err, req, res) => {
   });
 
   return res.status(err.statusCode).json({
-    status: err.status,
+    success: err.success,
     error: err,
     message: err.message,
     stack: err.stack,

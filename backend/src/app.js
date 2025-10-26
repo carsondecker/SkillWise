@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
+const cookieParser = require('cookie-parser');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -77,6 +78,8 @@ app.use(
 );
 */
 app.use(cors()); // Temporary: Allow all origins for development
+
+app.use(cookieParser());
 
 // Rate limiting
 const limiter = rateLimit({

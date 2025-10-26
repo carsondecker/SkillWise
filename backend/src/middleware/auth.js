@@ -24,7 +24,9 @@ const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+    if (!decoded.id) {
+      throw new AppError('Token is missing id claim', 401, 'INVALID_TOKEN');
+    }
     req.user = decoded;
     next();
   } catch (error) {

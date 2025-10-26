@@ -10,13 +10,15 @@ const authService = {
     try {
       const user = await userService.getUserByEmail(email);
       if (!bcrypt.compare(password, user.password_hash)) {
-        throw new AppError(`Invalid credentials, ${passwordHash}, ${user.password_hash}`, 401);
+        throw new AppError(`Invalid credentials`, 401);
       }
       const token = jwt.generateToken({ id: user.id, email: user.email });
-      const refreshToken = await authService.createRefreshToken(user.id, user.email);
+      const refreshToken = await authService.createRefreshToken(
+        user.id,
+        user.email,
+      );
       return { token, refreshToken };
-    }
-    catch (err) {
+    } catch (err) {
       if (err instanceof AppError) {
         throw err;
       }
@@ -34,8 +36,7 @@ const authService = {
         lastName,
       });
       return user;
-    }
-    catch (err) {
+    } catch (err) {
       if (err instanceof AppError) {
         throw err;
       }
@@ -43,12 +44,57 @@ const authService = {
     }
   },
 
-  // TODO: Implement token refresh
-  refreshToken: async (token) => {
-    // Implementation needed
-    throw new Error('Not implemented');
+  logout: async (userId) => {
+    try {
+      await db.query(
+        `UPDATE refresh_tokens SET is_revoked = TRUE
+        WHERE user_id = $1`,
+        [userId],
+      );
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError('Error logging out user: ' + err.message, 500);
+    }
   },
-  
+
+  revokeRefreshToken: async (token) => {
+    try {
+      await db.query(
+        `UPDATE refresh_tokens SET is_revoked = TRUE
+        WHERE token = $1`,
+        [token],
+      );
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError('Error revoking refresh token: ' + err.message, 500);
+    }
+  },
+
+  refreshToken: async (refreshToken, userId, email) => {
+    try {
+      const { rows } = await db.query(
+        `SELECT user_id, is_revoked, expires_at FROM refresh_tokens
+        WHERE token = $1 AND is_revoked = FALSE AND user_id = $2 AND expires_at > NOW()`,
+        [refreshToken, userId],
+      );
+      console.log(rows);
+      if (!rows || rows.length === 0) {
+        throw new AppError('Invalid or expired refresh token', 401);
+      }
+      const token = jwt.generateToken({ id: userId, email: email });
+      return token;
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError('Error refreshing token: ' + err.message, 500);
+    }
+  },
+
   createRefreshToken: async (id, email) => {
     try {
       const refreshToken = jwt.generateRefreshToken({ id, email });
@@ -58,8 +104,7 @@ const authService = {
         [refreshToken, id],
       );
       return refreshToken;
-    }
-    catch (err) {
+    } catch (err) {
       if (err instanceof AppError) {
         throw err;
       }
