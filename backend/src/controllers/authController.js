@@ -57,7 +57,7 @@ const authController = {
       }
       const { id, email } = verifyRefreshToken(refreshToken);
       console.log({ id, email });
-      const token = await authService.refreshToken(refreshToken);
+      const token = await authService.refreshToken(refreshToken, id, email);
       const refreshData = {
         token,
       };

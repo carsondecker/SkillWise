@@ -1,28 +1,70 @@
-// TODO: Implement authentication middleware unit tests
-const auth = require('../../src/middleware/auth');
+const { AppError } = require('../../../src/middleware/errorHandler');
+const jwt = require('jsonwebtoken');
+const auth = require('../../../src/middleware/auth');
 
-describe('Auth Middleware', () => {
-  test('should authenticate valid JWT token', async () => {
-    // TODO: Implement test
-    expect(true).toBe(true);
+jest.mock('jsonwebtoken');
+
+describe('auth middleware', () => {
+  let req, res, next;
+
+  beforeEach(() => {
+    req = { headers: {}, user: {} };
+    res = {};
+    next = jest.fn();
+    jest.clearAllMocks();
   });
 
-  test('should reject invalid token', async () => {
-    // TODO: Implement test
-    expect(true).toBe(true);
+  test('missing token -> next called with NO_TOKEN AppError', async () => {
+    await auth(req, res, next);
+    expect(next).toHaveBeenCalled();
+    const err = next.mock.calls[0][0];
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toMatch(/not logged in/i);
   });
 
-  test('should reject expired token', async () => {
-    // TODO: Implement test
-    expect(true).toBe(true);
+  test('invalid token (JsonWebTokenError) -> INVALID_TOKEN AppError', async () => {
+    req.headers.authorization = 'Bearer bad';
+    jwt.verify.mockImplementation(() => {
+      const e = new Error('bad');
+      e.name = 'JsonWebTokenError';
+      throw e;
+    });
+    await auth(req, res, next);
+    expect(next).toHaveBeenCalled();
+    const err = next.mock.calls[0][0];
+    expect(err.message).toMatch(/Invalid token/i);
   });
 
-  test('should reject missing token', async () => {
-    // TODO: Implement test
-    expect(true).toBe(true);
+  test('expired token -> TOKEN_EXPIRED AppError', async () => {
+    req.headers.authorization = 'Bearer bad';
+    jwt.verify.mockImplementation(() => {
+      const e = new Error('expired');
+      e.name = 'TokenExpiredError';
+      throw e;
+    });
+    await auth(req, res, next);
+    expect(next).toHaveBeenCalled();
+    const err = next.mock.calls[0][0];
+    expect(err.message).toMatch(/expired/i);
   });
 
-  // TODO: Add more test cases
+  test('valid token without id -> INVALID_TOKEN AppError', async () => {
+    req.headers.authorization = 'Bearer ok';
+    jwt.verify.mockReturnValue({});
+    await auth(req, res, next);
+    expect(next).toHaveBeenCalled();
+    const err = next.mock.calls[0][0];
+    expect(err.message).toMatch(/missing id claim/i);
+  });
+
+  test('restrictTo middleware denies when role not included', () => {
+    const { restrictTo } = require('../../../src/middleware/auth');
+    const mid = restrictTo('admin');
+    const req2 = { user: { role: 'user' } };
+    const next2 = jest.fn();
+    mid(req2, res, next2);
+    expect(next2).toHaveBeenCalled();
+    const err = next2.mock.calls[0][0];
+    expect(err.message).toMatch(/permission/i);
+  });
 });
-
-module.exports = {};

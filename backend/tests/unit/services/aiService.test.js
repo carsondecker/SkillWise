@@ -1,5 +1,5 @@
 // TODO: Implement AI service unit tests
-const aiService = require('../../src/services/aiService');
+const aiService = require('../../../src/services/aiService');
 
 describe('AIService', () => {
   describe('generateFeedback', () => {

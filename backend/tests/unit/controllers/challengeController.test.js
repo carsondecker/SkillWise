@@ -1,5 +1,5 @@
 // TODO: Implement challenge controller unit tests
-const challengeController = require('../../src/controllers/challengeController');
+const challengeController = require('../../../src/controllers/challengeController');
 
 describe('ChallengeController', () => {
   describe('GET /challenges', () => {

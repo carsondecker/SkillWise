@@ -9,7 +9,8 @@ const authService = {
   login: async (email, password) => {
     try {
       const user = await userService.getUserByEmail(email);
-      if (!bcrypt.compare(password, user.password_hash)) {
+      const match = await bcrypt.compare(password, user.password_hash);
+      if (!match) {
         throw new AppError(`Invalid credentials`, 401);
       }
       const token = jwt.generateToken({ id: user.id, email: user.email });
@@ -29,7 +30,7 @@ const authService = {
   register: async (email, password, firstName, lastName) => {
     try {
       const passwordHash = await bcrypt.hash(password, 10);
-      const user = userService.createUser({
+      const user = await userService.createUser({
         email,
         passwordHash,
         firstName,
@@ -78,10 +79,9 @@ const authService = {
     try {
       const { rows } = await db.query(
         `SELECT user_id, is_revoked, expires_at FROM refresh_tokens
-        WHERE token = $1 AND is_revoked = FALSE AND user_id = $2 AND expires_at > NOW()`,
+        WHERE token = $1 AND expires_at > NOW() AND is_revoked = FALSE AND user_id = $2`,
         [refreshToken, userId],
       );
-      console.log(rows);
       if (!rows || rows.length === 0) {
         throw new AppError('Invalid or expired refresh token', 401);
       }

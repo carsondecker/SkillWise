@@ -60,11 +60,16 @@ const sendErrorDev = (err, req, res) => {
     ip: req.ip,
   });
 
+  // Return a consistent canonical error shape in development, with debug details
   return res.status(err.statusCode).json({
-    success: err.success,
-    error: err,
-    message: err.message,
-    stack: err.stack,
+    success: false,
+    error: {
+      message: err.message || 'Internal server error',
+      code: err.code || null,
+      details: {
+        stack: err.stack,
+      },
+    },
     timestamp: new Date().toISOString(),
   });
 };
@@ -81,10 +86,13 @@ const sendErrorProd = (err, req, res) => {
       ip: req.ip,
     });
 
+    // Canonical error response (production): keep a stable shape for clients
     return res.status(err.statusCode).json({
-      status: err.status,
-      message: err.message,
-      code: err.code,
+      success: false,
+      error: {
+        message: err.message,
+        code: err.code || null,
+      },
       timestamp: new Date().toISOString(),
     });
   }
@@ -99,8 +107,11 @@ const sendErrorProd = (err, req, res) => {
   });
 
   return res.status(500).json({
-    status: 'error',
-    message: 'Something went wrong!',
+    success: false,
+    error: {
+      message: 'Something went wrong!',
+      code: 'INTERNAL_ERROR',
+    },
     timestamp: new Date().toISOString(),
   });
 };

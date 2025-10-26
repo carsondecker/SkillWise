@@ -19,11 +19,11 @@ const userService = {
       );
 
       if (!rows || rows.length === 0) {
-        return AppError('User not found', 404);
+        throw new AppError('User not found', 404);
       }
 
       return rows[0];
-    } catch (error) {
+    } catch (err) {
       if (err instanceof AppError) {
         throw err;
       }
@@ -46,8 +46,7 @@ const userService = {
       }
 
       return rows[0];
-    }
-    catch (err) {
+    } catch (err) {
       if (err instanceof AppError) {
         throw err;
       }
@@ -74,7 +73,7 @@ const userService = {
     }
 
     if (fields.length === 0) {
-      throw new Error('No valid fields to update');
+      throw new AppError('No valid fields to update', 400, 'INVALID_INPUT');
     }
 
     values.push(userId);

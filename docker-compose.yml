@@ -131,6 +131,28 @@ services:
     stdin_open: true
     tty: true
 
+  # Test Database
+  test_database:
+    image: postgres:15
+    container_name: skillwise_test_db
+    environment:
+      POSTGRES_DB: skillwise_test_db
+      POSTGRES_USER: skillwise_user
+      POSTGRES_PASSWORD: skillwise_pass
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8'
+    ports:
+      - '5434:5432'
+    volumes:
+      - ./backend/database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U skillwise_user -d skillwise_test_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - skillwise_network
+
 volumes:
   postgres_data:
     driver: local

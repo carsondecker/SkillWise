@@ -1,6 +1,6 @@
 // TODO: Implement challenges API integration tests
 const request = require('supertest');
-const app = require('../src/app');
+const app = require('../../src/app');
 
 describe('Challenges API Integration', () => {
   let authToken;
