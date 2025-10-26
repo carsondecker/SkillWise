@@ -11,6 +11,26 @@ const userService = {
     return rows[0];
   },
 
+  getUserByEmail: async (email) => {
+    try {
+      const { rows } = await db.query(
+        'SELECT id, first_name, last_name, email, password_hash, created_at, updated_at FROM users WHERE email = $1',
+        [email],
+      );
+
+      if (!rows || rows.length === 0) {
+        return AppError('User not found', 404);
+      }
+
+      return rows[0];
+    } catch (error) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError('Error finding user: ' + err.message, 500);
+    }
+  },
+
   createUser: async (userData) => {
     try {
       const { firstName, lastName, email, passwordHash } = userData;
