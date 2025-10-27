@@ -7,11 +7,12 @@ const authController = {
   login: async (req, res, next) => {
     try {
       const { email, password } = req.body;
-      const tokens = await authService.login(email, password);
+      const data = await authService.login(email, password);
       const loginData = {
-        token: tokens.token,
+        token: data.token,
+        user: data.user,
       };
-      res.cookie('refreshToken', tokens.refreshToken, {
+      res.cookie('refreshToken', data.refreshToken, {
         httpOnly: true,
         secure: false, // temp: switch to true
         sameSite: 'strict',

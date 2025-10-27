@@ -19,7 +19,7 @@ const userService = {
       );
 
       if (!rows || rows.length === 0) {
-        throw new AppError('User not found', 404);
+        return null;
       }
 
       return rows[0];

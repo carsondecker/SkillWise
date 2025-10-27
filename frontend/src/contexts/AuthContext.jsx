@@ -130,10 +130,10 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await apiService.auth.login(credentials);
-      const { user, accessToken } = response.data;
+      const { token, user } = response.data.data;
 
       // Store access token
-      setAccessToken(accessToken);
+      setAccessToken(token);
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -142,7 +142,21 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      const errorCode = error.response?.data?.error?.code || 'Login failed';
+      let errorMessage;
+      switch (errorCode) {
+        case 'INVALID_CREDENTIALS':
+          errorMessage = 'Invalid credentials';
+          break;
+        case 'USER_NOT_FOUND':
+          errorMessage = 'User not found';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = 'Invalid login data';
+          break;
+        default:
+          errorMessage = 'Login failed';
+      }
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -170,8 +184,19 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user };
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || 'Registration failed';
+      const errorCode =
+        error.response?.data?.error?.code || 'Registration failed';
+      let errorMessage;
+      switch (errorCode) {
+        case 'USER_ALREADY_EXISTS':
+          errorMessage = 'Email is already registered';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = 'Invalid registration data';
+          break;
+        default:
+          errorMessage = 'Registration failed';
+      }
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,

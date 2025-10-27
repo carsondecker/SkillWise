@@ -9,16 +9,24 @@ const authService = {
   login: async (email, password) => {
     try {
       const user = await userService.getUserByEmail(email);
+      if (!user) {
+        throw new AppError(`User not found`, 404, 'USER_NOT_FOUND');
+      }
       const match = await bcrypt.compare(password, user.password_hash);
       if (!match) {
-        throw new AppError(`Invalid credentials`, 401);
+        throw new AppError(`Invalid credentials`, 401, 'INVALID_CREDENTIALS');
       }
       const token = jwt.generateToken({ id: user.id, email: user.email });
       const refreshToken = await authService.createRefreshToken(
         user.id,
         user.email,
       );
-      return { token, refreshToken };
+      const limitedUser = {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+      };
+      return { token, refreshToken, user: limitedUser };
     } catch (err) {
       if (err instanceof AppError) {
         throw err;
@@ -30,6 +38,10 @@ const authService = {
   register: async (email, password, firstName, lastName) => {
     try {
       const passwordHash = await bcrypt.hash(password, 10);
+      const existingUser = await userService.getUserByEmail(email);
+      if (existingUser) {
+        throw new AppError('Email already in use', 400, 'USER_ALREADY_EXISTS');
+      }
       const user = await userService.createUser({
         email,
         passwordHash,

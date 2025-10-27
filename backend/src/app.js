@@ -67,17 +67,19 @@ app.use(
 );
 
 // CORS configuration
-/*
+// When requests include credentials (cookies) the Access-Control-Allow-Origin
+// header must be a specific origin (not '*') and Access-Control-Allow-Credentials
+// must be true. Use the CORS_ORIGIN env var to allow the frontend origin.
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: corsOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Set-Cookie'],
   }),
 );
-*/
-app.use(cors()); // Temporary: Allow all origins for development
 
 app.use(cookieParser());
 
