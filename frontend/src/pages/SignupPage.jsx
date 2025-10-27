@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import Header from '../components/common/Header';
 
 const SignupPage = () => {
   const registerSchema = z
@@ -83,6 +84,7 @@ const SignupPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
       <div className="flex flex-col items-center justify-center min-h-screen px-4 py-12">
         <div className="w-full max-w-md">
           <div className="mb-8 flex flex-col items-center">

@@ -11,9 +11,13 @@ import Header from '../components/common/Header';
 const LoginPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  if (isAuthenticated) {
+    navigate('/dashboard', { replace: true });
+  }
 
   // Redirect to intended page after login
   const from = location.state?.from?.pathname || '/dashboard';

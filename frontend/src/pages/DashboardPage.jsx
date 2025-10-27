@@ -1,12 +1,18 @@
 // TODO: Implement dashboard page with navigation
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import DashboardOverview from '../components/dashboard/DashboardOverview';
 import { useAuth } from '../hooks/useAuth';
+import Header from '../components/common/Header';
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
+
+  if (!isAuthenticated) {
+    navigate('/login', { replace: true });
+  }
 
   const navigationItems = [
     { path: '/dashboard', label: 'Overview', icon: '📊' },
@@ -20,6 +26,7 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
       <div className="flex h-screen overflow-hidden">
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
           <div className="p-6 border-b border-gray-200">
