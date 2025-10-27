@@ -1,35 +1,65 @@
 {
-  "name": "skillwise_aitutor",
+  "name": "skillwise-frontend",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@hookform/resolvers": "^3.3.2",
+    "axios": "^1.6.2",
+    "framer-motion": "^12.23.24",
+    "lottie-react": "^2.4.1",
+    "lucide-react": "^0.548.0",
+    "motion": "^12.23.24",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.48.2",
+    "react-router-dom": "^6.20.1",
+    "recharts": "^2.8.0",
+    "tailwindcss": "^3.3.6",
+    "zod": "^3.22.4"
+  },
   "scripts": {
-    "dev:all": "docker-compose up -d && echo '🟡 Installing dependencies inside containers...' && docker-compose exec backend sh -c 'npm install' && docker-compose exec frontend sh -c 'npm install' && echo '✅ All services are ready! Frontend: http://localhost:3000 | Backend: http://localhost:3001/api'",
-    "down": "docker-compose down -v",
-    "logs": "docker-compose logs -f",
-    "logs:backend": "docker-compose logs -f backend",
-    "logs:frontend": "docker-compose logs -f frontend",
-    "logs:db": "docker-compose logs -f database",
-    "build": "docker-compose build",
-    "rebuild": "docker-compose build --no-cache",
-    "reset": "docker-compose down -v && docker-compose up -d",
-    "test": "echo \"Run tests in individual services\" && exit 0",
-    "prepare": "husky install"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --silent",
+    "eject": "react-scripts eject",
+    "lint": "eslint src --ext .js,.jsx",
+    "lint:fix": "eslint src --ext .js,.jsx --fix",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run"
+  },
+  "devDependencies": {
+    "@axe-core/react": "^4.8.2",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.5.1",
+    "cypress": "^13.6.1",
+    "eslint": "^8.55.0",
+    "prettier": "^2.8.8",
+    "react-scripts": "5.0.1",
+    "sass": "^1.93.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   },
   "keywords": [
-    "ai",
-    "tutor",
-    "education",
     "react",
-    "node",
-    "postgresql"
+    "frontend",
+    "education",
+    "ai",
+    "tutor"
   ],
-  "description": "SkillWise AI Tutor - An intelligent tutoring system",
-  "license": "ISC",
-  "devDependencies": {
-    "eslint": "^8.44.0",
-    "husky": "^8.0.3",
-    "lint-staged": "^13.2.3",
-    "prettier": "^2.8.8",
-    "sass": "^1.93.2"
-  }
+  "author": "SkillWise Team",
+  "license": "MIT"
 }
