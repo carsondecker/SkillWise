@@ -22,7 +22,11 @@ describe('authService', () => {
     db.query = jest.fn().mockResolvedValue({ rows: [] });
 
     const res = await authService.login('a@b', 'pw');
-    expect(res).toEqual({ token: 'tok', refreshToken: 'r' });
+    expect(res).toEqual({
+      token: 'tok',
+      refreshToken: 'r',
+      user: { email: 'a@b', firstName: undefined, lastName: undefined },
+    });
     expect(db.query).toHaveBeenCalled();
   });
 
