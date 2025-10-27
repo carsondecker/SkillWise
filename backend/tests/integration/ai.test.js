@@ -1,6 +1,6 @@
 // TODO: Implement AI integration tests
 const request = require('supertest');
-const app = require('../src/app');
+const app = require('../../src/app');
 
 describe('AI Integration Tests', () => {
   let authToken;

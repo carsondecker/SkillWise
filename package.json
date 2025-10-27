@@ -18,14 +18,22 @@
     "test": "echo \"Run tests in individual services\" && exit 0",
     "prepare": "husky install"
   },
-  "keywords": ["ai", "tutor", "education", "react", "node", "postgresql"],
+  "keywords": [
+    "ai",
+    "tutor",
+    "education",
+    "react",
+    "node",
+    "postgresql"
+  ],
   "author": "",
   "license": "ISC",
   "description": "SkillWise AI Tutor - An intelligent tutoring system",
   "devDependencies": {
+    "eslint": "^8.44.0",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.3",
-    "eslint": "^8.44.0",
-    "prettier": "^2.8.8"
+    "prettier": "^2.8.8",
+    "sass": "^1.93.2"
   }
 }

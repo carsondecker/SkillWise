@@ -1,40 +1,52 @@
-// TODO: Request validation middleware using Zod schemas
+// src/middleware/validation.js
 const { z } = require('zod');
 const { AppError } = require('./errorHandler');
 
-// TODO: Validation schemas
+/**
+ * 🔹 Common Zod schemas for reusable validation
+ */
+
+// ✅ Auth Schemas
 const loginSchema = z.object({
   body: z.object({
     email: z.string().email('Invalid email format'),
-    password: z.string().min(1, 'Password is required')
-  })
+    password: z.string().min(1, 'Password is required'),
+  }),
 });
 
 const registerSchema = z.object({
-  body: z.object({
-    email: z.string().email('Invalid email format'),
-    password: z.string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one lowercase letter, one uppercase letter, and one number'),
-    firstName: z.string().min(1, 'First name is required').max(50, 'First name too long'),
-    lastName: z.string().min(1, 'Last name is required').max(50, 'Last name too long'),
-    confirmPassword: z.string()
-  }).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"]
-  })
+  body: z
+    .object({
+      email: z.string().email('Invalid email format'),
+      password: z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+          'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+        ),
+      firstName: z.string().min(1, 'First name is required').max(50, 'First name too long'),
+      lastName: z.string().min(1, 'Last name is required').max(50, 'Last name too long'),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: 'Passwords do not match',
+      path: ['confirmPassword'],
+    }),
 });
 
+// ✅ Goal Schema
 const goalSchema = z.object({
   body: z.object({
     title: z.string().min(1, 'Goal title is required').max(255, 'Title too long'),
-    description: z.string().optional(),
-    category: z.string().optional(),
+    description: z.string().max(1000, 'Description too long').optional(),
+    category: z.string().max(100, 'Category too long').optional(),
     difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
-    targetCompletionDate: z.string().datetime().optional()
-  })
+    targetCompletionDate: z.string().datetime().optional(),
+  }),
 });
 
+// ✅ Challenge Schema
 const challengeSchema = z.object({
   body: z.object({
     title: z.string().min(1, 'Challenge title is required').max(255, 'Title too long'),
@@ -44,45 +56,51 @@ const challengeSchema = z.object({
     difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
     estimatedTimeMinutes: z.number().int().positive().optional(),
     pointsReward: z.number().int().positive().default(10),
-    maxAttempts: z.number().int().positive().default(3)
-  })
+    maxAttempts: z.number().int().positive().default(3),
+  }),
 });
 
-// TODO: Generic validation middleware
+/**
+ * 🔹 Generic validation middleware factory
+ */
 const validate = (schema) => {
   return (req, res, next) => {
     try {
       const validationData = {
         body: req.body,
         query: req.query,
-        params: req.params
+        params: req.params,
       };
 
       const result = schema.safeParse(validationData);
 
       if (!result.success) {
-        const errors = result.error.errors.map(err => ({
+        const errors = result.error.errors.map((err) => ({
           field: err.path.join('.'),
-          message: err.message
+          message: err.message,
         }));
 
-        return next(new AppError(
-          `Validation error: ${errors.map(e => e.message).join(', ')}`,
-          400,
-          'VALIDATION_ERROR'
-        ));
+        return next(
+          new AppError(
+            `Validation failed: ${errors.map((e) => e.message).join(', ')}`,
+            400,
+            'VALIDATION_ERROR',
+          ),
+        );
       }
 
-      // Attach validated data to request
+      // Attach validated result for controllers/services
       req.validated = result.data;
       next();
     } catch (error) {
-      next(new AppError('Validation error', 400, 'VALIDATION_ERROR'));
+      next(new AppError('Unexpected validation error', 400, 'VALIDATION_ERROR'));
     }
   };
 };
 
-// TODO: Specific validation middleware functions
+/**
+ * 🔹 Prebuilt middleware for common routes
+ */
 const loginValidation = validate(loginSchema);
 const registerValidation = validate(registerSchema);
 const goalValidation = validate(goalSchema);
@@ -94,11 +112,10 @@ module.exports = {
   registerValidation,
   goalValidation,
   challengeValidation,
-  // Export schemas for testing
   schemas: {
     loginSchema,
     registerSchema,
     goalSchema,
-    challengeSchema
-  }
+    challengeSchema,
+  },
 };

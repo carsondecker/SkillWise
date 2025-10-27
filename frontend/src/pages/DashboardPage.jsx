@@ -1,12 +1,17 @@
-// TODO: Implement dashboard page with navigation
-import React from 'react';
+// src/pages/DashboardPage.jsx
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import DashboardOverview from '../components/dashboard/DashboardOverview';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
+import DashboardOverview from '../components/dashboard/DashboardOverview';
+import '../styles/DashboardPage.scss';
+import Navigation from '../components/common/Navigation';
+import TopBar from '../components/common/TopBar';
 
 const DashboardPage = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const navigationItems = [
     { path: '/dashboard', label: 'Overview', icon: '📊' },
@@ -21,35 +26,58 @@ const DashboardPage = () => {
   return (
     <div className="dashboard-page">
       <div className="dashboard-layout">
-        <aside className="dashboard-sidebar">
-          <div className="sidebar-header">
-            <h2>SkillWise</h2>
-            <p>Welcome, {user?.firstName || 'Student'}!</p>
-          </div>
-          
-          <nav className="sidebar-navigation">
-            <ul>
-              {navigationItems.map((item) => (
-                <li key={item.path}>
-                  <Link 
-                    to={item.path}
-                    className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
-                  >
-                    <span className="nav-icon">{item.icon}</span>
-                    <span className="nav-label">{item.label}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.aside
+              className="dashboard-sidebar"
+              initial={{ x: -250, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -250, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="sidebar-header">
+                <h2>⚡ SkillWise</h2>
+                <p>Welcome, {user?.firstName || 'Student'}!</p>
+              </div>
+
+              <Navigation
+                items={navigationItems}
+                currentPath={location.pathname}
+              />
+
+              <button
+                className="sidebar-toggle"
+                onClick={() => setSidebarOpen(false)}
+              >
+                ⬅ Collapse
+              </button>
+            </motion.aside>
+          )}
+        </AnimatePresence>
 
         <main className="dashboard-main">
-          <div className="dashboard-header">
-            <h1>Dashboard</h1>
-            <p>Track your learning progress and achievements</p>
-          </div>
-          
+          <TopBar />
+          <motion.header
+            className="dashboard-header"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div>
+              <h1>Welcome back, {user?.firstName || 'Learner'} 👋</h1>
+              <p>Track your learning progress and achievements below.</p>
+            </div>
+
+            {!sidebarOpen && (
+              <button
+                className="sidebar-toggle"
+                onClick={() => setSidebarOpen(true)}
+              >
+                ☰ Menu
+              </button>
+            )}
+          </motion.header>
+
           <DashboardOverview />
         </main>
       </div>

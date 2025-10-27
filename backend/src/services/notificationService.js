@@ -1,28 +1,139 @@
-// TODO: Implement notification service
+// src/services/notificationService.js
+const db = require('../database/connection');
+const { AppError } = require('../middleware/errorHandler');
+const emailService = require('./emailService'); // optional: for dual delivery
+
 const notificationService = {
-  // TODO: Send in-app notification
-  sendNotification: async (userId, type, message, data) => {
-    // Implementation needed
-    throw new Error('Not implemented');
+  /**
+   * 🔔 Send single in-app notification
+   * @param {number} userId
+   * @param {string} type - e.g. 'goal_completed', 'new_challenge', 'achievement'
+   * @param {string} message
+   * @param {object} data - optional metadata
+   */
+  sendNotification: async (userId, type, message, data = {}) => {
+    try {
+      if (!userId || !type || !message) {
+        throw new AppError('Invalid parameters for notification', 400, 'INVALID_INPUT');
+      }
+
+      const result = await db.query(
+        `
+        INSERT INTO notifications (user_id, type, message, data, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        RETURNING *
+        `,
+        [userId, type, message, JSON.stringify(data)],
+      );
+
+      // Optionally send an email for important notifications
+      if (['achievement', 'goal_completed'].includes(type)) {
+        const userQuery = await db.query('SELECT email, first_name FROM users WHERE id = $1', [userId]);
+        const user = userQuery.rows[0];
+        if (user) {
+          await emailService.sendAchievementNotification(user.email, {
+            title: type.replace('_', ' ').toUpperCase(),
+            description: message,
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Notification sent successfully',
+        notification: result.rows[0],
+      };
+    } catch (error) {
+      throw new AppError(`Error sending notification: ${error.message}`, 500);
+    }
   },
 
-  // TODO: Get user notifications
+  /**
+   * 📬 Get notifications for a user
+   * @param {number} userId
+   */
   getUserNotifications: async (userId) => {
-    // Implementation needed
-    throw new Error('Not implemented');
+    try {
+      const result = await db.query(
+        `
+        SELECT id, type, message, data, is_read, created_at
+        FROM notifications
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT 50
+        `,
+        [userId],
+      );
+      return result.rows;
+    } catch (error) {
+      throw new AppError(`Error fetching notifications: ${error.message}`, 500);
+    }
   },
 
-  // TODO: Mark notification as read
+  /**
+   * ✅ Mark notification as read
+   * @param {number} notificationId
+   */
   markAsRead: async (notificationId) => {
-    // Implementation needed
-    throw new Error('Not implemented');
+    try {
+      const result = await db.query(
+        `
+        UPDATE notifications
+        SET is_read = TRUE
+        WHERE id = $1
+        RETURNING *
+        `,
+        [notificationId],
+      );
+
+      if (!result.rows[0]) throw new AppError('Notification not found', 404, 'NOT_FOUND');
+
+      return {
+        success: true,
+        message: 'Notification marked as read',
+        notification: result.rows[0],
+      };
+    } catch (error) {
+      throw new AppError(`Error marking notification as read: ${error.message}`, 500);
+    }
   },
 
-  // TODO: Send bulk notifications
+  /**
+   * 📣 Send bulk notifications to multiple users
+   * @param {number[]} userIds
+   * @param {object} notification - { type, message, data? }
+   */
   sendBulkNotifications: async (userIds, notification) => {
-    // Implementation needed
-    throw new Error('Not implemented');
-  }
+    try {
+      const { type, message, data = {} } = notification;
+      if (!userIds || userIds.length === 0) {
+        throw new AppError('User list cannot be empty', 400, 'INVALID_INPUT');
+      }
+
+      const inserted = [];
+
+      for (const userId of userIds) {
+        const res = await db.query(
+          `
+          INSERT INTO notifications (user_id, type, message, data, created_at)
+          VALUES ($1, $2, $3, $4, NOW())
+          RETURNING *
+          `,
+          [userId, type, message, JSON.stringify(data)],
+        );
+        inserted.push(res.rows[0]);
+      }
+
+      return {
+        success: true,
+        count: inserted.length,
+        message: `Sent ${inserted.length} notifications.`,
+        notifications: inserted,
+      };
+    } catch (error) {
+      throw new AppError(`Error sending bulk notifications: ${error.message}`, 500);
+    }
+  },
 };
 
 module.exports = notificationService;

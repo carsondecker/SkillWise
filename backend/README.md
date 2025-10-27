@@ -95,7 +95,8 @@ backend/
 │   │   ├── auth.test.js
 │   │   ├── goals.test.js
 │   │   ├── challenges.test.js
-│   │   └── ai.test.js
+│   │   ├── ai.test.js
+│   │   └── users.test.js
 │   └── fixtures/
 │       ├── users.json
 │       ├── goals.json

@@ -1,0 +1,105 @@
+/* ===================== */
+/* Custom Main Styling   */
+/* ===================== */
+.rotating-text-main {
+    background-color: #ffffff; /* Tailwind: bg-cyan-300 */
+    color: #fbbf24;
+    overflow: hidden;
+    justify-content: center;
+    border-radius: 50px; /* Tailwind: rounded-lg */
+    display: inline-flex;
+    transition: all 0.6s ease;
+}
+.rotating-text-main span {
+    text-align: center;
+    border-radius: 50px;
+    gap:-1px;
+    padding: 2px;
+    text-shadow:
+            2px 0 0 #000000, /* Right shadow */
+            -2px 0 0 #000000, /* Left shadow */
+            0 2px 0 #000000, /* Bottom shadow */
+            0 -2px 0 #000000, /* Top shadow */
+            1px 1px #000000, /* Diagonal bottom-right */
+            -1px -1px 0 #000000, /* Diagonal top-left */
+            1px -1px 0 #000000, /* Diagonal top-right */
+            -1px 1px 0 #000000; /* Diagonal bottom-left */
+}
+.rotating-text-main span:first-child {
+    margin-left: 4px;
+    padding-left: 4px;
+}
+.rotating-text-main span:last-child {
+    margin-right: 4px;
+    padding-right: 4px;
+}
+
+/* Medium breakpoint (md) */
+@media (min-width: 768px) {
+    .rotating-text-main {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* Small breakpoint (sm) */
+@media (min-width: 640px) {
+    .rotating-text-main {
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* ===================== */
+/* Split Level Styling   */
+/* ===================== */
+.rotating-text-split {
+    overflow: hidden;
+}
+
+@media (min-width: 640px) {
+    .rotating-text-split {
+        padding-bottom: 0.25rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .rotating-text-split {
+        padding-bottom: 0.25rem;
+    }
+}
+
+.text-rotate {
+    display: flex;
+    flex-wrap: wrap;
+    white-space: pre-wrap;
+    position: relative;
+}
+
+.text-rotate-sr-only {
+    position: absolute;
+    width: 4px;
+    height: 50px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.text-rotate-word {
+    display: inline-flex;
+}
+
+.text-rotate-lines {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.text-rotate-element {
+    display: inline-block;
+}
+
+.text-rotate-space {
+    white-space: pre;
+}

@@ -27,7 +27,7 @@ const PeerReviewPage = () => {
         codeSnippet: 'const useDataFetch = (url) => { ... }',
         needsReview: true,
         reviewsCount: 2,
-        maxReviews: 3
+        maxReviews: 3,
       },
       {
         id: 2,
@@ -42,7 +42,7 @@ const PeerReviewPage = () => {
         codeSnippet: 'function mergeSort(arr) { ... }',
         needsReview: true,
         reviewsCount: 1,
-        maxReviews: 3
+        maxReviews: 3,
       },
       {
         id: 3,
@@ -57,8 +57,8 @@ const PeerReviewPage = () => {
         codeSnippet: 'class UserRepository extends Repository { ... }',
         needsReview: false,
         reviewsCount: 3,
-        maxReviews: 3
-      }
+        maxReviews: 3,
+      },
     ];
 
     const mockMySubmissions = [
@@ -73,7 +73,7 @@ const PeerReviewPage = () => {
         reviewsReceived: 2,
         maxReviews: 3,
         averageRating: 4.5,
-        feedback: 'Great responsive design approach!'
+        feedback: 'Great responsive design approach!',
       },
       {
         id: 2,
@@ -86,8 +86,8 @@ const PeerReviewPage = () => {
         reviewsReceived: 3,
         maxReviews: 3,
         averageRating: 4.7,
-        feedback: 'Excellent error handling and clean code structure'
-      }
+        feedback: 'Excellent error handling and clean code structure',
+      },
     ];
 
     setTimeout(() => {
@@ -97,15 +97,15 @@ const PeerReviewPage = () => {
     }, 1000);
   }, []);
 
-  const filteredReviews = reviews.filter(review => 
-    selectedCategory === 'all' || review.category.toLowerCase() === selectedCategory.toLowerCase()
+  const filteredReviews = reviews.filter(review =>
+    selectedCategory === 'all' || review.category.toLowerCase() === selectedCategory.toLowerCase(),
   );
 
   const getStatusBadge = (status) => {
     const statusConfig = {
       'under-review': { text: 'Under Review', className: 'status-pending' },
       'completed': { text: 'Completed', className: 'status-completed' },
-      'needs-revision': { text: 'Needs Revision', className: 'status-warning' }
+      'needs-revision': { text: 'Needs Revision', className: 'status-warning' },
     };
     const config = statusConfig[status] || { text: status, className: 'status-default' };
     return <span className={`status-badge ${config.className}`}>{config.text}</span>;
@@ -115,7 +115,7 @@ const PeerReviewPage = () => {
     const colors = {
       'Beginner': '#4CAF50',
       'Intermediate': '#FF9800',
-      'Advanced': '#F44336'
+      'Advanced': '#F44336',
     };
     return colors[difficulty] || '#757575';
   };
@@ -124,7 +124,7 @@ const PeerReviewPage = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-    
+
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${diffInHours}h ago`;
     return `${Math.floor(diffInHours / 24)}d ago`;
@@ -186,7 +186,7 @@ const PeerReviewPage = () => {
                       </div>
                     </div>
                     <div className="review-meta">
-                      <span 
+                      <span
                         className="difficulty-badge"
                         style={{ backgroundColor: getDifficultyColor(review.difficulty) }}
                       >
@@ -210,7 +210,7 @@ const PeerReviewPage = () => {
                         {review.reviewsCount}/{review.maxReviews} reviews
                       </span>
                     </div>
-                    
+
                     {review.needsReview ? (
                       <button className="btn-primary">
                         Start Review
@@ -256,7 +256,7 @@ const PeerReviewPage = () => {
                       <h4>{submission.title}</h4>
                       <div className="submission-meta">
                         <span className="category-badge">{submission.category}</span>
-                        <span 
+                        <span
                           className="difficulty-badge"
                           style={{ backgroundColor: getDifficultyColor(submission.difficulty) }}
                         >
@@ -297,10 +297,10 @@ const PeerReviewPage = () => {
                       Review Progress: {submission.reviewsReceived}/{submission.maxReviews}
                     </div>
                     <div className="progress-track">
-                      <div 
+                      <div
                         className="progress-fill"
-                        style={{ 
-                          width: `${(submission.reviewsReceived / submission.maxReviews) * 100}%` 
+                        style={{
+                          width: `${(submission.reviewsReceived / submission.maxReviews) * 100}%`,
                         }}
                       ></div>
                     </div>

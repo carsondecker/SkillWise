@@ -1,19 +1,25 @@
-// TODO: Implement leaderboard routes
+// src/routes/leaderboard.js
 const express = require('express');
 const router = express.Router();
+
 const leaderboardController = require('../controllers/leaderboardController');
 const auth = require('../middleware/auth');
 
-// TODO: Add GET / route for global leaderboard
+// --------------------------------------------------
+// 🔹 Leaderboard Routes (Protected)
+// --------------------------------------------------
+
+// 🟢 Get global leaderboard
+// Optional query params: ?period=weekly|monthly|alltime&limit=10
 router.get('/', auth, leaderboardController.getLeaderboard);
 
-// TODO: Add GET /ranking route for user ranking
+// 🟢 Get current user's ranking and total points
 router.get('/ranking', auth, leaderboardController.getUserRanking);
 
-// TODO: Add GET /points route for points breakdown
+// 🟡 Get detailed points breakdown for the logged-in user
 router.get('/points', auth, leaderboardController.getPointsBreakdown);
 
-// TODO: Add GET /achievements route for achievements
+// 🟣 Get user achievements and badges
 router.get('/achievements', auth, leaderboardController.getAchievements);
 
 module.exports = router;

@@ -42,7 +42,7 @@ const processQueue = (error, token = null) => {
       resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -50,22 +50,22 @@ const processQueue = (error, token = null) => {
 api.interceptors.request.use(
   (config) => {
     const token = getAccessToken();
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // Log request in development
     if (process.env.NODE_ENV === 'development') {
       console.log(`🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     }
-    
+
     return config;
   },
   (error) => {
     console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for token refresh logic
@@ -75,17 +75,17 @@ api.interceptors.response.use(
     if (process.env.NODE_ENV === 'development') {
       console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
     }
-    
+
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
-    
+
     // Log error in development
     if (process.env.NODE_ENV === 'development') {
       console.log(`❌ API Error: ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - ${error.response?.status}`);
     }
-    
+
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -111,62 +111,62 @@ api.interceptors.response.use(
           {
             withCredentials: true, // Send httpOnly refresh cookie
             timeout: 5000,
-          }
+          },
         );
 
         const { accessToken } = refreshResponse.data;
-        
+
         if (accessToken) {
           // Update stored access token
           setAccessToken(accessToken);
-          
+
           // Update default authorization header
           api.defaults.headers.Authorization = `Bearer ${accessToken}`;
-          
+
           // Process queued requests with new token
           processQueue(null, accessToken);
-          
+
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          
+
           console.log('✅ Token refreshed successfully');
           return api(originalRequest);
         } else {
           throw new Error('No access token received from refresh');
         }
-        
+
       } catch (refreshError) {
         console.error('❌ Token refresh failed:', refreshError);
-        
+
         // Clear tokens and redirect to login
         clearTokens();
         processQueue(refreshError, null);
-        
+
         // Dispatch logout event for AuthContext to handle
-        window.dispatchEvent(new CustomEvent('auth:logout', { 
-          detail: { reason: 'token_refresh_failed' } 
+        window.dispatchEvent(new CustomEvent('auth:logout', {
+          detail: { reason: 'token_refresh_failed' },
         }));
-        
+
         // Redirect to login page
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
-        
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
-    
+
     // Handle other error cases
     if (error.response?.status >= 500) {
       console.error('🚨 Server Error:', error.response.data);
       // Could dispatch global error event here
-      window.dispatchEvent(new CustomEvent('api:server-error', { 
-        detail: { error: error.response.data } 
+      window.dispatchEvent(new CustomEvent('api:server-error', {
+        detail: { error: error.response.data },
       }));
     }
-    
+
     // Network errors
     if (error.code === 'ECONNABORTED') {
       console.error('⏰ Request timeout');
@@ -175,9 +175,9 @@ api.interceptors.response.use(
       console.error('🔌 Network Error:', error.message);
       error.message = 'Network error. Please check your connection and try again.';
     }
-    
+
     return Promise.reject(error);
-  }
+  },
 );
 
 // API service methods
@@ -194,10 +194,10 @@ export const apiService = {
 
   // User methods
   user: {
-    getProfile: () => api.get('/user/profile'),
-    updateProfile: (data) => api.put('/user/profile', data),
-    deleteAccount: () => api.delete('/user/profile'),
-    changePassword: (data) => api.put('/user/change-password', data),
+    getProfile: () => api.get('/users/profile'),
+    updateProfile: (data) => api.put('/users/profile', data),
+    deleteAccount: () => api.delete('/users/profile'),
+    changePassword: (data) => api.put('/users/change-password', data),
   },
 
   // Goals methods

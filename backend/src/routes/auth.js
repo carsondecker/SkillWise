@@ -1,25 +1,32 @@
-// TODO: Implement authentication routes
+// src/routes/auth.js
 const express = require('express');
 const router = express.Router();
+
 const authController = require('../controllers/authController');
-const validation = require('../middleware/validation');
+const { loginValidation, registerValidation } = require('../middleware/validation');
+const auth = require('../middleware/auth');
 
-// TODO: Add POST /login route
-router.post('/login', validation.loginValidation, authController.login);
+// 🔹 AUTH ROUTES
+// --------------------------------------------------
 
-// TODO: Add POST /register route
-router.post('/register', validation.registerValidation, authController.register);
+// 🟢 Register new user
+router.post('/register', registerValidation, authController.register);
 
-// TODO: Add POST /logout route
+// 🟢 Login existing user
+router.post('/login', loginValidation, authController.login);
+
+// 🔵 Logout current session
 router.post('/logout', authController.logout);
 
-// TODO: Add POST /refresh route
+// 🟡 Refresh access token
 router.post('/refresh', authController.refreshToken);
 
-// TODO: Add POST /forgot-password route
+// ⚪️ Optional future expansion: Forgot/Reset Password
 // router.post('/forgot-password', authController.forgotPassword);
-
-// TODO: Add POST /reset-password route
 // router.post('/reset-password', authController.resetPassword);
+
+// 🟣 Authenticated routes (profile)
+// router.get('/profile', auth, authController.getProfile);
+// router.put('/profile', auth, authController.updateProfile);
 
 module.exports = router;

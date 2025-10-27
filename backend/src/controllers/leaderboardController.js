@@ -1,26 +1,67 @@
-// TODO: Implement leaderboard controller for rankings and points
+// src/controllers/leaderboardController.js
+const { z } = require('zod');
 const leaderboardService = require('../services/leaderboardService');
+const { asyncHandler } = require('../utils/helpers');
 
+// ✅ Validation Schemas
+const leaderboardQuerySchema = z.object({
+  period: z.enum(['daily', 'weekly', 'monthly', 'alltime']).default('weekly'),
+  limit: z
+    .string()
+    .regex(/^[0-9]+$/, 'Limit must be a number')
+    .transform(Number)
+    .default('50'),
+});
+
+// ✅ Controller Implementation
 const leaderboardController = {
-  // TODO: Get global leaderboard
-  getLeaderboard: async (req, res, next) => {
-    // Implementation needed
-  },
+  // -------------------------
+  // Get global leaderboard
+  // -------------------------
+  getLeaderboard: asyncHandler(async (req, res) => {
+    const { period, limit } = leaderboardQuerySchema.parse(req.query);
 
-  // TODO: Get user ranking
-  getUserRanking: async (req, res, next) => {
-    // Implementation needed
-  },
+    const leaderboard = await leaderboardService.getLeaderboard({ period, limit });
+    res.json({ leaderboard });
+  }),
 
-  // TODO: Get points breakdown
-  getPointsBreakdown: async (req, res, next) => {
-    // Implementation needed
-  },
+  // -------------------------
+  // Get user ranking
+  // -------------------------
+  getUserRanking: asyncHandler(async (req, res) => {
+    const userId = z.string().uuid().parse(req.params.userId);
 
-  // TODO: Get achievements
-  getAchievements: async (req, res, next) => {
-    // Implementation needed
-  }
+    const ranking = await leaderboardService.getUserRanking({ userId });
+    if (!ranking) {
+      return res.status(404).json({ message: 'User ranking not found' });
+    }
+
+    res.json({ ranking });
+  }),
+
+  // -------------------------
+  // Get points breakdown for a user
+  // -------------------------
+  getPointsBreakdown: asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+
+    const breakdown = await leaderboardService.getPointsBreakdown({ userId });
+    if (!breakdown) {
+      return res.status(404).json({ message: 'No points data available' });
+    }
+
+    res.json({ breakdown });
+  }),
+
+  // -------------------------
+  // Get achievements and badges
+  // -------------------------
+  getAchievements: asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+
+    const achievements = await leaderboardService.getAchievements({ userId });
+    res.json({ achievements });
+  }),
 };
 
 module.exports = leaderboardController;

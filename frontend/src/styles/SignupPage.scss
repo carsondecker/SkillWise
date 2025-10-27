@@ -1,0 +1,280 @@
+.signup-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  scrollbar-width: none;
+  font-family: 'Inter', sans-serif;
+
+  /* --- Background --- */
+  .animated-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+
+    .gradient {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #6b73ff 0%, #000dff 100%);
+      background-size: 300% 300%;
+      animation: gradientShift 10s ease infinite;
+      filter: blur(60px);
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes gradientShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* --- Left: Signup Card --- */
+  .signup-card {
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 2.5rem 3rem;
+    margin: auto;
+    width: 100%;
+    max-width: 540px;
+    max-height: 85vh; /* allows breathing space */
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow-y: hidden;
+    scale: 0.9;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.25);
+      border-radius: 8px;
+    }
+
+    h2 {
+      font-size: 1.9rem;
+      margin-top: 1rem;
+      margin-bottom: 0.3rem;
+      color: #111827;
+      text-align: center;
+    }
+
+    p {
+      color: #4b5563;
+      font-size: 0.95rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .auth-logo h1 {
+      font-size: 2.2rem;
+      color: #1e3a8a;
+      font-weight: 800;
+      margin-bottom: 0.4rem;
+      text-align: center;
+    }
+
+    .error-message {
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 0.9rem;
+      margin-bottom: 1rem;
+
+      p {
+        color: #b91c1c;
+        font-weight: 500;
+        text-align: center;
+      }
+    }
+
+    /* --- Form Layout --- */
+    .signup-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .form-row {
+        display: flex;
+        gap: 0.5rem;
+
+        .form-group {
+          flex: 1;
+        }
+
+        @media (max-width: 500px) {
+          flex-direction: column;
+          gap: 1rem;
+        }
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+
+        label {
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 0.4rem;
+          font-size: 0.95rem;
+        }
+
+        input {
+          border: 1.8px solid #d1d5db;
+          border-radius: 10px;
+          padding: 12px;
+          font-size: 1rem;
+          outline: none;
+          transition: all 0.25s ease;
+
+          &:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+          }
+        }
+
+        small {
+          font-size: 0.8rem;
+          color: #6b7280;
+          margin-top: 3px;
+        }
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #2563eb, #1e3a8a);
+        border: none;
+        border-radius: 12px;
+        padding: 0.9rem 1rem;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 5px 20px rgba(37, 99, 235, 0.3);
+        margin-top: 0.5rem;
+
+        &:hover {
+          background: linear-gradient(135deg, #1d4ed8, #1e40af);
+          box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+        }
+
+        &:active {
+          transform: scale(0.98);
+        }
+      }
+    }
+
+    /* --- Footer Link --- */
+    .auth-footer {
+      text-align: center;
+      margin-top: 1.8rem;
+      padding-bottom: 0.5rem;
+
+      p {
+        color: #6b7280;
+        font-size: 0.9rem;
+      }
+
+      .auth-link {
+        color: #1e3a8a;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.2s ease;
+
+        &:hover {
+          color: #2563eb;
+        }
+      }
+    }
+  }
+
+  /* --- Right Side: Lottie + Features --- */
+  .signup-side {
+    display: flex;
+    flex-direction: column;
+    color: white;
+    padding: 3rem 4rem;
+    background: linear-gradient(120deg, #1e3a8a, #2563eb);
+    text-align: center;
+    min-height: 100vh;
+
+    .welcome-animation {
+      max-width: 520px;
+      width: 75%;
+      justify-self: flex-start;
+      align-self: center;
+    }
+
+    .auth-features {
+      max-width: 400px;
+      margin-top: -10px;
+      justify-self: center;
+      align-self: center;
+      h3 {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      ul {
+        text-align: left;
+        line-height: 1.8;
+        font-size: 1rem;
+        opacity: 0.95;
+      }
+    }
+  }
+}
+
+/* --- Responsive Layouts --- */
+@media (max-width: 1024px) {
+  .signup-page {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+
+    .signup-side {
+      display: none;
+    }
+
+    .signup-card {
+      max-width: 480px;
+      width: 90%;
+      padding: 2rem 2.5rem;
+      max-height: none;
+      overflow: visible;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .signup-page .signup-card {
+    padding: 1.6rem;
+    border-radius: 16px;
+  }
+
+  .signup-page .signup-card h2 {
+    font-size: 1.5rem;
+  }
+
+  .signup-page .signup-card p {
+    font-size: 0.9rem;
+  }
+}
