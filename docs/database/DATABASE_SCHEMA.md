@@ -1,11 +1,13 @@
 # Database Schema Design
 
 ## Overview
+
 SkillWise uses PostgreSQL as the primary database. The schema is designed to support user authentication, goal management, challenge tracking, AI feedback, peer reviews, and leaderboard functionality.
 
 ## Core Tables
 
 ### Users Table
+
 Stores user account information and authentication data.
 
 ```sql
@@ -28,6 +30,7 @@ CREATE INDEX idx_users_created_at ON users(created_at);
 ```
 
 ### Refresh Tokens Table
+
 Manages JWT refresh tokens for secure authentication.
 
 ```sql
@@ -47,6 +50,7 @@ CREATE UNIQUE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 ```
 
 ### Goals Table
+
 Stores learning goals created by users.
 
 ```sql
@@ -76,6 +80,7 @@ CREATE INDEX idx_goals_created_at ON goals(created_at);
 ```
 
 ### Challenges Table
+
 Individual challenges within learning goals.
 
 ```sql
@@ -108,6 +113,7 @@ CREATE INDEX idx_challenges_created_at ON challenges(created_at);
 ```
 
 ### Submissions Table
+
 User work submissions for challenges.
 
 ```sql
@@ -126,7 +132,7 @@ CREATE TABLE submissions (
   score INTEGER CHECK (score >= 0 AND score <= 100),
   submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   reviewed_at TIMESTAMP WITH TIME ZONE,
-  
+
   -- Ensure one submission per user per challenge
   UNIQUE(challenge_id, user_id)
 );
@@ -139,6 +145,7 @@ CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at);
 ```
 
 ### AI Feedback Table
+
 AI-generated feedback for submissions.
 
 ```sql
@@ -162,6 +169,7 @@ CREATE INDEX idx_ai_feedback_created_at ON ai_feedback(created_at);
 ```
 
 ### Peer Reviews Table
+
 Peer review system for submissions.
 
 ```sql
@@ -180,7 +188,7 @@ CREATE TABLE peer_reviews (
   assigned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   completed_at TIMESTAMP WITH TIME ZONE,
   deadline_at TIMESTAMP WITH TIME ZONE,
-  
+
   -- Prevent self-review
   CHECK (reviewer_id != (SELECT user_id FROM submissions WHERE id = submission_id))
 );
@@ -193,6 +201,7 @@ CREATE INDEX idx_peer_reviews_assigned_at ON peer_reviews(assigned_at);
 ```
 
 ### Progress Tracking Table
+
 Detailed progress tracking for users.
 
 ```sql
@@ -215,6 +224,7 @@ CREATE INDEX idx_progress_events_created_at ON progress_events(created_at);
 ```
 
 ### User Statistics Table
+
 Aggregated user statistics for performance.
 
 ```sql
@@ -237,6 +247,7 @@ CREATE TABLE user_statistics (
 ```
 
 ### Leaderboard Table
+
 Computed leaderboard data for different scopes and timeframes.
 
 ```sql
@@ -254,7 +265,7 @@ CREATE TABLE leaderboard_entries (
   challenges_completed INTEGER DEFAULT 0,
   average_score DECIMAL(5,2) DEFAULT 0,
   computed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Unique constraint for scope/category/timeframe/user combination
   UNIQUE(scope, category, timeframe, user_id)
 );
@@ -267,6 +278,7 @@ CREATE INDEX idx_leaderboard_computed_at ON leaderboard_entries(computed_at);
 ```
 
 ### Achievements Table
+
 User achievement tracking.
 
 ```sql
@@ -287,7 +299,7 @@ CREATE TABLE user_achievements (
   achievement_id UUID NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
   earned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   progress_data JSONB, -- For tracking progress toward achievement
-  
+
   UNIQUE(user_id, achievement_id)
 );
 
@@ -299,6 +311,7 @@ CREATE INDEX idx_user_achievements_earned_at ON user_achievements(earned_at);
 ## Database Functions and Triggers
 
 ### Update Progress Function
+
 Automatically update goal progress when challenges are completed.
 
 ```sql
@@ -307,18 +320,18 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Update goal progress when challenge status changes to completed
   IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
-    UPDATE goals 
+    UPDATE goals
     SET progress_percentage = (
       SELECT ROUND(
         (COUNT(*) FILTER (WHERE status = 'completed')::DECIMAL / COUNT(*)) * 100
       )::INTEGER
-      FROM challenges 
+      FROM challenges
       WHERE goal_id = NEW.goal_id
     ),
     updated_at = NOW()
     WHERE id = NEW.goal_id;
   END IF;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -330,6 +343,7 @@ CREATE TRIGGER trigger_update_goal_progress
 ```
 
 ### Update User Statistics Function
+
 Maintain user statistics table.
 
 ```sql
@@ -349,7 +363,7 @@ BEGIN
       last_activity_date = CURRENT_DATE,
       updated_at = NOW();
   END IF;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -363,6 +377,7 @@ CREATE TRIGGER trigger_update_user_statistics
 ## Indexes for Performance
 
 ### Composite Indexes
+
 ```sql
 -- For efficient goal filtering by user and status
 CREATE INDEX idx_goals_user_status ON goals(user_id, status);
@@ -378,21 +393,23 @@ CREATE INDEX idx_leaderboard_scope_rank ON leaderboard_entries(scope, timeframe,
 ```
 
 ### Partial Indexes
+
 ```sql
 -- Index only active goals
 CREATE INDEX idx_goals_active ON goals(user_id, created_at) WHERE status = 'active';
 
 -- Index only pending peer reviews
-CREATE INDEX idx_peer_reviews_pending ON peer_reviews(reviewer_id, assigned_at) 
+CREATE INDEX idx_peer_reviews_pending ON peer_reviews(reviewer_id, assigned_at)
 WHERE status = 'assigned';
 ```
 
 ## Data Relationships
 
 ### Entity Relationship Diagram
+
 ```
 Users (1) ──→ (N) Goals
-Goals (1) ──→ (N) Challenges  
+Goals (1) ──→ (N) Challenges
 Challenges (1) ──→ (1) Submissions
 Submissions (1) ──→ (1) AI_Feedback
 Submissions (1) ──→ (N) Peer_Reviews
@@ -402,6 +419,7 @@ Users (1) ──→ (N) User_Achievements
 ```
 
 ### Foreign Key Constraints
+
 - All foreign keys use `ON DELETE CASCADE` for dependent data
 - Soft deletes implemented where data retention is needed
 - Referential integrity maintained at database level
@@ -409,6 +427,7 @@ Users (1) ──→ (N) User_Achievements
 ## Sample Data
 
 ### Insert Sample Users
+
 ```sql
 INSERT INTO users (email, password_hash, full_name, bio) VALUES
 ('john@example.com', '$2b$10$...', 'John Smith', 'Learning JavaScript and loving it!'),
@@ -417,17 +436,19 @@ INSERT INTO users (email, password_hash, full_name, bio) VALUES
 ```
 
 ### Insert Sample Goals
+
 ```sql
 INSERT INTO goals (user_id, title, description, category, difficulty, target_date) VALUES
-((SELECT id FROM users WHERE email = 'john@example.com'), 
- 'Learn JavaScript Basics', 
- 'Master the fundamentals of JavaScript programming', 
- 'programming', 
- 'intermediate', 
+((SELECT id FROM users WHERE email = 'john@example.com'),
+ 'Learn JavaScript Basics',
+ 'Master the fundamentals of JavaScript programming',
+ 'programming',
+ 'intermediate',
  '2024-04-15');
 ```
 
 ### Insert Sample Achievements
+
 ```sql
 INSERT INTO achievements (name, description, icon, criteria, points) VALUES
 ('First Goal', 'Create your first learning goal', '🎯', '{"goals_created": 1}', 50),
@@ -438,18 +459,21 @@ INSERT INTO achievements (name, description, icon, criteria, points) VALUES
 ## Performance Considerations
 
 ### Query Optimization
+
 - Use appropriate indexes for common query patterns
 - Implement database connection pooling
 - Use prepared statements to prevent SQL injection
 - Optimize JOIN operations with proper indexing
 
 ### Scaling Strategies
+
 - Implement read replicas for analytics queries
 - Use database partitioning for large tables (progress_events, submissions)
 - Consider caching layer (Redis) for frequently accessed data
 - Archive old data to maintain performance
 
 ### Monitoring
+
 - Track slow queries and optimize them
 - Monitor index usage and remove unused indexes
 - Set up alerts for connection pool exhaustion

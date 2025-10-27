@@ -3,13 +3,16 @@
 ## Development Methodology
 
 ### Sprint Structure
+
 - **Duration**: 2 weeks per sprint
 - **Total Sprints**: 4 sprints over 8 weeks
 - **Team Structure**: Individual development with team code reviews
 - **Review Process**: PR voting system for best implementation
 
 ### Definition of Done (DoD)
+
 Each sprint must meet these criteria:
+
 - [ ] All user stories completed and tested
 - [ ] Code reviewed and approved by team
 - [ ] Unit tests written and passing
@@ -23,16 +26,19 @@ Each sprint must meet these criteria:
 ## Sprint 1: Foundation & Authentication (Weeks 1-2)
 
 ### 🎯 Sprint Goal
+
 Establish the foundational architecture and implement user authentication with a basic dashboard.
 
 ### 📋 User Stories
 
 #### Epic: User Authentication
+
 **As a** new user  
 **I want to** create an account and log in securely  
 **So that** I can access my personal learning dashboard
 
 **Acceptance Criteria:**
+
 - User can register with email, full name, and password
 - Password requirements: minimum 8 characters, mixed case, numbers
 - User can log in with email and password
@@ -41,6 +47,7 @@ Establish the foundational architecture and implement user authentication with a
 - Password reset functionality (email-based)
 
 **Tasks:**
+
 - [ ] Set up React project with routing
 - [ ] Create registration form with validation
 - [ ] Create login form with validation
@@ -50,11 +57,13 @@ Establish the foundational architecture and implement user authentication with a
 - [ ] Design and implement user profile pages
 
 #### Epic: Dashboard Shell
+
 **As an** authenticated user  
 **I want to** see an overview of my learning progress  
 **So that** I can quickly understand my current status
 
 **Acceptance Criteria:**
+
 - Dashboard shows welcome message with user name
 - Display placeholder cards for goals, challenges, progress
 - Navigation menu with main sections (Goals, Challenges, Progress, Profile)
@@ -62,6 +71,7 @@ Establish the foundational architecture and implement user authentication with a
 - Loading states for data fetching
 
 **Tasks:**
+
 - [ ] Create dashboard layout component
 - [ ] Implement navigation component
 - [ ] Create placeholder cards and widgets
@@ -69,11 +79,13 @@ Establish the foundational architecture and implement user authentication with a
 - [ ] Add loading spinners and error boundaries
 
 #### Epic: Development Environment
+
 **As a** developer  
 **I want to** have a reliable development environment  
 **So that** I can develop and test effectively
 
 **Acceptance Criteria:**
+
 - Local development runs with single command
 - Database migrations work correctly
 - Environment variables properly configured
@@ -81,6 +93,7 @@ Establish the foundational architecture and implement user authentication with a
 - Hot reloading works for development
 
 **Tasks:**
+
 - [ ] Set up Docker Compose configuration
 - [ ] Create database migration scripts
 - [ ] Configure environment variables
@@ -88,6 +101,7 @@ Establish the foundational architecture and implement user authentication with a
 - [ ] Create development documentation
 
 ### 🧪 Testing Requirements
+
 - [ ] Authentication flow tests (registration, login, logout)
 - [ ] Protected route tests
 - [ ] Form validation tests
@@ -95,6 +109,7 @@ Establish the foundational architecture and implement user authentication with a
 - [ ] JWT token tests (access and refresh)
 
 ### 📦 Technical Deliverables
+
 - React application with routing
 - Express API with authentication endpoints
 - PostgreSQL database with user tables
@@ -102,6 +117,7 @@ Establish the foundational architecture and implement user authentication with a
 - Basic CI pipeline setup
 
 ### 🚀 Deployment Target
+
 - Local development environment fully functional
 - Staging deployment with authentication working
 
@@ -110,16 +126,19 @@ Establish the foundational architecture and implement user authentication with a
 ## Sprint 2: Core Learning Features (Weeks 3-4)
 
 ### 🎯 Sprint Goal
+
 Implement the core learning features: goals and challenges management with progress tracking.
 
 ### 📋 User Stories
 
 #### Epic: Goal Management
+
 **As a** user  
 **I want to** create and manage learning goals  
 **So that** I can structure my learning journey
 
 **Acceptance Criteria:**
+
 - User can create goals with title, description, category, target date
 - User can view all their goals in a list/grid format
 - User can edit existing goals
@@ -128,6 +147,7 @@ Implement the core learning features: goals and challenges management with progr
 - User can delete goals (with confirmation)
 
 **Tasks:**
+
 - [ ] Create goal management API endpoints
 - [ ] Design goal creation/editing forms
 - [ ] Implement goal list view with filtering
@@ -136,11 +156,13 @@ Implement the core learning features: goals and challenges management with progr
 - [ ] Implement progress calculation
 
 #### Epic: Challenge System
+
 **As a** user  
 **I want to** create and work on challenges within my goals  
 **So that** I can make concrete progress toward my learning objectives
 
 **Acceptance Criteria:**
+
 - User can create challenges linked to goals
 - Challenges have title, description, difficulty, estimated time
 - User can submit work (text, code, or links) for challenges
@@ -149,6 +171,7 @@ Implement the core learning features: goals and challenges management with progr
 - Challenges support prerequisites (must complete X before Y)
 
 **Tasks:**
+
 - [ ] Create challenge management API endpoints
 - [ ] Design challenge creation forms
 - [ ] Implement challenge list view within goals
@@ -157,11 +180,13 @@ Implement the core learning features: goals and challenges management with progr
 - [ ] Implement prerequisite system
 
 #### Epic: Progress Tracking
+
 **As a** user  
 **I want to** track my progress across goals and challenges  
 **So that** I can see my learning growth over time
 
 **Acceptance Criteria:**
+
 - Dashboard shows overall progress statistics
 - Goal progress updates automatically when challenges completed
 - User can see daily/weekly activity charts
@@ -169,6 +194,7 @@ Implement the core learning features: goals and challenges management with progr
 - Achievement milestones are tracked and displayed
 
 **Tasks:**
+
 - [ ] Create progress tracking database schema
 - [ ] Implement progress calculation logic
 - [ ] Design progress visualization components
@@ -176,6 +202,7 @@ Implement the core learning features: goals and challenges management with progr
 - [ ] Add basic achievement system
 
 ### 🧪 Testing Requirements
+
 - [ ] Goal CRUD operation tests
 - [ ] Challenge CRUD operation tests
 - [ ] Progress calculation tests
@@ -183,12 +210,14 @@ Implement the core learning features: goals and challenges management with progr
 - [ ] API integration tests
 
 ### 📦 Technical Deliverables
+
 - Complete goal and challenge management system
 - Progress tracking functionality
 - Database schema for core entities
 - Responsive UI components
 
 ### 🚀 Deployment Target
+
 - Staging environment with full CRUD functionality
 - CI pipeline running all tests
 
@@ -197,16 +226,19 @@ Implement the core learning features: goals and challenges management with progr
 ## Sprint 3: AI Integration & Feedback (Weeks 5-6)
 
 ### 🎯 Sprint Goal
+
 Integrate AI capabilities for challenge generation and intelligent feedback on submissions.
 
 ### 📋 User Stories
 
 #### Epic: AI Challenge Generation
+
 **As a** user  
 **I want to** generate challenges using AI  
 **So that** I can get personalized learning content for my goals
 
 **Acceptance Criteria:**
+
 - User can request AI-generated challenges for a goal
 - Generated challenges match the goal's category and difficulty
 - User can customize generation parameters (count, focus areas)
@@ -214,6 +246,7 @@ Integrate AI capabilities for challenge generation and intelligent feedback on s
 - System tracks which challenges are AI-generated vs user-created
 
 **Tasks:**
+
 - [ ] Integrate OpenAI API for challenge generation
 - [ ] Create prompt templates for different categories
 - [ ] Design AI challenge generation interface
@@ -221,11 +254,13 @@ Integrate AI capabilities for challenge generation and intelligent feedback on s
 - [ ] Add generation history and tracking
 
 #### Epic: AI Feedback System
+
 **As a** user  
 **I want to** receive AI feedback on my challenge submissions  
 **So that** I can improve my work and learn from mistakes
 
 **Acceptance Criteria:**
+
 - User can request AI feedback on code, text, or link submissions
 - Feedback includes score, positive points, and improvement areas
 - Feedback is contextual to the challenge requirements
@@ -233,6 +268,7 @@ Integrate AI capabilities for challenge generation and intelligent feedback on s
 - Feedback history is maintained for reference
 
 **Tasks:**
+
 - [ ] Create AI feedback API endpoints
 - [ ] Design feedback prompt templates
 - [ ] Implement feedback display components
@@ -240,17 +276,20 @@ Integrate AI capabilities for challenge generation and intelligent feedback on s
 - [ ] Create feedback history interface
 
 #### Epic: Error Monitoring
+
 **As a** developer  
 **I want to** monitor application errors and performance  
 **So that** I can quickly identify and fix issues
 
 **Acceptance Criteria:**
+
 - Production errors are automatically tracked
 - Performance metrics are collected
 - Error notifications are sent to development team
 - User-facing error messages are helpful and actionable
 
 **Tasks:**
+
 - [ ] Integrate Sentry for error tracking
 - [ ] Set up performance monitoring
 - [ ] Create error boundaries in React
@@ -258,6 +297,7 @@ Integrate AI capabilities for challenge generation and intelligent feedback on s
 - [ ] Set up alerting for critical errors
 
 ### 🧪 Testing Requirements
+
 - [ ] AI API integration tests
 - [ ] Snapshot tests for AI prompt responses
 - [ ] Error handling tests
@@ -265,12 +305,14 @@ Integrate AI capabilities for challenge generation and intelligent feedback on s
 - [ ] User feedback flow tests
 
 ### 📦 Technical Deliverables
+
 - AI challenge generation system
 - AI feedback system
 - Error monitoring and alerting
 - Performance optimization
 
 ### 🚀 Deployment Target
+
 - Production deployment with AI features
 - Error monitoring active
 - Performance baselines established
@@ -280,16 +322,19 @@ Integrate AI capabilities for challenge generation and intelligent feedback on s
 ## Sprint 4: Social Features & Polish (Weeks 7-8)
 
 ### 🎯 Sprint Goal
+
 Implement social features (leaderboard, peer review) and polish the application for production.
 
 ### 📋 User Stories
 
 #### Epic: Leaderboard System
+
 **As a** user  
 **I want to** see how I rank compared to other learners  
 **So that** I can stay motivated and competitive
 
 **Acceptance Criteria:**
+
 - Global leaderboard shows top users by points
 - Leaderboard can be filtered by category and timeframe
 - User's current rank and percentile are displayed
@@ -297,6 +342,7 @@ Implement social features (leaderboard, peer review) and polish the application 
 - Leaderboard updates in real-time
 
 **Tasks:**
+
 - [ ] Design point calculation system
 - [ ] Create leaderboard API endpoints
 - [ ] Implement leaderboard UI components
@@ -304,11 +350,13 @@ Implement social features (leaderboard, peer review) and polish the application 
 - [ ] Create point system documentation
 
 #### Epic: Peer Review System
+
 **As a** user  
 **I want to** review other users' work and receive reviews  
 **So that** I can give and receive constructive feedback
 
 **Acceptance Criteria:**
+
 - User receives assignments to review others' submissions
 - Reviews include structured feedback and ratings
 - User can see reviews received on their own work
@@ -316,6 +364,7 @@ Implement social features (leaderboard, peer review) and polish the application 
 - Review quality affects reviewer's reputation
 
 **Tasks:**
+
 - [ ] Create peer review assignment algorithm
 - [ ] Design review interface and forms
 - [ ] Implement review history and tracking
@@ -323,11 +372,13 @@ Implement social features (leaderboard, peer review) and polish the application 
 - [ ] Create review notification system
 
 #### Epic: Accessibility & Polish
+
 **As a** user with accessibility needs  
 **I want to** use the application with assistive technologies  
 **So that** I can participate fully in the learning platform
 
 **Acceptance Criteria:**
+
 - Application meets WCAG 2.1 AA standards
 - Keyboard navigation works throughout
 - Screen readers can navigate and understand content
@@ -335,6 +386,7 @@ Implement social features (leaderboard, peer review) and polish the application 
 - Forms have proper labels and error handling
 
 **Tasks:**
+
 - [ ] Audit application with axe-core
 - [ ] Implement keyboard navigation
 - [ ] Add ARIA labels and roles
@@ -342,11 +394,13 @@ Implement social features (leaderboard, peer review) and polish the application 
 - [ ] Test with screen readers
 
 #### Epic: Production Deployment
+
 **As a** stakeholder  
 **I want to** have the application deployed to production  
 **So that** users can access the full SkillWise experience
 
 **Acceptance Criteria:**
+
 - Application is deployed to production environment
 - Database is properly configured and backed up
 - Environment variables are securely managed
@@ -354,6 +408,7 @@ Implement social features (leaderboard, peer review) and polish the application 
 - Documentation is complete and accurate
 
 **Tasks:**
+
 - [ ] Set up production hosting (Vercel + Render)
 - [ ] Configure production database (Neon/Supabase)
 - [ ] Set up domain and SSL certificates
@@ -361,6 +416,7 @@ Implement social features (leaderboard, peer review) and polish the application 
 - [ ] Set up backup and monitoring
 
 ### 🧪 Testing Requirements
+
 - [ ] Accessibility tests with axe-core
 - [ ] Peer review workflow tests
 - [ ] Leaderboard calculation tests
@@ -368,6 +424,7 @@ Implement social features (leaderboard, peer review) and polish the application 
 - [ ] End-to-end user journey tests
 
 ### 📦 Technical Deliverables
+
 - Complete peer review system
 - Leaderboard functionality
 - Accessibility compliance
@@ -375,6 +432,7 @@ Implement social features (leaderboard, peer review) and polish the application 
 - Complete documentation
 
 ### 🚀 Deployment Target
+
 - Fully functional production application
 - Complete Swagger API documentation
 - User onboarding guide
@@ -385,7 +443,9 @@ Implement social features (leaderboard, peer review) and polish the application 
 ## Cross-Sprint Requirements
 
 ### Documentation Requirements
+
 Each sprint must maintain:
+
 - [ ] API documentation (Swagger/OpenAPI)
 - [ ] Component documentation (Storybook optional)
 - [ ] Database migration scripts
@@ -393,6 +453,7 @@ Each sprint must maintain:
 - [ ] User guides and help content
 
 ### Code Quality Standards
+
 - [ ] ESLint and Prettier configuration
 - [ ] TypeScript definitions (if using TypeScript)
 - [ ] Code coverage above 80%
@@ -400,7 +461,9 @@ Each sprint must maintain:
 - [ ] Performance budgets met
 
 ### Review Process
+
 At the end of each sprint:
+
 1. **Individual demos** - Each student presents their implementation
 2. **Code review session** - Team reviews all implementations
 3. **Voting process** - Team votes on best implementation for each feature
@@ -408,6 +471,7 @@ At the end of each sprint:
 5. **Retrospective** - Team discusses what went well and improvements
 
 ### Success Metrics
+
 - [ ] All core user stories completed
 - [ ] Application deployed and functional
 - [ ] Test coverage above 80%

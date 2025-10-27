@@ -7,6 +7,7 @@ A comprehensive full-stack web application for transforming personal learning go
 This repository contains a complete project framework for students to build SkillWise from the ground up. It includes:
 
 ### 📖 Comprehensive Documentation
+
 - **[Wireframes & UI Design](docs/wireframes/UI_WIREFRAMES.md)** - Complete visual guide for all app interfaces
 - **[API Documentation](docs/api/API_ENDPOINTS.md)** - Detailed REST API specifications
 - **[Database Schema](docs/database/DATABASE_SCHEMA.md)** - Complete database design with relationships
@@ -14,13 +15,16 @@ This repository contains a complete project framework for students to build Skil
 - **[Setup Instructions](SETUP.md)** - Step-by-step development environment setup
 
 ### 🏗️ Project Structure
+
 - **Frontend Guidelines** - React 18 with modern development practices
 - **Backend Guidelines** - Node.js/Express API with PostgreSQL
 - **File Organization** - Complete folder structure for scalable development
 - **Development Workflow** - Git workflow, testing, and deployment strategies
 
 ### 🎯 Learning Objectives
+
 Students will gain hands-on experience with:
+
 - **Full-Stack Development** - React frontend + Node.js backend
 - **Database Design** - PostgreSQL with complex relationships
 - **API Development** - RESTful services with authentication
@@ -32,12 +36,14 @@ Students will gain hands-on experience with:
 ## 🚀 Quick Start
 
 ### For Instructors
+
 1. Review the [Sprint Planning Guide](docs/SPRINT_PLANNING.md) for course integration
 2. Customize requirements based on your curriculum needs
 3. Set up GitHub repositories for student teams
 4. Review assessment criteria in each sprint's Definition of Done
 
 ### For Students
+
 1. Read the [Project Overview](README.md) to understand the application goals
 2. Follow [Setup Instructions](SETUP.md) to configure your development environment
 3. Study the [UI Wireframes](docs/wireframes/UI_WIREFRAMES.md) for design guidance
@@ -46,6 +52,7 @@ Students will gain hands-on experience with:
 ## 📋 Project Scope
 
 ### Core Features
+
 - **User Authentication** - Secure registration and login system
 - **Goal Management** - Create and track learning objectives
 - **Challenge System** - Break goals into actionable tasks
@@ -55,6 +62,7 @@ Students will gain hands-on experience with:
 - **Responsive Design** - Mobile-first approach
 
 ### Technical Stack
+
 - **Frontend**: React 18, React Router, Tailwind CSS, React Hook Form
 - **Backend**: Node.js, Express, PostgreSQL, JWT Authentication
 - **AI**: OpenAI API integration for intelligent features
@@ -64,16 +72,19 @@ Students will gain hands-on experience with:
 ## 🎓 Educational Approach
 
 ### Individual Development
+
 - Each student builds a complete vertical slice
 - Solo development promotes deep understanding
 - Personal accountability for all features
 
 ### Team Collaboration
+
 - Weekly code reviews and knowledge sharing
 - PR voting system for best implementations
 - Peer learning through code comparison
 
 ### Real-World Skills
+
 - Modern development practices
 - Industry-standard tools and workflows
 - Production deployment experience
@@ -100,6 +111,7 @@ skillwise/
 By completing this project, students will:
 
 ### Technical Skills
+
 - Build responsive React applications with modern hooks
 - Design and implement RESTful APIs
 - Create complex database schemas with relationships
@@ -108,6 +120,7 @@ By completing this project, students will:
 - Deploy applications to production
 
 ### Professional Skills
+
 - Follow Agile development practices
 - Conduct meaningful code reviews
 - Write clear technical documentation
@@ -115,6 +128,7 @@ By completing this project, students will:
 - Debug complex full-stack issues
 
 ### Software Architecture
+
 - Understand MVC patterns and separation of concerns
 - Design scalable database schemas
 - Implement secure authentication systems
@@ -123,21 +137,25 @@ By completing this project, students will:
 ## 🔧 Development Phases
 
 ### Sprint 1 (Weeks 1-2): Foundation
+
 - User authentication and security
 - Basic dashboard and navigation
 - Development environment setup
 
 ### Sprint 2 (Weeks 3-4): Core Features
+
 - Goal and challenge management
 - Progress tracking system
 - Data persistence and retrieval
 
 ### Sprint 3 (Weeks 5-6): AI Integration
+
 - OpenAI API integration
 - Intelligent challenge generation
 - AI-powered feedback system
 
 ### Sprint 4 (Weeks 7-8): Social & Polish
+
 - Peer review system
 - Leaderboard functionality
 - Production deployment and optimization
@@ -145,12 +163,14 @@ By completing this project, students will:
 ## 📊 Assessment Strategy
 
 ### Individual Assessment
+
 - Code quality and organization
 - Feature completeness and functionality
 - Testing coverage and quality
 - Documentation and commenting
 
 ### Team Assessment
+
 - Code review participation
 - Collaboration and communication
 - Knowledge sharing contributions
@@ -174,6 +194,7 @@ By completing this project, students will:
 ## 🎯 Success Criteria
 
 A successful SkillWise implementation will:
+
 - ✅ Have all core features functional
 - ✅ Include comprehensive testing
 - ✅ Be deployed to production

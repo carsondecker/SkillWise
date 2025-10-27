@@ -345,6 +345,7 @@ skillwise/
 ## Key File Purposes
 
 ### Frontend Structure
+
 - **Components**: Reusable UI components organized by feature
 - **Pages**: Top-level page components with routing
 - **Hooks**: Custom React hooks for shared logic
@@ -353,6 +354,7 @@ skillwise/
 - **Contexts**: React context for global state
 
 ### Backend Structure
+
 - **Controllers**: HTTP request/response handling
 - **Middleware**: Request processing pipeline
 - **Models**: Data models and database interaction
@@ -362,6 +364,7 @@ skillwise/
 - **Utils**: Utility functions and configurations
 
 ### Documentation Structure
+
 - **Wireframes**: UI designs and user flows
 - **API**: Endpoint documentation and specifications
 - **Database**: Schema and relationship documentation
@@ -369,6 +372,7 @@ skillwise/
 - **Testing**: Testing strategies and guides
 
 ### Development Tools
+
 - **GitHub Workflows**: CI/CD pipelines and automation
 - **Scripts**: Development and deployment automation
 - **VSCode**: Editor configuration and debugging
@@ -377,6 +381,7 @@ skillwise/
 ## Usage Guidelines
 
 ### For Students
+
 1. **Start with documentation** to understand the project structure
 2. **Follow the sprint planning** for organized development
 3. **Use the wireframes** as UI implementation guides
@@ -384,6 +389,7 @@ skillwise/
 5. **Follow testing requirements** for each sprint
 
 ### For Instructors
+
 1. **Customize sprint requirements** based on course needs
 2. **Use PR review process** for assessment
 3. **Reference troubleshooting guide** for common issues

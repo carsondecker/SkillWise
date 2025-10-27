@@ -1,5 +1,6 @@
 // TODO: Implement user management controller for profile, settings, statistics
 const userService = require('../services/userService');
+const bcrypt = require('bcryptjs');
 
 const userController = {
   // TODO: Get user profile
@@ -20,7 +21,7 @@ const userController = {
   // TODO: Delete user account
   deleteAccount: async (req, res, next) => {
     // Implementation needed
-  }
+  },
 };
 
 module.exports = userController;

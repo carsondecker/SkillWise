@@ -13,8 +13,13 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Ensure a minimal public/index.html exists
+# RUN mkdir public && \
+#     printf '%s\n' '<!doctype html>' '<html lang="en">' '  <head>' '    <meta charset="utf-8" />' '    <meta name="viewport" content="width=device-width, initial-scale=1" />' '    <title>SkillWise</title>' '  </head>' '  <body>' '    <noscript>You need to enable JavaScript to run this app.</noscript>' '    <div id="root"></div>' '  </body>' '</html>' > public/index.html;
+
+
 # Expose port
 EXPOSE 3000
 
 # Start development server
-CMD ["npm", "start"]
+#CMD ["npm", "start"]

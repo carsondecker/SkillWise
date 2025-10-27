@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { apiService, getAccessToken, setAccessToken, clearTokens } from '../services/api';
+import {
+  apiService,
+  getAccessToken,
+  setAccessToken,
+  clearTokens,
+} from '../services/api';
 
 // Initial state
 const initialState = {
@@ -81,7 +86,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const token = getAccessToken();
-      
+
       if (token) {
         try {
           // Validate token by fetching user profile
@@ -112,7 +117,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     window.addEventListener('auth:logout', handleLogout);
-    
+
     return () => {
       window.removeEventListener('auth:logout', handleLogout);
     };
@@ -125,10 +130,10 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await apiService.auth.login(credentials);
-      const { user, accessToken } = response.data;
+      const { token, user } = response.data.data;
 
       // Store access token
-      setAccessToken(accessToken);
+      setAccessToken(token);
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -137,7 +142,21 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      const errorCode = error.response?.data?.error?.code || 'Login failed';
+      let errorMessage;
+      switch (errorCode) {
+        case 'INVALID_CREDENTIALS':
+          errorMessage = 'Invalid credentials';
+          break;
+        case 'USER_NOT_FOUND':
+          errorMessage = 'User not found';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = 'Invalid login data';
+          break;
+        default:
+          errorMessage = 'Login failed';
+      }
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -165,7 +184,19 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      const errorCode =
+        error.response?.data?.error?.code || 'Registration failed';
+      let errorMessage;
+      switch (errorCode) {
+        case 'USER_ALREADY_EXISTS':
+          errorMessage = 'Email is already registered';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = 'Invalid registration data';
+          break;
+        default:
+          errorMessage = 'Registration failed';
+      }
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -208,7 +239,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return { success: true, user: updatedUser };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Profile update failed';
+      const errorMessage =
+        error.response?.data?.message || 'Profile update failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -227,7 +259,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password change failed';
+      const errorMessage =
+        error.response?.data?.message || 'Password change failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -246,7 +279,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset request failed';
+      const errorMessage =
+        error.response?.data?.message || 'Password reset request failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -265,7 +299,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset failed';
+      const errorMessage =
+        error.response?.data?.message || 'Password reset failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -298,21 +333,17 @@ export const AuthProvider = ({ children }) => {
     clearError,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  
+
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  
+
   return context;
 };
 

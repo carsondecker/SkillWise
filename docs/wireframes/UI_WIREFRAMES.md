@@ -1,15 +1,18 @@
 # SkillWise Wireframes
 
 ## Overview
+
 These wireframes provide a visual guide for the user interface of SkillWise. Each wireframe includes layout, component placement, and user interaction flows.
 
 ## Design Principles
+
 - **Mobile-First**: Responsive design starting with mobile layout
 - **Accessibility**: Clear contrast, keyboard navigation, screen reader support
 - **User-Centered**: Intuitive navigation and clear call-to-actions
 - **Consistent**: Unified design language across all pages
 
 ## Color Scheme Suggestions
+
 - **Primary**: Blue (#3B82F6) - trust, learning, progress
 - **Secondary**: Green (#10B981) - success, achievement, growth
 - **Accent**: Purple (#8B5CF6) - creativity, innovation
@@ -18,11 +21,13 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 - **Error**: Red (#EF4444) - errors, validation issues
 
 ## Typography
+
 - **Headers**: Bold, sans-serif (e.g., Inter, Roboto)
 - **Body**: Regular, readable (16px base size)
 - **Code**: Monospace font for code submissions
 
 ## Wireframe Index
+
 1. [Landing Page](#1-landing-page)
 2. [Authentication Pages](#2-authentication-pages)
 3. [Dashboard](#3-dashboard)
@@ -66,6 +71,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - Clear value proposition
 - Three-step process visualization
 - Call-to-action buttons
@@ -77,6 +83,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ## 2. Authentication Pages
 
 ### Login Page
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     SkillWise Header                        │
@@ -106,6 +113,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Sign Up Page
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     SkillWise Header                        │
@@ -138,6 +146,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - Form validation with real-time feedback
 - Password strength indicator
 - Social login options (optional)
@@ -192,6 +201,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - Summary statistics cards
 - Recent activity feed
 - Current goals with progress bars
@@ -203,6 +213,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ## 4. Goals Management
 
 ### Goals List Page
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [☰] SkillWise > Goals                     [👤] Profile [🔔] │
@@ -245,6 +256,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### New Goal Form
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [☰] SkillWise > Goals > New                [👤] Profile     │
@@ -288,6 +300,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - Goal status indicators
 - Progress visualization
 - Filtering and search options
@@ -299,6 +312,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ## 5. Challenges
 
 ### Challenges List
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [☰] SkillWise > Learn JavaScript > Challenges [👤] Profile  │
@@ -359,6 +373,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Challenge Detail/Work Page
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [☰] Challenge: Functions and Scope             [👤] Profile │
@@ -428,6 +443,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - Challenge status and progress tracking
 - Multiple submission types (code, text, links, files)
 - AI feedback integration
@@ -502,6 +518,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - Visual progress charts and graphs
 - Achievement badges and milestones
 - Activity streaks and statistics
@@ -571,6 +588,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - Ranking system with user positioning
 - Point system explanation
 - Filtering options (global, friends, categories)
@@ -582,6 +600,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ## 8. Peer Review
 
 ### Peer Review List
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [☰] SkillWise > Peer Reviews                 [👤] Profile   │
@@ -646,6 +665,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Review Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [☰] Reviewing: JavaScript Functions         [👤] Profile    │
@@ -717,6 +737,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - Anonymous review system
 - Structured feedback forms
 - Rating system with criteria
@@ -812,6 +833,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ```
 
 ### Key Elements:
+
 - User information and avatar
 - Comprehensive statistics dashboard
 - Achievement showcase
@@ -823,6 +845,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ## Navigation Structure
 
 ### Main Navigation (always visible)
+
 - **Dashboard** - Overview and quick actions
 - **Goals** - Create and manage learning goals
 - **Challenges** - Work on and submit challenges
@@ -832,6 +855,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 - **Profile** - User settings and stats
 
 ### Mobile Navigation
+
 - Hamburger menu with collapsed navigation
 - Bottom tab bar for main sections
 - Swipe gestures for common actions
@@ -839,6 +863,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ## Responsive Design Considerations
 
 ### Mobile (320px - 768px)
+
 - Single column layouts
 - Collapsible navigation
 - Touch-friendly buttons (44px minimum)
@@ -846,12 +871,14 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 - Modal forms instead of inline editing
 
 ### Tablet (768px - 1024px)
+
 - Two-column layouts where appropriate
 - Expanded navigation sidebar
 - Larger touch targets
 - Grid layouts for cards
 
 ### Desktop (1024px+)
+
 - Multi-column layouts
 - Fixed navigation sidebar
 - Hover states and tooltips
@@ -861,6 +888,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 ## Accessibility Features
 
 ### Visual
+
 - High contrast color scheme
 - Clear typography hierarchy
 - Focus indicators
@@ -868,6 +896,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 - Loading state indicators
 
 ### Interactive
+
 - Keyboard navigation
 - Screen reader support
 - ARIA labels and roles
@@ -875,6 +904,7 @@ These wireframes provide a visual guide for the user interface of SkillWise. Eac
 - Descriptive button text
 
 ### Form Accessibility
+
 - Clear labels and instructions
 - Error message association
 - Required field indicators

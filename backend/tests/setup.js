@@ -3,13 +3,21 @@ const { Pool } = require('pg');
 
 // Test database configuration
 const testDbConfig = {
-  connectionString: process.env.TEST_DATABASE_URL || 
-    'postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_test_db',
+  connectionString:
+    process.env.TEST_DATABASE_URL ||
+    'postgresql://skillwise_user:skillwise_pass@localhost:5434/skillwise_test_db',
   // Reduce connections for test environment
   max: 5,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 1000,
 };
+
+// Ensure the app picks up the test database when required during tests
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL =
+    process.env.TEST_DATABASE_URL ||
+    'postgresql://skillwise_user:skillwise_pass@localhost:5434/skillwise_test_db';
+}
 
 const testPool = new Pool(testDbConfig);
 
@@ -19,7 +27,7 @@ beforeAll(async () => {
   process.env.NODE_ENV = 'test';
   process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
   process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key-for-testing-only';
-  
+
   // Test database connection
   try {
     await testPool.query('SELECT 1');
@@ -35,7 +43,7 @@ afterAll(async () => {
   try {
     // Clean up test data if needed
     // await testPool.query('TRUNCATE TABLE users CASCADE');
-    
+
     // Close database connections
     await testPool.end();
     console.log('✅ Test database cleanup completed');
@@ -48,7 +56,7 @@ afterAll(async () => {
 const clearTestData = async () => {
   const tables = [
     'user_achievements',
-    'achievements', 
+    'achievements',
     'leaderboard',
     'progress_events',
     'peer_reviews',
@@ -57,7 +65,7 @@ const clearTestData = async () => {
     'challenges',
     'goals',
     'refresh_tokens',
-    'users'
+    'users',
   ];
 
   for (const table of tables) {
@@ -73,5 +81,5 @@ const clearTestData = async () => {
 // Export test utilities
 module.exports = {
   testPool,
-  clearTestData
+  clearTestData,
 };

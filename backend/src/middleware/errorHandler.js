@@ -1,6 +1,6 @@
 // TODO: Centralized error handling middleware
 const logger = require('pino')({
-  name: 'skillwise-error-handler'
+  name: 'skillwise-error-handler',
 });
 
 class AppError extends Error {
@@ -8,7 +8,9 @@ class AppError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
-    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
+    this.success = !(
+      `${statusCode}`.startsWith('4') || `${statusCode}`.startsWith('5')
+    );
     this.isOperational = true;
 
     Error.captureStackTrace(this, this.constructor);
@@ -28,17 +30,25 @@ const handleDuplicateFieldsDB = (err) => {
 };
 
 const handleValidationErrorDB = (err) => {
-  const errors = Object.values(err.errors).map(el => el.message);
+  const errors = Object.values(err.errors).map((el) => el.message);
   const message = `Invalid input data. ${errors.join('. ')}`;
   return new AppError(message, 400, 'VALIDATION_ERROR');
 };
 
 const handleJWTError = () => {
-  return new AppError('Invalid token. Please log in again.', 401, 'INVALID_TOKEN');
+  return new AppError(
+    'Invalid token. Please log in again.',
+    401,
+    'INVALID_TOKEN',
+  );
 };
 
 const handleJWTExpiredError = () => {
-  return new AppError('Your token has expired. Please log in again.', 401, 'TOKEN_EXPIRED');
+  return new AppError(
+    'Your token has expired. Please log in again.',
+    401,
+    'TOKEN_EXPIRED',
+  );
 };
 
 const sendErrorDev = (err, req, res) => {
@@ -47,15 +57,20 @@ const sendErrorDev = (err, req, res) => {
     stack: err.stack,
     url: req.originalUrl,
     method: req.method,
-    ip: req.ip
+    ip: req.ip,
   });
 
+  // Return a consistent canonical error shape in development, with debug details
   return res.status(err.statusCode).json({
-    status: err.status,
-    error: err,
-    message: err.message,
-    stack: err.stack,
-    timestamp: new Date().toISOString()
+    success: false,
+    error: {
+      message: err.message || 'Internal server error',
+      code: err.code || null,
+      details: {
+        stack: err.stack,
+      },
+    },
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -68,14 +83,17 @@ const sendErrorProd = (err, req, res) => {
       code: err.code,
       url: req.originalUrl,
       method: req.method,
-      ip: req.ip
+      ip: req.ip,
     });
 
+    // Canonical error response (production): keep a stable shape for clients
     return res.status(err.statusCode).json({
-      status: err.status,
-      message: err.message,
-      code: err.code,
-      timestamp: new Date().toISOString()
+      success: false,
+      error: {
+        message: err.message,
+        code: err.code || null,
+      },
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -85,13 +103,16 @@ const sendErrorProd = (err, req, res) => {
     stack: err.stack,
     url: req.originalUrl,
     method: req.method,
-    ip: req.ip
+    ip: req.ip,
   });
 
   return res.status(500).json({
-    status: 'error',
-    message: 'Something went wrong!',
-    timestamp: new Date().toISOString()
+    success: false,
+    error: {
+      message: 'Something went wrong!',
+      code: 'INTERNAL_ERROR',
+    },
+    timestamp: new Date().toISOString(),
   });
 };
 

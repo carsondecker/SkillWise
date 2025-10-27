@@ -1,6 +1,6 @@
 // TODO: Implement goals API integration tests
 const request = require('supertest');
-const app = require('../src/app');
+const app = require('../../src/app');
 
 describe('Goals API Integration', () => {
   let authToken;

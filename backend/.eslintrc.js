@@ -4,9 +4,7 @@ module.exports = {
     es2021: true,
     jest: true,
   },
-  extends: [
-    'eslint:recommended',
-  ],
+  extends: ['eslint:recommended', 'plugin:prettier/recommended'],
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
@@ -14,16 +12,17 @@ module.exports = {
   rules: {
     'no-unused-vars': 'warn',
     'no-console': 'off', // Allow console for logging
-    'indent': ['error', 2],
-    'quotes': ['error', 'single'],
-    'semi': ['error', 'always'],
-    'comma-dangle': ['error', 'always-multiline'],
-    'no-trailing-spaces': 'error',
-    'eol-last': 'error',
-    'object-curly-spacing': ['error', 'always'],
     'array-bracket-spacing': ['error', 'never'],
-    'space-before-function-paren': ['error', 'always'],
+    'space-before-function-paren': [
+      'error',
+      {
+        anonymous: 'always',
+        named: 'never',
+        asyncArrow: 'always',
+      },
+    ],
     'keyword-spacing': 'error',
     'space-infix-ops': 'error',
+    'linebreak-style': ['error', 'unix'],
   },
 };

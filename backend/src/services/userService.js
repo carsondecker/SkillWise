@@ -1,4 +1,4 @@
-// TODO: User service for database operations and business logic
+const { AppError } = require('../middleware/errorHandler');
 const db = require('../database/connection');
 
 const userService = {
@@ -6,9 +6,52 @@ const userService = {
   getUserById: async (userId) => {
     const { rows } = await db.query(
       'SELECT id, first_name, last_name, email, created_at, updated_at FROM users WHERE id = $1',
-      [userId]
+      [userId],
     );
     return rows[0];
+  },
+
+  getUserByEmail: async (email) => {
+    try {
+      const { rows } = await db.query(
+        'SELECT id, first_name, last_name, email, password_hash, created_at, updated_at FROM users WHERE email = $1',
+        [email],
+      );
+
+      if (!rows || rows.length === 0) {
+        return null;
+      }
+
+      return rows[0];
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError('Error finding user: ' + err.message, 500);
+    }
+  },
+
+  createUser: async (userData) => {
+    try {
+      const { firstName, lastName, email, passwordHash } = userData;
+      const { rows } = await db.query(
+        `INSERT INTO users (first_name, last_name, email, password_hash) 
+        VALUES ($1, $2, $3, $4) 
+        RETURNING first_name, last_name, email, created_at, updated_at`,
+        [firstName, lastName, email, passwordHash],
+      );
+
+      if (!rows || rows.length === 0) {
+        throw new AppError('Failed to create user', 500);
+      }
+
+      return rows[0];
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError('Error creating user: ' + err.message, 500);
+    }
   },
 
   // TODO: Update user profile
@@ -30,7 +73,7 @@ const userService = {
     }
 
     if (fields.length === 0) {
-      throw new Error('No valid fields to update');
+      throw new AppError('No valid fields to update', 400, 'INVALID_INPUT');
     }
 
     values.push(userId);
@@ -38,7 +81,7 @@ const userService = {
       `UPDATE users SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $${paramCount} 
        RETURNING id, first_name, last_name, email, created_at, updated_at`,
-      values
+      values,
     );
 
     return rows[0];
@@ -54,7 +97,7 @@ const userService = {
     // This would integrate with user_statistics table
     const { rows } = await db.query(
       'SELECT * FROM user_statistics WHERE user_id = $1',
-      [userId]
+      [userId],
     );
     return rows[0] || null;
   },

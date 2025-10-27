@@ -3,15 +3,20 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const validation = require('../middleware/validation');
+const auth = require('../middleware/auth');
 
 // TODO: Add POST /login route
 router.post('/login', validation.loginValidation, authController.login);
 
 // TODO: Add POST /register route
-router.post('/register', validation.registerValidation, authController.register);
+router.post(
+  '/register',
+  validation.registerValidation,
+  authController.register,
+);
 
 // TODO: Add POST /logout route
-router.post('/logout', authController.logout);
+router.post('/logout', auth, authController.logout);
 
 // TODO: Add POST /refresh route
 router.post('/refresh', authController.refreshToken);
