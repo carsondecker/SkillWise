@@ -1,33 +1,74 @@
-// TODO: Implement authentication controller unit tests
 const request = require('supertest');
-const authController = require('../../src/controllers/authController');
+const app = require('../../../src/app');
+const db = require('../../../src/database/connection');
 
-describe('AuthController', () => {
-  describe('POST /login', () => {
-    test('should login with valid credentials', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+describe('🔐 Authentication Integration', () => {
+  let testUser = {
+    email: `testuser${Date.now()}@example.com`,
+    password: 'Test1234!',
+    firstName: 'Test',
+    lastName: 'User',
+    confirmPassword: 'Test1234!',
+  };
+
+  let tokens = {};
+
+  afterAll(async () => {
+    await db.end();
+  });
+
+  describe('POST /api/auth/register', () => {
+    it('should register a new user successfully', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send(testUser)
+        .expect(201);
+
+      expect(res.body).toHaveProperty('message', 'Registration successful');
+      expect(res.body.user).toHaveProperty('email', testUser.email);
     });
 
-    test('should reject invalid credentials', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+    it('should fail for duplicate email', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send(testUser)
+        .expect(400);
+
+      expect(res.body.message).toMatch(/Email already registered/i);
     });
   });
 
-  describe('POST /register', () => {
-    test('should register new user with valid data', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+  describe('POST /api/auth/login', () => {
+    it('should login existing user', async () => {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: testUser.email, password: testUser.password })
+        .expect(200);
+
+      expect(res.body).toHaveProperty('message', 'Login successful');
+      tokens.accessToken = res.body.accessToken;
+      tokens.refreshToken = res.body.refreshToken;
     });
 
-    test('should reject duplicate email', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+    it('should reject invalid credentials', async () => {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: testUser.email, password: 'WrongPass' })
+        .expect(401);
+
+      expect(res.body.message).toMatch(/Invalid email or password/i);
     });
   });
 
-  // TODO: Add more test cases
+  describe('POST /api/auth/refresh', () => {
+    it('should refresh a valid refresh token', async () => {
+      const res = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', [`refreshToken=${tokens.refreshToken}`])
+        .expect(200);
+
+      expect(res.body).toHaveProperty('accessToken');
+      expect(res.body).toHaveProperty('refreshToken');
+    });
+  });
 });
-
-module.exports = {};

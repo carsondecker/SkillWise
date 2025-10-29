@@ -28,3 +28,5 @@ CREATE INDEX idx_goals_completion_date ON goals(completion_date);
 -- Create trigger for updated_at
 CREATE TRIGGER update_goals_updated_at BEFORE UPDATE ON goals
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE goals ADD COLUMN target_date TIMESTAMPTZ;

@@ -1,19 +1,29 @@
-// TODO: Implement peer review routes
+// src/routes/reviews.js
 const express = require('express');
 const router = express.Router();
+
 const peerReviewController = require('../controllers/peerReviewController');
 const auth = require('../middleware/auth');
 
-// TODO: Add GET /assignments route for review assignments
+// --------------------------------------------------
+// 🔹 Peer Review Routes (Protected)
+// --------------------------------------------------
+
+// 🟢 Get review assignments for the logged-in user
+// Optional query params: ?limit=10&offset=0
 router.get('/assignments', auth, peerReviewController.getReviewAssignments);
 
-// TODO: Add POST / route for submitting review
+// 🟡 Submit a new peer review
+// Expected body: { submissionId, rating, feedback }
 router.post('/', auth, peerReviewController.submitReview);
 
-// TODO: Add GET /received route for received reviews
+// 🔵 Get reviews received on user's own submissions
+// Optional query params: ?limit=10&offset=0
 router.get('/received', auth, peerReviewController.getReceivedReviews);
 
-// TODO: Add GET /history route for review history
+// 🟣 Get review history (reviews written by the user)
+// Optional query params: ?limit=10&offset=0
 router.get('/history', auth, peerReviewController.getReviewHistory);
 
 module.exports = router;
+

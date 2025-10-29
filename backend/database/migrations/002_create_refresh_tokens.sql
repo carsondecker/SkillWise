@@ -19,3 +19,6 @@ CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 -- Create trigger for updated_at
 CREATE TRIGGER update_refresh_tokens_updated_at BEFORE UPDATE ON refresh_tokens
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE refresh_tokens ADD CONSTRAINT unique_user_token UNIQUE (user_id);
+ALTER TABLE refresh_tokens ALTER COLUMN token TYPE TEXT;

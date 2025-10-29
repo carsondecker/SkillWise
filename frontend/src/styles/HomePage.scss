@@ -1,0 +1,192 @@
+.home-page {
+  font-family: 'Poppins', sans-serif;
+  color: #f9fafb;
+  background-color: #0f172a;
+
+  .hero {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+    color: #fff;
+    overflow: hidden;
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1), transparent 70%),
+      radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1), transparent 70%);
+      z-index: 1;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 700px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+
+      h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        color: #f3f4f6;
+      }
+
+
+
+      .hero-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+
+        button {
+          padding: 0.9rem 2rem;
+          font-size: 1rem;
+          border-radius: 9999px;
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+          background: linear-gradient(90deg, #fbbf24, #f59e0b);
+          color: #1e1e1e;
+          font-weight: 600;
+
+          &:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+          }
+        }
+
+        .btn-secondary {
+          background: transparent;
+          border: 2px solid #fbbf24;
+          color: #fbbf24;
+          font-weight: 500;
+
+          &:hover {
+            background: #fbbf24;
+            color: #1e1e1e;
+          }
+        }
+      }
+    }
+  }
+
+  .features {
+    background: #1e293b;
+    padding: 6rem 2rem;
+    text-align: center;
+
+    h2 {
+      font-size: 2.2rem;
+      color: #fbbf24;
+      margin-bottom: 1rem;
+    }
+
+    .subtitle {
+      color: #cbd5e1;
+      max-width: 600px;
+      margin: 0 auto 3rem;
+      font-size: 1.1rem;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2rem;
+
+      .feature-card {
+        background: #0f172a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 1rem;
+        padding: 2rem;
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+        }
+
+        .icon {
+          font-size: 2.5rem;
+          margin-bottom: 1rem;
+        }
+
+        h3 {
+          font-size: 1.3rem;
+          color: #fbbf24;
+          margin-bottom: 0.5rem;
+        }
+
+        p {
+          color: #e2e8f0;
+        }
+      }
+    }
+  }
+
+  .cta {
+    background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+    text-align: center;
+    padding: 5rem 2rem;
+    color: #fff;
+
+    .cta-content {
+      max-width: 600px;
+      margin: 0 auto;
+
+      h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+      }
+
+      .btn-glow {
+        background: linear-gradient(90deg, #fbbf24, #f59e0b);
+        color: #1e1e1e;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 9999px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: scale(1.05);
+          box-shadow: 0 0 30px rgba(251, 191, 36, 0.8);
+        }
+      }
+    }
+  }
+
+  .footer {
+    background: #0f172a;
+    padding: 1.5rem;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+}
