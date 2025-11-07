@@ -1,7 +1,9 @@
 // TODO: Implement leaderboard and rankings page
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
+import '../styles/LearderboradPage.scss';
 
 const LeaderboardPage = () => {
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -93,14 +95,19 @@ const LeaderboardPage = () => {
 
   const getRankIcon = (rank) => {
     switch (rank) {
-    case 1: return '🥇';
-    case 2: return '🥈';
-    case 3: return '🥉';
-    default: return `#${rank}`;
+      case 1:
+        return '🥇';
+      case 2:
+        return '🥈';
+      case 3:
+        return '🥉';
+      default:
+        return `#${rank}`;
     }
   };
 
-  const currentUserRank = leaderboardData.find(user => user.isCurrentUser)?.rank || 0;
+  const currentUserRank =
+    leaderboardData.find((user) => user.isCurrentUser)?.rank || 0;
 
   return (
     <div className="leaderboard-page">
@@ -110,35 +117,42 @@ const LeaderboardPage = () => {
       </div>
 
       <div className="leaderboard-filters">
-        <div className="filters-row">
-          <div className="filter-group">
-            <label htmlFor="timeframe">Timeframe</label>
-            <select
-              id="timeframe"
-              value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value)}
-            >
-              <option value="all-time">All Time</option>
-              <option value="this-month">This Month</option>
-              <option value="this-week">This Week</option>
-              <option value="today">Today</option>
-            </select>
-          </div>
+        <motion.div
+          className="table-row"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: user.rank * 0.05 }}
+        >
+          <div className="filters-row">
+            <div className="filter-group">
+              <label htmlFor="timeframe">Timeframe</label>
+              <select
+                id="timeframe"
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+              >
+                <option value="all-time">All Time</option>
+                <option value="this-month">This Month</option>
+                <option value="this-week">This Week</option>
+                <option value="today">Today</option>
+              </select>
+            </div>
 
-          <div className="filter-group">
-            <label htmlFor="category">Category</label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="overall">Overall Points</option>
-              <option value="challenges">Challenges Completed</option>
-              <option value="goals">Goals Achieved</option>
-              <option value="streak">Learning Streak</option>
-            </select>
+            <div className="filter-group">
+              <label htmlFor="category">Category</label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="overall">Overall Points</option>
+                <option value="challenges">Challenges Completed</option>
+                <option value="goals">Goals Achieved</option>
+                <option value="streak">Learning Streak</option>
+              </select>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {currentUserRank > 0 && (
@@ -148,7 +162,11 @@ const LeaderboardPage = () => {
             <div className="rank-info">
               <span className="rank-number">#{currentUserRank}</span>
               <div className="rank-details">
-                <p>You're in the top {Math.round((currentUserRank / leaderboardData.length) * 100)}% of learners!</p>
+                <p>
+                  You're in the top{' '}
+                  {Math.round((currentUserRank / leaderboardData.length) * 100)}
+                  % of learners!
+                </p>
                 <small>Keep learning to climb higher!</small>
               </div>
             </div>
@@ -161,24 +179,34 @@ const LeaderboardPage = () => {
           <LoadingSpinner message="Loading leaderboard..." />
         ) : (
           <>
-            <div className="podium-section">
-              <h2>Top Performers</h2>
-              <div className="podium">
-                {leaderboardData.slice(0, 3).map((user, index) => (
-                  <div key={user.id} className={`podium-position position-${index + 1}`}>
-                    <div className="podium-user">
-                      <div className="user-avatar">{user.avatar}</div>
-                      <h4>{user.name}</h4>
-                      <p>{user.points} points</p>
-                      <span className="level-badge">Level {user.level}</span>
+            <motion.div
+              className="table-row"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: user.rank * 0.05 }}
+            >
+              <div className="podium-section">
+                <h2>Top Performers</h2>
+                <div className="podium">
+                  {leaderboardData.slice(0, 3).map((user, index) => (
+                    <div
+                      key={user.id}
+                      className={`podium-position position-${index + 1}`}
+                    >
+                      <div className="podium-user">
+                        <div className="user-avatar">{user.avatar}</div>
+                        <h4>{user.name}</h4>
+                        <p>{user.points} points</p>
+                        <span className="level-badge">Level {user.level}</span>
+                      </div>
+                      <div className="podium-rank">
+                        {getRankIcon(user.rank)}
+                      </div>
                     </div>
-                    <div className="podium-rank">
-                      {getRankIcon(user.rank)}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </motion.div>
 
             <div className="full-rankings">
               <h2>Complete Rankings</h2>
@@ -194,10 +222,14 @@ const LeaderboardPage = () => {
                 {leaderboardData.map((user) => (
                   <div
                     key={user.id}
-                    className={`table-row ${user.isCurrentUser ? 'current-user' : ''}`}
+                    className={`table-row ${
+                      user.isCurrentUser ? 'current-user' : ''
+                    }`}
                   >
                     <div className="col-rank">
-                      <span className="rank-icon">{getRankIcon(user.rank)}</span>
+                      <span className="rank-icon">
+                        {getRankIcon(user.rank)}
+                      </span>
                     </div>
                     <div className="col-user">
                       <div className="user-info">

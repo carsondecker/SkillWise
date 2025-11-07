@@ -1,40 +1,62 @@
-// TODO: Implement challenge card component
+// src/components/challenges/ChallengeCard.jsx
 import React from 'react';
+import { motion } from 'framer-motion';
+import '../../styles/components/Challenge/ChallengeCard.scss';
 
 const ChallengeCard = ({ challenge }) => {
-  // TODO: Add difficulty indicators, estimated time, tags, actions
+  const {
+    title,
+    description,
+    difficulty,
+    points,
+    estimatedTime,
+    tags,
+    category,
+  } = challenge;
+
   return (
-    <div className="challenge-card">
+    <motion.div
+      className="challenge-card"
+      whileHover={{ y: -5, boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}
+      transition={{ duration: 0.25 }}
+    >
       <div className="challenge-header">
-        <h3>{challenge?.title || 'Challenge Title'}</h3>
-        <div className="challenge-meta">
-          <span className="difficulty">{challenge?.difficulty || 'Medium'}</span>
-          <span className="points">+{challenge?.points || 10} pts</span>
+        <h3>{title}</h3>
+        <div className="meta">
+          <span className={`difficulty ${difficulty?.toLowerCase()}`}>
+            {difficulty}
+          </span>
+          <span className="points">+{points} pts</span>
         </div>
       </div>
 
-      <div className="challenge-content">
-        <p>{challenge?.description || 'Challenge description goes here...'}</p>
+      <p className="challenge-description">{description}</p>
 
-        {challenge?.estimatedTime && (
-          <div className="estimated-time">
-            <span>⏱️ {challenge.estimatedTime} min</span>
-          </div>
-        )}
-
-        {challenge?.tags && (
-          <div className="challenge-tags">
-            {challenge.tags.map((tag, index) => (
-              <span key={index} className="tag">{tag}</span>
-            ))}
-          </div>
-        )}
+      <div className="challenge-info">
+        {category && <span className="category">{category}</span>}
+        {estimatedTime && <span>⏱️ {estimatedTime} min</span>}
       </div>
+
+      {tags && (
+        <div className="tags">
+          {tags.map((tag, i) => (
+            <span key={i} className="tag">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="challenge-footer">
-        <button className="btn-primary">Start Challenge</button>
+        <motion.button
+          className="btn-primary"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Start Challenge
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

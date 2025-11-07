@@ -1,4 +1,4 @@
-# Development Dockerfile for Frontend  
+# Development Dockerfile for Frontend
 FROM node:18-alpine
 
 # Set working directory
@@ -13,8 +13,11 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Ensure dependencies are ready
+RUN mkdir -p node_modules/.cache
+
 # Expose port
 EXPOSE 3000
 
-# Start development server
-CMD ["npm", "start"]
+# Delay start slightly to avoid race conditions
+CMD ["sh", "-c", "sleep 5 && npm start"]

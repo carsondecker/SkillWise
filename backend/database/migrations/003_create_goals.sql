@@ -30,3 +30,4 @@ CREATE TRIGGER update_goals_updated_at BEFORE UPDATE ON goals
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 ALTER TABLE goals ADD COLUMN target_date TIMESTAMPTZ;
+ALTER TABLE goals DROP COLUMN IF EXISTS target_completion_date;

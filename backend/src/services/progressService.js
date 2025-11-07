@@ -20,11 +20,16 @@ const progressService = {
         totalPoints: Number(stats.total_points || 0),
         averageScore: Number(stats.average_score || 0),
         completionRate: stats.total_attempts
-          ? Math.round((stats.completed_challenges / stats.total_attempts) * 100)
+          ? Math.round(
+              (stats.completed_challenges / stats.total_attempts) * 100
+            )
           : 0,
       };
     } catch (error) {
-      throw new AppError(`Error calculating overall progress: ${error.message}`, 500);
+      throw new AppError(
+        `Error calculating overall progress: ${error.message}`,
+        500
+      );
     }
   },
 
@@ -39,7 +44,7 @@ const progressService = {
         INSERT INTO progress_events (user_id, event_type, event_data, created_at)
         VALUES ($1, $2, $3, NOW())
         `,
-        [userId, eventType, JSON.stringify(eventData)],
+        [userId, eventType, JSON.stringify(eventData)]
       );
 
       // If user completed a challenge, award points
@@ -51,7 +56,7 @@ const progressService = {
           userId,
           'challenge_completed',
           `You earned ${points} points for completing a challenge!`,
-          { challengeId: eventData.challenge_id },
+          { challengeId: eventData.challenge_id }
         );
       }
 
@@ -61,7 +66,7 @@ const progressService = {
           userId,
           'goal_completed',
           '🎉 Congratulations on completing your goal!',
-          { goalId: eventData.goal_id },
+          { goalId: eventData.goal_id }
         );
       }
 
@@ -71,7 +76,10 @@ const progressService = {
         eventType,
       };
     } catch (error) {
-      throw new AppError(`Error tracking progress event: ${error.message}`, 500);
+      throw new AppError(
+        `Error tracking progress event: ${error.message}`,
+        500
+      );
     }
   },
 
@@ -83,8 +91,10 @@ const progressService = {
   generateAnalytics: async (userId, timeframe = 'weekly') => {
     try {
       let dateFilter = '';
-      if (timeframe === 'weekly') dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\'';
-      else if (timeframe === 'monthly') dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'30 days\'';
+      if (timeframe === 'weekly')
+        dateFilter = "AND p.created_at >= NOW() - INTERVAL '7 days'";
+      else if (timeframe === 'monthly')
+        dateFilter = "AND p.created_at >= NOW() - INTERVAL '30 days'";
 
       const result = await db.query(
         `
@@ -99,7 +109,7 @@ const progressService = {
         GROUP BY DATE_TRUNC('day', p.created_at)
         ORDER BY date ASC
         `,
-        [userId],
+        [userId]
       );
 
       return {
@@ -154,13 +164,14 @@ const progressService = {
 
       // Award points + notifications for new milestones
       for (const achievement of achievements) {
-        const points = leaderboardService.calculateAchievementPoints(achievement);
+        const points =
+          leaderboardService.calculateAchievementPoints(achievement);
         await leaderboardService.updateUserPoints(userId, points, 'milestone');
         await notificationService.sendNotification(
           userId,
           'achievement',
           `🏆 ${achievement.title} — ${achievement.description}`,
-          achievement,
+          achievement
         );
       }
 
@@ -174,5 +185,28 @@ const progressService = {
     }
   },
 };
+/**
+ * 🧾 Get user progress overview (used in /progress/stats)
+ */
+const getProgressOverview = async ({ userId }) => {
+  const stats = await progressService.calculateOverallProgress(userId);
+
+  return {
+    userId,
+    level: Math.floor(stats.totalPoints / 100) + 1,
+    total_points: stats.totalPoints,
+    completed_challenges: stats.completedChallenges,
+    average_score: stats.averageScore,
+    completion_rate: stats.completionRate,
+    goals_achieved: 0,
+    current_streak: 0,
+    longest_streak: 0,
+    badges: [],
+    skills: [],
+    recent_activity: [],
+  };
+};
+
+progressService.getProgressOverview = getProgressOverview;
 
 module.exports = progressService;

@@ -1,35 +1,60 @@
 const db = require('../database/connection');
 
 class Progress {
-  static async findByUserId (userId) {
+  /**
+   * 🔹 Get all events for a user
+   */
+  static async findByUserId(userId) {
     try {
-      const query = 'SELECT * FROM progress WHERE user_id = $1 ORDER BY created_at DESC';
+      const query = `
+        SELECT *
+        FROM progress_events
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+      `;
       const result = await db.query(query, [userId]);
       return result.rows;
     } catch (error) {
-      throw new Error(`Error finding progress for user: ${error.message}`);
+      throw new Error(
+        `Error finding progress events for user: ${error.message}`
+      );
     }
   }
 
-  static async findByUserAndChallenge (userId, challengeId) {
+  /**
+   * 🔹 Find a progress event by user and challenge
+   */
+  static async findByUserAndChallenge(userId, challengeId) {
     try {
-      const query = 'SELECT * FROM progress WHERE user_id = $1 AND challenge_id = $2';
+      const query = `
+        SELECT *
+        FROM progress_events
+        WHERE user_id = $1
+          AND related_challenge_id = $2
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
       const result = await db.query(query, [userId, challengeId]);
       return result.rows[0];
     } catch (error) {
-      throw new Error(`Error finding progress: ${error.message}`);
+      throw new Error(`Error finding progress event: ${error.message}`);
     }
   }
 
-  static async getUserStats (userId) {
+  /**
+   * 🔹 Aggregate stats for a user
+   */
+  static async getUserStats(userId) {
     try {
       const query = `
-        SELECT 
-          COUNT(*) as total_attempts,
-          COUNT(CASE WHEN completed = true THEN 1 END) as completed_challenges,
-          SUM(points_earned) as total_points,
-          AVG(CASE WHEN completed = true THEN score END) as average_score
-        FROM progress 
+        SELECT
+          COUNT(*) AS total_attempts,
+          COUNT(
+            CASE WHEN event_type IN ('challenge_completed', 'goal_completed') THEN 1 END
+          ) AS completed_challenges,
+          SUM(points_earned) AS total_points,
+          AVG((event_data->>'score')::NUMERIC) AS average_score
+        FROM progress_events
         WHERE user_id = $1
       `;
       const result = await db.query(query, [userId]);
@@ -39,54 +64,56 @@ class Progress {
     }
   }
 
-  static async create (progressData) {
+  /**
+   * 🔹 Create a new progress event
+   */
+  static async create(progressData) {
     try {
-      const { user_id, challenge_id, score, completed, points_earned, time_spent } = progressData;
+      const {
+        user_id,
+        event_type,
+        points_earned,
+        related_goal_id,
+        related_challenge_id,
+        event_data,
+      } = progressData;
       const query = `
-        INSERT INTO progress (user_id, challenge_id, score, completed, points_earned, time_spent, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-        RETURNING *
+        INSERT INTO progress_events
+        (user_id, event_type, points_earned, related_goal_id, related_challenge_id, event_data, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+          RETURNING *
       `;
-      const result = await db.query(query, [user_id, challenge_id, score, completed, points_earned, time_spent]);
+      const result = await db.query(query, [
+        user_id,
+        event_type,
+        points_earned,
+        related_goal_id,
+        related_challenge_id,
+        JSON.stringify(event_data || {}),
+      ]);
       return result.rows[0];
     } catch (error) {
-      throw new Error(`Error creating progress: ${error.message}`);
+      throw new Error(`Error creating progress event: ${error.message}`);
     }
   }
 
-  static async update (progressId, updateData) {
-    try {
-      const { score, completed, points_earned, time_spent } = updateData;
-      const query = `
-        UPDATE progress 
-        SET score = COALESCE($2, score),
-            completed = COALESCE($3, completed),
-            points_earned = COALESCE($4, points_earned),
-            time_spent = COALESCE($5, time_spent),
-            updated_at = NOW()
-        WHERE id = $1
-        RETURNING *
-      `;
-      const result = await db.query(query, [progressId, score, completed, points_earned, time_spent]);
-      return result.rows[0];
-    } catch (error) {
-      throw new Error(`Error updating progress: ${error.message}`);
-    }
-  }
-
-  static async getLeaderboardData (limit = 10) {
+  /**
+   * 🔹 Generate leaderboard data
+   */
+  static async getLeaderboardData(limit = 10) {
     try {
       const query = `
         SELECT 
           u.id,
-          u.username,
           u.first_name,
           u.last_name,
-          SUM(p.points_earned) as total_points,
-          COUNT(CASE WHEN p.completed = true THEN 1 END) as challenges_completed
+          SUM(pe.points_earned) AS total_points,
+          COUNT(
+            CASE WHEN pe.event_type = 'challenge_completed' THEN 1 END
+          ) AS challenges_completed
         FROM users u
-        LEFT JOIN progress p ON u.id = p.user_id
-        GROUP BY u.id, u.username, u.first_name, u.last_name
+        LEFT JOIN progress_events pe ON u.id = pe.user_id
+        GROUP BY u.id, u.first_name, u.last_name
         ORDER BY total_points DESC, challenges_completed DESC
         LIMIT $1
       `;
