@@ -46,8 +46,10 @@ describe('🔐 Authentication Integration', () => {
         .expect(200);
 
       expect(res.body).toHaveProperty('message', 'Login successful');
-      tokens.accessToken = res.body.accessToken;
-      tokens.refreshToken = res.body.refreshToken;
+      expect(res.body.tokens.accessToken).toBeDefined();
+      expect(res.body.tokens.refreshToken).toBeDefined();
+      tokens.accessToken = res.body.tokens.accessToken;
+      tokens.refreshToken = res.body.tokens.refreshToken;
     });
 
     it('should reject invalid credentials', async () => {

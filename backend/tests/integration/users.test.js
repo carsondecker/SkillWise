@@ -9,24 +9,20 @@ describe('🧪 Users API Integration', () => {
     await clearTestData();
 
     // ✅ Register a test user
-    const registerRes = await request(app)
-      .post('/api/auth/register')
-      .send({
-        email: 'user_test@example.com',
-        password: 'Test1234!',
-        confirmPassword: 'Test1234!',
-        firstName: 'Integration',
-        lastName: 'User',
-      });
+    const registerRes = await request(app).post('/api/auth/register').send({
+      email: 'user_test@example.com',
+      password: 'Test1234!',
+      confirmPassword: 'Test1234!',
+      firstName: 'Integration',
+      lastName: 'User',
+    });
     expect(registerRes.statusCode).toBe(201);
 
     // ✅ Login to obtain token
-    const loginRes = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'user_test@example.com',
-        password: 'Test1234!',
-      });
+    const loginRes = await request(app).post('/api/auth/login').send({
+      email: 'user_test@example.com',
+      password: 'Test1234!',
+    });
     expect(loginRes.statusCode).toBe(200);
 
     authToken = loginRes.body.tokens?.accessToken;
@@ -49,8 +45,8 @@ describe('🧪 Users API Integration', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.user).toHaveProperty('id');
       expect(res.body.user.email).toBe('user_test@example.com');
-      expect(res.body.user.first_name).toBeDefined();
-      expect(res.body.user.last_name).toBeDefined();
+      expect(res.body.user.firstName).toBeDefined();
+      expect(res.body.user.lastName).toBeDefined();
     });
 
     test('should return 401 if unauthorized', async () => {
