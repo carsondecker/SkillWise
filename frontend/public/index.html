@@ -9,10 +9,19 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="manifest" href="/manifest.json" />
 
-  <!-- Tailwind (if you’re using @tailwind in src/styles/tailwind.css) -->
+  <!-- Reset default margin and padding -->
+  <style>
+      html, body {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: "Inter", sans-serif;
+          background-color: #ffffff;
+      }
+  </style>
 </head>
 
-<body class="bg-gray-50 text-gray-900">
+<body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
 <div id="root"></div>
 

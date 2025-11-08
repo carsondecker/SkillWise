@@ -53,24 +53,51 @@
 
   .challenge-meta {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
-    font-size: 0.9rem;
-    color: #4b5563;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 0.8rem;
     background: #f9fafb;
-    padding: 0.6rem 0.5rem;
-    border-radius: 10px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
 
-    span {
+    .meta-item {
       display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      font-weight: 500;
-    }
-
-    .points {
-      color: #2563eb;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 0.1rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 20px;
+      background: white;
+      font-size: 0.85rem;
       font-weight: 600;
+      color: #374151;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      &.category {
+        background: #eef2ff;
+        color: #3730a3;
+        border: 1px solid #c7d2fe;
+      }
+
+      &.time {
+        background: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+
+      &.points {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+      }
     }
   }
 

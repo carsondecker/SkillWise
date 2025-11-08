@@ -1,5 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -16,88 +21,103 @@ import PeerReviewPage from './pages/PeerReviewPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import ErrorPage from './pages/ErrorPage';
+import Topbar from './components/common/TopBar';
 
-function AppRoutes() {
+/* ==============================
+   🔹 Split into two components
+   ============================== */
+
+function AppContent() {
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Hide topbar on login/signup
+  const hideTopbar = ['/login', '/signup'].includes(location.pathname);
 
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/error" element={<ErrorPage />} />
+    <>
+      {!hideTopbar && <Topbar />}
 
-      {/* Protected routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage key={user?.id || 'guest'} />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/goals"
-        element={
-          <ProtectedRoute>
-            <GoalsPage key={user?.id || 'guest'} />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/challenges"
-        element={
-          <ProtectedRoute>
-            <ChallengesPage key={user?.id || 'guest'} />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/progress"
-        element={
-          <ProtectedRoute>
-            <ProgressPage key={user?.id || 'guest'} />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/leaderboard"
-        element={
-          <ProtectedRoute>
-            <LeaderboardPage key={user?.id || 'guest'} />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/peer-review"
-        element={
-          <ProtectedRoute>
-            <PeerReviewPage key={user?.id || 'guest'} />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage key={user?.id || 'guest'} />
-          </ProtectedRoute>
-        }
-      />
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/error" element={<ErrorPage />} />
 
-      {/* Catch-all route */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        {/* Protected routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/goals"
+          element={
+            <ProtectedRoute>
+              <GoalsPage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/challenges"
+          element={
+            <ProtectedRoute>
+              <ChallengesPage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/progress"
+          element={
+            <ProtectedRoute>
+              <ProgressPage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <LeaderboardPage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/peer-review"
+          element={
+            <ProtectedRoute>
+              <PeerReviewPage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch-all */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </>
   );
 }
 
-// ✅ The AuthProvider wraps Router and everything else
+/* ==============================
+   🔹 Main App wrapper
+   ============================== */
 export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppRoutes />
+        <AppContent /> {/* ✅ useLocation is safe here */}
       </Router>
     </AuthProvider>
   );

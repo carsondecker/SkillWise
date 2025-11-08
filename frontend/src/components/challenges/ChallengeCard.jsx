@@ -30,11 +30,13 @@ const ChallengeCard = ({ challenge, onEdit }) => {
 
       {/* Meta info */}
       <div className="challenge-meta">
-        {category && <span className="category">📘 {category}</span>}
+        {category && <span className="meta-item category">📘 {category}</span>}
         {estimated_time_minutes && (
-          <span className="time">⏱️ {estimated_time_minutes} min</span>
+          <span className="meta-item time">
+            ⏱️ {estimated_time_minutes} min
+          </span>
         )}
-        <span className="points">🏆 {points_reward} pts</span>
+        <span className="meta-item points">🏆 {points_reward} pts</span>
       </div>
 
       {/* Footer actions */}
