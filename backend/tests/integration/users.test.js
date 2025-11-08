@@ -64,13 +64,13 @@ describe('🧪 Users API Integration', () => {
         .put('/api/users/profile')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          first_name: 'UpdatedName',
-          last_name: 'UpdatedLast',
+          firstName: 'UpdatedName',
+          lastName: 'UpdatedLast',
           bio: 'Learning integration testing!',
         });
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.user.first_name).toBe('UpdatedName');
+      expect(res.body.user.firstName).toBe('UpdatedName');
       expect(res.body.user.bio).toBe('Learning integration testing!');
     });
 

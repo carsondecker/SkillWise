@@ -1,5 +1,7 @@
 // TODO: Test environment setup and configuration
 const { Pool } = require('pg');
+// App-level DB connection will be required after we set TEST_DATABASE_URL
+let appDb;
 
 // Test database configuration
 const testDbConfig = {
@@ -28,6 +30,16 @@ beforeAll(async () => {
   process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
   process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key-for-testing-only';
 
+  // Ensure app uses the test DB connection string before it is required
+  if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL =
+      process.env.TEST_DATABASE_URL ||
+      'postgresql://skillwise_user:skillwise_pass@localhost:5434/skillwise_test_db';
+  }
+
+  // Require app DB connection after env is set so it picks up test DB
+  appDb = require('../src/database/connection');
+
   // Test database connection
   try {
     await testPool.query('SELECT 1');
@@ -41,10 +53,15 @@ beforeAll(async () => {
 // Global test cleanup
 afterAll(async () => {
   try {
-    // Clean up test data if needed
-    // await testPool.query('TRUNCATE TABLE users CASCADE');
+    // Close app-level DB pool to avoid leaking connections when Jest runs suites
+    try {
+      await appDb.closePool();
+      console.log('✅ App database pool closed');
+    } catch (err) {
+      console.warn('⚠️ Could not close app DB pool:', err.message);
+    }
 
-    // Close database connections
+    // Close test pool
     await testPool.end();
     console.log('✅ Test database cleanup completed');
   } catch (err) {
@@ -68,12 +85,25 @@ const clearTestData = async () => {
     'users',
   ];
 
-  for (const table of tables) {
-    try {
-      await testPool.query(`TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE`);
-    } catch (err) {
-      // Table might not exist, continue
-      console.warn(`Warning: Could not truncate table ${table}:`, err.message);
+  try {
+    const tableList = tables.join(', ');
+    await testPool.query(
+      `TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`
+    );
+  } catch (err) {
+    console.warn('Warning: Could not truncate tables:', err.message);
+    // Fallback: try per-table truncate (best-effort)
+    for (const table of tables) {
+      try {
+        await testPool.query(
+          `TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE`
+        );
+      } catch (innerErr) {
+        console.warn(
+          `Warning: Could not truncate table ${table}:`,
+          innerErr.message
+        );
+      }
     }
   }
 };
