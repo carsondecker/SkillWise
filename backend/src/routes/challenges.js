@@ -5,7 +5,10 @@ const router = express.Router();
 const challengeController = require('../controllers/challengeController');
 const auth = require('../middleware/auth');
 const { restrictTo } = require('../middleware/auth');
-const { challengeValidation } = require('../middleware/validation');
+const {
+  challengeValidation,
+  challengeUpdateValidation,
+} = require('../middleware/validation');
 
 // --------------------------------------------------
 // 🔹 Challenge Routes
@@ -19,12 +22,29 @@ router.get('/', auth, challengeController.getChallenges);
 router.get('/:id', auth, challengeController.getChallengeById);
 
 // 🟡 Create new challenge (Admin only)
-router.post('/', auth, restrictTo('admin'), challengeValidation, challengeController.createChallenge);
+router.post(
+  '/',
+  auth,
+  restrictTo('admin'),
+  challengeValidation,
+  challengeController.createChallenge
+);
 
 // 🔵 Update challenge (Admin only)
-router.put('/:id', auth, restrictTo('admin'), challengeValidation, challengeController.updateChallenge);
+router.put(
+  '/:id',
+  auth,
+  restrictTo('admin'),
+  challengeUpdateValidation,
+  challengeController.updateChallenge
+);
 
 // 🔴 Delete challenge (Admin only)
-router.delete('/:id', auth, restrictTo('admin'), challengeController.deleteChallenge);
+router.delete(
+  '/:id',
+  auth,
+  restrictTo('admin'),
+  challengeController.deleteChallenge
+);
 
 module.exports = router;

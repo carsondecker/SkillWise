@@ -23,10 +23,16 @@ const registerSchema = z.object({
         .min(8, 'Password must be at least 8 characters')
         .regex(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-          'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+          'Password must contain at least one lowercase letter, one uppercase letter, and one number'
         ),
-      firstName: z.string().min(1, 'First name is required').max(50, 'First name too long'),
-      lastName: z.string().min(1, 'Last name is required').max(50, 'Last name too long'),
+      firstName: z
+        .string()
+        .min(1, 'First name is required')
+        .max(50, 'First name too long'),
+      lastName: z
+        .string()
+        .min(1, 'Last name is required')
+        .max(50, 'Last name too long'),
       confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
@@ -38,7 +44,10 @@ const registerSchema = z.object({
 // ✅ Goal Schema
 const goalSchema = z.object({
   body: z.object({
-    title: z.string().min(1, 'Goal title is required').max(255, 'Title too long'),
+    title: z
+      .string()
+      .min(1, 'Goal title is required')
+      .max(255, 'Title too long'),
     description: z.string().max(1000, 'Description too long').optional(),
     category: z.string().max(100, 'Category too long').optional(),
     difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
@@ -49,17 +58,69 @@ const goalSchema = z.object({
 // ✅ Challenge Schema
 const challengeSchema = z.object({
   body: z.object({
-    title: z.string().min(1, 'Challenge title is required').max(255, 'Title too long'),
-    description: z.string().min(1, 'Description is required'),
-    instructions: z.string().min(1, 'Instructions are required'),
-    category: z.string().min(1, 'Category is required'),
-    difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
-    estimatedTimeMinutes: z.number().int().positive().optional(),
-    pointsReward: z.number().int().positive().default(10),
-    maxAttempts: z.number().int().positive().default(3),
+    title: z
+      .string()
+      .min(1, 'Challenge title is required')
+      .max(255, 'Title too long'),
+
+    description: z
+      .string()
+      .min(1, 'Description is required')
+      .max(5000, 'Description too long'),
+
+    instructions: z
+      .string()
+      .min(1, 'Instructions are required')
+      .max(5000, 'Instructions too long'),
+
+    category: z
+      .string()
+      .min(1, 'Category is required')
+      .max(100, 'Category too long'),
+
+    difficulty_level: z.enum(['easy', 'medium', 'hard']).default('medium'),
+
+    estimated_time_minutes: z
+      .number()
+      .int()
+      .positive()
+      .max(600, 'Estimated time too large (max 600 min)')
+      .optional(),
+
+    points_reward: z.number().int().positive().default(10),
+
+    max_attempts: z.number().int().positive().default(3),
+
+    requires_peer_review: z.boolean().default(false),
+
+    is_active: z.boolean().default(true),
+    prerequisites: z.array(z.string().min(1)).default([]),
+    tags: z.array(z.string().min(1)).default([]),
+
+    learning_objectives: z.array(z.string().min(1)).default([]),
+
+    // created_by comes from backend (req.user)
+    created_by: z.number().int().optional(),
   }),
 });
-
+// ✅ Challenge Update Schema (all fields optional)
+const challengeUpdateSchema = z.object({
+  body: z.object({
+    title: z.string().min(1).max(255).optional(),
+    description: z.string().max(5000).optional(),
+    instructions: z.string().max(5000).optional(),
+    category: z.string().max(100).optional(),
+    difficulty_level: z.enum(['easy', 'medium', 'hard']).optional(),
+    estimated_time_minutes: z.number().int().positive().max(600).optional(),
+    points_reward: z.number().int().positive().optional(),
+    max_attempts: z.number().int().positive().optional(),
+    requires_peer_review: z.boolean().optional(),
+    is_active: z.boolean().optional(),
+    prerequisites: z.array(z.string().min(1)).optional(),
+    tags: z.array(z.string().min(1)).optional(),
+    learning_objectives: z.array(z.string().min(1)).optional(),
+  }),
+});
 /**
  * 🔹 Generic validation middleware factory
  */
@@ -84,8 +145,8 @@ const validate = (schema) => {
           new AppError(
             `Validation failed: ${errors.map((e) => e.message).join(', ')}`,
             400,
-            'VALIDATION_ERROR',
-          ),
+            'VALIDATION_ERROR'
+          )
         );
       }
 
@@ -93,7 +154,9 @@ const validate = (schema) => {
       req.validated = result.data;
       next();
     } catch (error) {
-      next(new AppError('Unexpected validation error', 400, 'VALIDATION_ERROR'));
+      next(
+        new AppError('Unexpected validation error', 400, 'VALIDATION_ERROR')
+      );
     }
   };
 };
@@ -105,6 +168,7 @@ const loginValidation = validate(loginSchema);
 const registerValidation = validate(registerSchema);
 const goalValidation = validate(goalSchema);
 const challengeValidation = validate(challengeSchema);
+const challengeUpdateValidation = validate(challengeUpdateSchema);
 
 module.exports = {
   validate,
@@ -112,10 +176,12 @@ module.exports = {
   registerValidation,
   goalValidation,
   challengeValidation,
+  challengeUpdateValidation,
   schemas: {
     loginSchema,
     registerSchema,
     goalSchema,
     challengeSchema,
+    challengeUpdateSchema,
   },
 };

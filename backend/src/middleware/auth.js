@@ -1,6 +1,5 @@
 // src/middleware/auth.js
 const jwt = require('jsonwebtoken');
-const db = require('../database/connection'); // optional if checking user existence
 const { AppError } = require('./errorHandler');
 
 /**
@@ -31,13 +30,6 @@ const auth = async (req, res, next) => {
 
     // ✅ 2. Verify token signature and decode payload
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // ✅ 3. (Optional) Validate user existence in DB
-    // const result = await db.query('SELECT id, email, role FROM users WHERE id = $1', [decoded.id]);
-    // const currentUser = result.rows[0];
-    // if (!currentUser) {
-    //   return next(new AppError('The user belonging to this token no longer exists.', 401, 'USER_NOT_FOUND'));
-    // }
 
     // ✅ 4. Attach user data to request object
     req.user = decoded; // or { id, email, role } from currentUser if you queried DB

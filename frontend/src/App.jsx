@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Import all pages
+// Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -17,95 +17,88 @@ import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import ErrorPage from './pages/ErrorPage';
 
-// Import layout components (TODO: Create these)
-// import Navbar from './components/layout/Navbar';
-// import Footer from './components/layout/Footer';
+function AppRoutes() {
+  const { user } = useAuth();
 
-function App() {
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/error" element={<ErrorPage />} />
+
+      {/* Protected routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardPage key={user?.id || 'guest'} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/goals"
+        element={
+          <ProtectedRoute>
+            <GoalsPage key={user?.id || 'guest'} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/challenges"
+        element={
+          <ProtectedRoute>
+            <ChallengesPage key={user?.id || 'guest'} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/progress"
+        element={
+          <ProtectedRoute>
+            <ProgressPage key={user?.id || 'guest'} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leaderboard"
+        element={
+          <ProtectedRoute>
+            <LeaderboardPage key={user?.id || 'guest'} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/peer-review"
+        element={
+          <ProtectedRoute>
+            <PeerReviewPage key={user?.id || 'guest'} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage key={user?.id || 'guest'} />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Catch-all route */}
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+}
+
+// ✅ The AuthProvider wraps Router and everything else
+export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="App">
-          {/* TODO: Add Navbar component */}
-          {/* <Navbar /> */}
-
-          <main className="main-content">
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/error" element={<ErrorPage />} />
-
-              {/* Protected routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/goals"
-                element={
-                  <ProtectedRoute>
-                    <GoalsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/challenges"
-                element={
-                  <ProtectedRoute>
-                    <ChallengesPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/progress"
-                element={
-                  <ProtectedRoute>
-                    <ProgressPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/leaderboard"
-                element={
-                  <ProtectedRoute>
-                    <LeaderboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/peer-review"
-                element={
-                  <ProtectedRoute>
-                    <PeerReviewPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Catch-all route for 404 */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </main>
-
-          {/* TODO: Add Footer component */}
-          {/* <Footer /> */}
-        </div>
+        <AppRoutes />
       </Router>
     </AuthProvider>
   );
 }
-
-export default App;

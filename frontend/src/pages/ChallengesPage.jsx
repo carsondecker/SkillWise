@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth'; // ✅ import auth hook
 import '../styles/ChallengesPage.scss';
+import { validateChallenge } from '../validation/challengeValidation';
 
 const ChallengesPage = () => {
   const { user } = useAuth(); // ✅ get current logged-in user
@@ -26,6 +27,10 @@ const ChallengesPage = () => {
     difficulty_level: 'medium',
     points_reward: 10,
     estimated_time_minutes: 30,
+    max_attempts: 3,
+    requires_peer_review: false,
+    is_active: true,
+    prerequisites: '',
     tags: '',
     learning_objectives: '',
   });
@@ -51,8 +56,10 @@ const ChallengesPage = () => {
         setLoading(false);
       }
     };
-
-    fetchChallenges();
+    setTimeout(() => {
+      void fetchChallenges();
+      setLoading(false);
+    }, 1000);
   }, []);
 
   // 🔹 Filtering logic
@@ -94,38 +101,34 @@ const ChallengesPage = () => {
   };
 
   // 🔹 Create new challenge
+  // 🔹 Create new challenge
   const handleCreateChallenge = async (e) => {
     e.preventDefault();
     setCreating(true);
 
     try {
-      const payload = {
-        title: newChallenge.title.trim(),
-        description: newChallenge.description.trim(),
-        instructions: newChallenge.instructions.trim(),
-        category: newChallenge.category,
-        difficulty_level: newChallenge.difficulty_level,
-        points_reward: Number(newChallenge.points_reward),
-        estimated_time_minutes: Number(newChallenge.estimated_time_minutes),
-        requires_peer_review: false,
-        is_active: true,
-        created_by: user?.id || 1,
-        tags: newChallenge.tags
-          ? newChallenge.tags.split(',').map((t) => t.trim())
-          : [],
-        learning_objectives: newChallenge.learning_objectives
-          ? newChallenge.learning_objectives.split(',').map((t) => t.trim())
-          : [],
-      };
+      // 1️⃣ Run validation first
+      const validation = validateChallenge(newChallenge);
+      if (!validation.success) {
+        alert(validation.error); // or toast
+        setCreating(false);
+        return;
+      }
 
+      // 2️⃣ Use validated + normalized data
+      const payload = validation.data;
+      payload.created_by = user?.id || 1;
+
+      // 3️⃣ Send to API
       const res = await apiService.challenges.create(payload);
       const created = res.data.challenge || res.data;
 
+      // 4️⃣ Update local state
       setChallenges((prev) => [created, ...prev]);
       setFilteredChallenges((prev) => [created, ...prev]);
       setShowModal(false);
 
-      // Reset form
+      // 5️⃣ Reset form
       setNewChallenge({
         title: '',
         description: '',
@@ -134,6 +137,10 @@ const ChallengesPage = () => {
         difficulty_level: 'medium',
         points_reward: 10,
         estimated_time_minutes: 30,
+        max_attempts: 3,
+        requires_peer_review: false,
+        is_active: true,
+        prerequisites: '',
         tags: '',
         learning_objectives: '',
       });
@@ -336,6 +343,63 @@ const ChallengesPage = () => {
                     name="estimated_time_minutes"
                     value={newChallenge.estimated_time_minutes}
                     onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Max Attempts</label>
+                  <input
+                    type="number"
+                    name="max_attempts"
+                    value={newChallenge.max_attempts}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Requires Peer Review?</label>
+                  <select
+                    name="requires_peer_review"
+                    value={newChallenge.requires_peer_review ? 'true' : 'false'}
+                    onChange={(e) =>
+                      setNewChallenge((prev) => ({
+                        ...prev,
+                        requires_peer_review: e.target.value === 'true',
+                      }))
+                    }
+                  >
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Active Status</label>
+                  <select
+                    name="is_active"
+                    value={newChallenge.is_active ? 'true' : 'false'}
+                    onChange={(e) =>
+                      setNewChallenge((prev) => ({
+                        ...prev,
+                        is_active: e.target.value === 'true',
+                      }))
+                    }
+                  >
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Prerequisites (comma-separated)</label>
+                  <input
+                    name="prerequisites"
+                    value={newChallenge.prerequisites}
+                    onChange={handleInputChange}
+                    placeholder="e.g., HTML Basics, JS Arrays"
                   />
                 </div>
               </div>

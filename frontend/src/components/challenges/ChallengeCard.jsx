@@ -1,52 +1,43 @@
 // src/components/challenges/ChallengeCard.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth';
 import '../../styles/components/Challenge/ChallengeCard.scss';
 
-const ChallengeCard = ({ challenge }) => {
+const ChallengeCard = ({ challenge, onEdit }) => {
+  const { user } = useAuth();
   const {
     title,
-    description,
-    difficulty,
-    points,
-    estimatedTime,
-    tags,
+    difficulty_level,
+    points_reward,
+    estimated_time_minutes,
     category,
   } = challenge;
 
   return (
     <motion.div
       className="challenge-card"
-      whileHover={{ y: -5, boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}
+      whileHover={{ y: -6, scale: 1.02 }}
       transition={{ duration: 0.25 }}
     >
+      {/* Header */}
       <div className="challenge-header">
         <h3>{title}</h3>
-        <div className="meta">
-          <span className={`difficulty ${difficulty?.toLowerCase()}`}>
-            {difficulty}
-          </span>
-          <span className="points">+{points} pts</span>
-        </div>
+        <span className={`difficulty-badge ${difficulty_level?.toLowerCase()}`}>
+          {difficulty_level}
+        </span>
       </div>
 
-      <p className="challenge-description">{description}</p>
-
-      <div className="challenge-info">
-        {category && <span className="category">{category}</span>}
-        {estimatedTime && <span>⏱️ {estimatedTime} min</span>}
+      {/* Meta info */}
+      <div className="challenge-meta">
+        {category && <span className="category">📘 {category}</span>}
+        {estimated_time_minutes && (
+          <span className="time">⏱️ {estimated_time_minutes} min</span>
+        )}
+        <span className="points">🏆 {points_reward} pts</span>
       </div>
 
-      {tags && (
-        <div className="tags">
-          {tags.map((tag, i) => (
-            <span key={i} className="tag">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
+      {/* Footer actions */}
       <div className="challenge-footer">
         <motion.button
           className="btn-primary"
@@ -55,6 +46,18 @@ const ChallengeCard = ({ challenge }) => {
         >
           Start Challenge
         </motion.button>
+
+        {/* Admin-only Edit button */}
+        {user?.role === 'admin' && (
+          <motion.button
+            className="btn-secondary"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onEdit?.(challenge)}
+          >
+            ✏️ Edit
+          </motion.button>
+        )}
       </div>
     </motion.div>
   );
