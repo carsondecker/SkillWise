@@ -52,16 +52,15 @@ const ChallengesPage = () => {
     if (filters.category) {
       filtered = filtered.filter(
         (c) =>
-          (c.category || '').toLowerCase() === filters.category.toLowerCase(),
+          (c.category || '').toLowerCase() === filters.category.toLowerCase()
       );
     }
 
     if (filters.difficulty) {
-      filtered = filtered.filter(
-        (c) =>
-          (c.difficulty || '').toLowerCase() ===
-          filters.difficulty.toLowerCase(),
-      );
+      filtered = filtered.filter((c) => {
+        const diff = (c.difficulty || c.difficulty_level || '').toString();
+        return diff.toLowerCase() === filters.difficulty.toLowerCase();
+      });
     }
 
     if (filters.search) {
@@ -70,7 +69,7 @@ const ChallengesPage = () => {
         const inTitle = (c.title || '').toLowerCase().includes(q);
         const inDesc = (c.description || '').toLowerCase().includes(q);
         const inTags = (c.tags || []).some((tag) =>
-          tag.toLowerCase().includes(q),
+          tag.toLowerCase().includes(q)
         );
         return inTitle || inDesc || inTags;
       });
@@ -87,7 +86,7 @@ const ChallengesPage = () => {
   useEffect(() => {
     setTitle('Challenges');
     setSubtitle(
-      'Explore hands-on tasks to practice and demonstrate your skills',
+      'Explore hands-on tasks to practice and demonstrate your skills'
     );
   }, [setTitle, setSubtitle]);
 

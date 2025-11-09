@@ -6,17 +6,17 @@ class Leaderboard {
       const query = `
         SELECT 
           u.id,
-          u.username,
+          (COALESCE(NULLIF(u.first_name, '') || ' ' || NULLIF(u.last_name, ''), u.email)) AS username,
           u.first_name,
           u.last_name,
           COALESCE(SUM(p.points_earned), 0) as total_points,
-          COUNT(CASE WHEN p.completed = true THEN 1 END) as challenges_completed,
-          COALESCE(AVG(CASE WHEN p.completed = true THEN p.score END), 0) as average_score,
+          COUNT(CASE WHEN p.related_challenge_id IS NOT NULL THEN 1 END) as challenges_completed,
+          COALESCE(AVG((p.event_data->>'score')::numeric), 0) as average_score,
           u.created_at as join_date
         FROM users u
-        LEFT JOIN progress p ON u.id = p.user_id
-    WHERE u.is_active = true
-        GROUP BY u.id, u.username, u.first_name, u.last_name, u.created_at
+        LEFT JOIN progress_events p ON u.id = p.user_id
+        WHERE u.is_active = true
+  GROUP BY u.id, u.first_name, u.last_name, u.created_at
         ORDER BY total_points DESC, challenges_completed DESC, average_score DESC
         LIMIT $1
       `;
@@ -32,16 +32,16 @@ class Leaderboard {
       const query = `
         SELECT 
           u.id,
-          u.username,
+          (COALESCE(NULLIF(u.first_name, '') || ' ' || NULLIF(u.last_name, ''), u.email)) AS username,
           u.first_name,
           u.last_name,
           COALESCE(SUM(p.points_earned), 0) as weekly_points,
-          COUNT(CASE WHEN p.completed = true THEN 1 END) as weekly_completions
+          COUNT(CASE WHEN p.related_challenge_id IS NOT NULL THEN 1 END) as weekly_completions
         FROM users u
-        LEFT JOIN progress p ON u.id = p.user_id
-    WHERE u.is_active = true 
-        AND p.created_at >= DATE_TRUNC('week', CURRENT_DATE)
-        GROUP BY u.id, u.username, u.first_name, u.last_name
+        LEFT JOIN progress_events p ON u.id = p.user_id
+        WHERE u.is_active = true 
+        AND p.timestamp_occurred >= DATE_TRUNC('week', CURRENT_DATE)
+  GROUP BY u.id, u.first_name, u.last_name
         ORDER BY weekly_points DESC, weekly_completions DESC
         LIMIT $1
       `;
@@ -57,16 +57,16 @@ class Leaderboard {
       const query = `
         SELECT 
           u.id,
-          u.username,
+          (COALESCE(NULLIF(u.first_name, '') || ' ' || NULLIF(u.last_name, ''), u.email)) AS username,
           u.first_name,
           u.last_name,
           COALESCE(SUM(p.points_earned), 0) as monthly_points,
-          COUNT(CASE WHEN p.completed = true THEN 1 END) as monthly_completions
+          COUNT(CASE WHEN p.related_challenge_id IS NOT NULL THEN 1 END) as monthly_completions
         FROM users u
-        LEFT JOIN progress p ON u.id = p.user_id
-    WHERE u.is_active = true 
-        AND p.created_at >= DATE_TRUNC('month', CURRENT_DATE)
-        GROUP BY u.id, u.username, u.first_name, u.last_name
+        LEFT JOIN progress_events p ON u.id = p.user_id
+        WHERE u.is_active = true 
+        AND p.timestamp_occurred >= DATE_TRUNC('month', CURRENT_DATE)
+  GROUP BY u.id, u.first_name, u.last_name
         ORDER BY monthly_points DESC, monthly_completions DESC
         LIMIT $1
       `;
@@ -86,8 +86,8 @@ class Leaderboard {
             COALESCE(SUM(p.points_earned), 0) as total_points,
             RANK() OVER (ORDER BY SUM(p.points_earned) DESC) as rank
           FROM users u
-          LEFT JOIN progress p ON u.id = p.user_id
-      WHERE u.is_active = true
+          LEFT JOIN progress_events p ON u.id = p.user_id
+        WHERE u.is_active = true
           GROUP BY u.id
         )
         SELECT rank, total_points
@@ -106,17 +106,17 @@ class Leaderboard {
       const query = `
         SELECT 
           u.id,
-          u.username,
+          (COALESCE(NULLIF(u.first_name, '') || ' ' || NULLIF(u.last_name, ''), u.email)) AS username,
           u.first_name,
           u.last_name,
           COALESCE(SUM(p.points_earned), 0) as subject_points,
-          COUNT(CASE WHEN p.completed = true THEN 1 END) as subject_completions
+          COUNT(CASE WHEN p.related_challenge_id IS NOT NULL THEN 1 END) as subject_completions
         FROM users u
-        LEFT JOIN progress p ON u.id = p.user_id
-        LEFT JOIN challenges c ON p.challenge_id = c.id
-    WHERE u.is_active = true 
+        LEFT JOIN progress_events p ON u.id = p.user_id
+        LEFT JOIN challenges c ON p.related_challenge_id = c.id
+        WHERE u.is_active = true 
         AND c.subject = $1
-        GROUP BY u.id, u.username, u.first_name, u.last_name
+  GROUP BY u.id, u.first_name, u.last_name
         ORDER BY subject_points DESC, subject_completions DESC
         LIMIT $2
       `;

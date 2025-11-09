@@ -51,7 +51,7 @@ const LeaderboardPage = () => {
               row.weekly_points ??
               row.monthly_points ??
               row.subject_points ??
-              0,
+              0
           );
 
           const completedChallenges = Number(
@@ -59,7 +59,7 @@ const LeaderboardPage = () => {
               row.weekly_completions ??
               row.monthly_completions ??
               row.subject_completions ??
-              0,
+              0
           );
 
           const name = username || `${first} ${last}`.trim() || 'Unknown';
@@ -113,6 +113,12 @@ const LeaderboardPage = () => {
 
   const [currentUserRank, setCurrentUserRank] = useState(0);
   const [achievements, setAchievements] = useState([]);
+
+  // percentage calculation for user's ranking vs displayed leaderboard
+  const currentUserPercent =
+    leaderboardData && leaderboardData.length > 0
+      ? Math.round((currentUserRank / leaderboardData.length) * 100)
+      : null;
 
   // derive current user rank from loaded leaderboard or fallback to API
   useEffect(() => {
@@ -207,12 +213,25 @@ const LeaderboardPage = () => {
             <div className="rank-info">
               <span className="rank-number">#{currentUserRank}</span>
               <div className="rank-details">
-                <p>
-                  You're in the top{' '}
-                  {Math.round((currentUserRank / leaderboardData.length) * 100)}
-                  % of learners!
-                </p>
-                <small>Keep learning to climb higher!</small>
+                {currentUserRank === 1 ? (
+                  <>
+                    <p>
+                      You're currently ranked #1 — great job!
+                      {leaderboardData && leaderboardData.length === 1
+                        ? " You're the only learner on the leaderboard right now."
+                        : ''}
+                    </p>
+                  </>
+                ) : currentUserPercent !== null ? (
+                  <p>You're in the top {currentUserPercent}% of learners!</p>
+                ) : (
+                  <p>You're ranked #{currentUserRank}.</p>
+                )}
+                <small>
+                  {currentUserRank === 1
+                    ? 'Congratulations!'
+                    : 'Keep learning to climb higher!'}
+                </small>
               </div>
             </div>
           </div>
