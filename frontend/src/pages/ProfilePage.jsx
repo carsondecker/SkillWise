@@ -11,81 +11,69 @@ const ProfilePage = () => {
   const [formData, setFormData] = useState({});
   const { user, updateProfile } = useAuth();
 
-  // Mock data - TODO: Replace with API call
+  // Fetch profile from backend when possible, fall back to a lightweight mock
   useEffect(() => {
-    const mockProfileData = {
-      id: user?.id || 1,
-      firstName: user?.firstName || 'John',
-      lastName: user?.lastName || 'Doe',
-      email: user?.email || 'john.doe@example.com',
-      avatar: '👤',
-      bio: 'Passionate full-stack developer with a love for learning new technologies.',
-      location: 'San Francisco, CA',
-      website: 'https://johndoe.dev',
-      joinedDate: '2024-01-01T00:00:00Z',
-      level: 6,
-      totalPoints: 1850,
-      completedChallenges: 28,
-      goalsAchieved: 5,
-      currentStreak: 12,
-      longestStreak: 25,
-      badges: [
-        { id: 1, name: 'First Steps', icon: '🚀', description: 'Completed first challenge', earned: true },
-        { id: 2, name: 'Streak Master', icon: '🔥', description: '7-day learning streak', earned: true },
-        { id: 3, name: 'Goal Crusher', icon: '🎯', description: 'Completed 5 learning goals', earned: true },
-        { id: 4, name: 'Code Reviewer', icon: '👥', description: 'Provided 10 peer reviews', earned: false },
-        { id: 5, name: 'Challenge Master', icon: '💪', description: 'Completed 50 challenges', earned: false },
-      ],
-      skills: [
-        { name: 'JavaScript', level: 85, category: 'Programming' },
-        { name: 'React', level: 78, category: 'Frontend' },
-        { name: 'Node.js', level: 72, category: 'Backend' },
-        { name: 'CSS', level: 88, category: 'Frontend' },
-        { name: 'Python', level: 65, category: 'Programming' },
-        { name: 'SQL', level: 70, category: 'Database' },
-      ],
-      recentActivity: [
-        {
-          id: 1,
-          type: 'challenge',
-          title: 'Completed React Hooks Challenge',
-          date: '2024-01-15T14:30:00Z',
-          points: 50,
-        },
-        {
-          id: 2,
-          type: 'goal',
-          title: 'Achieved Frontend Fundamentals Goal',
-          date: '2024-01-14T10:15:00Z',
-          points: 100,
-        },
-        {
-          id: 3,
-          type: 'review',
-          title: 'Reviewed peer submission',
-          date: '2024-01-13T16:45:00Z',
-          points: 25,
-        },
-      ],
-      preferences: {
-        emailNotifications: true,
-        pushNotifications: false,
-        weeklyDigest: true,
-        publicProfile: true,
-        showProgress: true,
-      },
+    let mounted = true;
+
+    const fetchProfile = async () => {
+      setLoading(true);
+
+      try {
+        // Try to get profile from backend
+        const res = await fetch('/api/users/profile', {
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Profile fetch failed');
+
+        const data = await res.json();
+
+        if (!mounted) return;
+
+        const remoteProfile = data.user || data;
+        setProfileData(remoteProfile);
+        setFormData(remoteProfile);
+      } catch (err) {
+        // Fallback: use a light mock based on AuthContext user if backend unavailable
+        const fallback = {
+          id: user?.id || 1,
+          firstName: user?.firstName || 'John',
+          lastName: user?.lastName || 'Doe',
+          email: user?.email || 'john.doe@example.com',
+          avatar: '👤',
+          bio: '',
+          location: '',
+          website: '',
+          joinedDate: new Date().toISOString(),
+          level: 1,
+          totalPoints: 0,
+          completedChallenges: 0,
+          goalsAchieved: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          badges: [],
+          skills: [],
+          recentActivity: [],
+          preferences: {},
+        };
+
+        if (!mounted) return;
+        setProfileData(fallback);
+        setFormData(fallback);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
 
-    setTimeout(() => {
-      setProfileData(mockProfileData);
-      setFormData(mockProfileData);
-      setLoading(false);
-    }, 1000);
+    fetchProfile();
+
+    return () => {
+      mounted = false;
+    };
   }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
@@ -95,13 +83,31 @@ const ProfilePage = () => {
     e.preventDefault();
     setLoading(true);
 
-    // TODO: Replace with actual API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setProfileData(formData);
-      setIsEditing(false);
-      // Call auth context update if needed
-      // await updateProfile(formData);
+      // Prefer the AuthContext updateProfile if available
+      if (updateProfile) {
+        const result = await updateProfile(formData);
+        if (result?.success) {
+          setProfileData(formData);
+          setIsEditing(false);
+        } else {
+          console.error('Profile update failed:', result?.error);
+        }
+      } else {
+        // Fallback to direct API call
+        const res = await fetch('/api/users/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(formData),
+        });
+
+        if (!res.ok) throw new Error('Profile update failed');
+
+        const updated = await res.json();
+        setProfileData(updated.user || updated);
+        setIsEditing(false);
+      }
     } catch (error) {
       console.error('Failed to update profile:', error);
     } finally {
@@ -152,15 +158,24 @@ const ProfilePage = () => {
             </div>
 
             <div className="profile-details">
-              <h1>{profileData?.firstName} {profileData?.lastName}</h1>
+              <h1>
+                {profileData?.firstName} {profileData?.lastName}
+              </h1>
               <p className="profile-bio">{profileData?.bio}</p>
               <div className="profile-meta">
                 <span>📍 {profileData?.location}</span>
                 <span>📅 Joined {formatDate(profileData?.joinedDate)}</span>
                 {profileData?.website && (
-                  <span>🌐 <a href={profileData.website} target="_blank" rel="noopener noreferrer">
-                    {profileData.website}
-                  </a></span>
+                  <span>
+                    🌐{' '}
+                    <a
+                      href={profileData.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {profileData.website}
+                    </a>
+                  </span>
                 )}
               </div>
             </div>
@@ -313,7 +328,9 @@ const ProfilePage = () => {
                         <h4>{activity.title}</h4>
                         <div className="activity-meta">
                           <span>{formatTimeAgo(activity.date)}</span>
-                          <span className="points">+{activity.points} points</span>
+                          <span className="points">
+                            +{activity.points} points
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -333,7 +350,9 @@ const ProfilePage = () => {
                     <span>Longest Streak</span>
                   </div>
                   <div className="achievement-stat">
-                    <strong>{profileData?.badges.filter(b => b.earned).length}</strong>
+                    <strong>
+                      {profileData?.badges.filter((b) => b.earned).length}
+                    </strong>
                     <span>Badges Earned</span>
                   </div>
                 </div>
@@ -372,7 +391,10 @@ const ProfilePage = () => {
             <h3>Badge Collection</h3>
             <div className="badges-grid">
               {profileData?.badges.map((badge) => (
-                <div key={badge.id} className={`badge-item ${badge.earned ? 'earned' : 'locked'}`}>
+                <div
+                  key={badge.id}
+                  className={`badge-item ${badge.earned ? 'earned' : 'locked'}`}
+                >
                   <div className="badge-icon">{badge.icon}</div>
                   <h4>{badge.name}</h4>
                   <p>{badge.description}</p>

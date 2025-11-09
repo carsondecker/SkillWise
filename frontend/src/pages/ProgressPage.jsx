@@ -1,70 +1,52 @@
 // TODO: Implement progress tracking and analytics page
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { apiService } from '../services/api';
 
 const ProgressPage = () => {
   const [progressData, setProgressData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('week');
 
-  // Mock data - TODO: Replace with API call
+  // Load progress data from backend
   useEffect(() => {
-    const mockProgressData = {
-      overall: {
-        totalPoints: 450,
-        level: 5,
-        experiencePoints: 1250,
-        nextLevelXP: 1500,
-        completedGoals: 8,
-        completedChallenges: 15,
-        currentStreak: 7,
-        longestStreak: 12,
-      },
-      recentActivity: [
-        {
-          id: 1,
-          type: 'challenge_completed',
-          title: 'Build a React Component',
-          points: 50,
-          timestamp: '2025-10-02T10:30:00Z',
-        },
-        {
-          id: 2,
-          type: 'goal_progress',
-          title: 'Master Frontend Development',
-          progress: 75,
-          timestamp: '2025-10-02T09:15:00Z',
-        },
-        {
-          id: 3,
-          type: 'achievement_earned',
-          title: 'First Week Streak',
-          points: 25,
-          timestamp: '2025-10-01T16:45:00Z',
-        },
-      ],
-      weeklyProgress: [
-        { day: 'Mon', points: 30, timeSpent: 45 },
-        { day: 'Tue', points: 50, timeSpent: 60 },
-        { day: 'Wed', points: 0, timeSpent: 0 },
-        { day: 'Thu', points: 75, timeSpent: 90 },
-        { day: 'Fri', points: 40, timeSpent: 55 },
-        { day: 'Sat', points: 60, timeSpent: 75 },
-        { day: 'Sun', points: 35, timeSpent: 40 },
-      ],
-      skillBreakdown: [
-        { skill: 'JavaScript', level: 4, progress: 80 },
-        { skill: 'React', level: 3, progress: 65 },
-        { skill: 'CSS', level: 5, progress: 90 },
-        { skill: 'Node.js', level: 2, progress: 40 },
-        { skill: 'Database', level: 3, progress: 55 },
-      ],
+    let mounted = true;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await apiService.progress.getOverview({ timeframe });
+        const data = res.data || {};
+        if (!mounted) return;
+        setProgressData(data);
+      } catch (error) {
+        console.error('Failed to load progress data:', error);
+        if (!mounted) return;
+        setProgressData({
+          overall: {
+            totalPoints: 0,
+            level: 1,
+            experiencePoints: 0,
+            nextLevelXP: 100,
+            completedGoals: 0,
+            completedChallenges: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+          },
+          recentActivity: [],
+          weeklyProgress: [],
+          skillBreakdown: [],
+        });
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
 
-    setTimeout(() => {
-      setProgressData(mockProgressData);
-      setLoading(false);
-    }, 1000);
+    load();
+
+    return () => {
+      mounted = false;
+    };
   }, [timeframe]);
 
   if (loading) {
@@ -97,11 +79,18 @@ const ProgressPage = () => {
                 <div
                   className="progress-fill"
                   style={{
-                    width: `${(progressData.overall.experiencePoints / progressData.overall.nextLevelXP) * 100}%`,
+                    width: `${
+                      (progressData.overall.experiencePoints /
+                        progressData.overall.nextLevelXP) *
+                      100
+                    }%`,
                   }}
                 ></div>
               </div>
-              <small>{progressData.overall.experiencePoints}/{progressData.overall.nextLevelXP} XP</small>
+              <small>
+                {progressData.overall.experiencePoints}/
+                {progressData.overall.nextLevelXP} XP
+              </small>
             </div>
           </div>
 
@@ -178,7 +167,9 @@ const ProgressPage = () => {
                       {activity.points && `+${activity.points} points`}
                       {activity.progress && `${activity.progress}% complete`}
                     </p>
-                    <small>{new Date(activity.timestamp).toLocaleDateString()}</small>
+                    <small>
+                      {new Date(activity.timestamp).toLocaleDateString()}
+                    </small>
                   </div>
                 </div>
               ))}

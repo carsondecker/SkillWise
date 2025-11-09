@@ -1,16 +1,57 @@
 // src/components/dashboard/DashboardOverview.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Lottie from 'lottie-react';
 import progressAnimation from '../../assets/animations/progress.json';
 import '../../styles/components/dashboard/DashboardOverview.scss';
+import { apiService } from '../../services/api';
 
 const DashboardOverview = () => {
-  const stats = [
-    { label: 'Goals Completed', value: 8, color: '#6C63FF' },
-    { label: 'Challenges Completed', value: 5, color: '#FF6584' },
-    { label: 'Current Streak', value: '12 days', color: '#00C9A7' },
-  ];
+  const [stats, setStats] = useState([
+    { label: 'Goals Completed', value: 0, color: '#6C63FF' },
+    { label: 'Challenges Completed', value: 0, color: '#FF6584' },
+    { label: 'Current Streak', value: '0 days', color: '#00C9A7' },
+  ]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadStats = async () => {
+      try {
+        const res = await apiService.progress.getStats();
+        const data = res.data || {};
+
+        // Expect shape: { goalsCompleted, challengesCompleted, currentStreak }
+        const updated = [
+          {
+            label: 'Goals Completed',
+            value: data.goalsCompleted ?? data.completedGoals ?? 0,
+            color: '#6C63FF',
+          },
+          {
+            label: 'Challenges Completed',
+            value: data.challengesCompleted ?? data.completedChallenges ?? 0,
+            color: '#FF6584',
+          },
+          {
+            label: 'Current Streak',
+            value: `${data.currentStreak ?? 0} days`,
+            color: '#00C9A7',
+          },
+        ];
+
+        if (mounted) setStats(updated);
+      } catch (error) {
+        console.error('Failed to load dashboard stats:', error);
+        // keep defaults if failed
+      }
+    };
+
+    loadStats();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <motion.div
@@ -26,7 +67,11 @@ const DashboardOverview = () => {
         transition={{ duration: 0.6 }}
       >
         <h2>Your Learning Snapshot</h2>
-        <Lottie animationData={progressAnimation} loop className="overview-lottie" />
+        <Lottie
+          animationData={progressAnimation}
+          loop
+          className="overview-lottie"
+        />
       </motion.div>
 
       <div className="stats-grid">

@@ -1,5 +1,6 @@
 // TODO: Implement challenges browsing and participation page
 import React, { useState, useEffect } from 'react';
+import { apiService } from '../services/api';
 import ChallengeCard from '../components/challenges/ChallengeCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
@@ -13,46 +14,33 @@ const ChallengesPage = () => {
     search: '',
   });
 
-  // Mock data - TODO: Replace with API call
+  // Load challenges from backend
   useEffect(() => {
-    const mockChallenges = [
-      {
-        id: 1,
-        title: 'Build a React Component',
-        description: 'Create a reusable React component with props and state management.',
-        category: 'Programming',
-        difficulty: 'Medium',
-        points: 50,
-        estimatedTime: 45,
-        tags: ['React', 'JavaScript', 'Frontend'],
-      },
-      {
-        id: 2,
-        title: 'Design a Logo',
-        description: 'Design a professional logo using design principles and color theory.',
-        category: 'Design',
-        difficulty: 'Easy',
-        points: 30,
-        estimatedTime: 60,
-        tags: ['Design', 'Branding', 'Creative'],
-      },
-      {
-        id: 3,
-        title: 'Database Optimization',
-        description: 'Optimize a slow database query and improve performance metrics.',
-        category: 'Backend',
-        difficulty: 'Hard',
-        points: 100,
-        estimatedTime: 120,
-        tags: ['SQL', 'Database', 'Performance'],
-      },
-    ];
+    let mounted = true;
 
-    setTimeout(() => {
-      setChallenges(mockChallenges);
-      setFilteredChallenges(mockChallenges);
-      setLoading(false);
-    }, 1000);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await apiService.challenges.getAll();
+        const list = res.data?.challenges || res.data || [];
+        if (!mounted) return;
+        setChallenges(list);
+        setFilteredChallenges(list);
+      } catch (error) {
+        console.error('Failed to load challenges:', error);
+        if (!mounted) return;
+        setChallenges([]);
+        setFilteredChallenges([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Filter challenges based on current filters
@@ -60,22 +48,32 @@ const ChallengesPage = () => {
     let filtered = challenges;
 
     if (filters.category) {
-      filtered = filtered.filter(challenge =>
-        challenge.category.toLowerCase() === filters.category.toLowerCase(),
+      filtered = filtered.filter(
+        (challenge) =>
+          challenge.category.toLowerCase() === filters.category.toLowerCase(),
       );
     }
 
     if (filters.difficulty) {
-      filtered = filtered.filter(challenge =>
-        challenge.difficulty.toLowerCase() === filters.difficulty.toLowerCase(),
+      filtered = filtered.filter(
+        (challenge) =>
+          challenge.difficulty.toLowerCase() ===
+          filters.difficulty.toLowerCase(),
       );
     }
 
     if (filters.search) {
-      filtered = filtered.filter(challenge =>
-        challenge.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        challenge.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-        challenge.tags.some(tag => tag.toLowerCase().includes(filters.search.toLowerCase())),
+      filtered = filtered.filter(
+        (challenge) =>
+          challenge.title
+            .toLowerCase()
+            .includes(filters.search.toLowerCase()) ||
+          challenge.description
+            .toLowerCase()
+            .includes(filters.search.toLowerCase()) ||
+          challenge.tags.some((tag) =>
+            tag.toLowerCase().includes(filters.search.toLowerCase()),
+          ),
       );
     }
 
@@ -83,7 +81,7 @@ const ChallengesPage = () => {
   }, [challenges, filters]);
 
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [filterType]: value,
     }));
@@ -141,7 +139,10 @@ const ChallengesPage = () => {
         </div>
 
         <div className="results-summary">
-          <p>Showing {filteredChallenges.length} of {challenges.length} challenges</p>
+          <p>
+            Showing {filteredChallenges.length} of {challenges.length}{' '}
+            challenges
+          </p>
         </div>
       </div>
 
@@ -150,7 +151,7 @@ const ChallengesPage = () => {
           <LoadingSpinner message="Loading challenges..." />
         ) : filteredChallenges.length > 0 ? (
           <div className="challenges-grid">
-            {filteredChallenges.map(challenge => (
+            {filteredChallenges.map((challenge) => (
               <ChallengeCard key={challenge.id} challenge={challenge} />
             ))}
           </div>
@@ -160,7 +161,9 @@ const ChallengesPage = () => {
             <p>Try adjusting your filters or search terms.</p>
             <button
               className="btn-secondary"
-              onClick={() => setFilters({ category: '', difficulty: '', search: '' })}
+              onClick={() =>
+                setFilters({ category: '', difficulty: '', search: '' })
+              }
             >
               Clear Filters
             </button>

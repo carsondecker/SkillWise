@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
+import { apiService } from '../services/api';
 
 const LeaderboardPage = () => {
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -10,97 +11,49 @@ const LeaderboardPage = () => {
   const [category, setCategory] = useState('overall');
   const { user } = useAuth();
 
-  // Mock data - TODO: Replace with API call
+  // Load leaderboard from backend
   useEffect(() => {
-    const mockLeaderboardData = [
-      {
-        id: 1,
-        rank: 1,
-        name: 'Alex Johnson',
-        avatar: '👨‍💻',
-        points: 2450,
-        level: 8,
-        completedChallenges: 45,
-        isCurrentUser: false,
-      },
-      {
-        id: 2,
-        rank: 2,
-        name: 'Sarah Kim',
-        avatar: '👩‍🎨',
-        points: 2380,
-        level: 8,
-        completedChallenges: 42,
-        isCurrentUser: false,
-      },
-      {
-        id: 3,
-        rank: 3,
-        name: 'Mike Chen',
-        avatar: '👨‍🔬',
-        points: 2290,
-        level: 7,
-        completedChallenges: 38,
-        isCurrentUser: false,
-      },
-      {
-        id: 4,
-        rank: 4,
-        name: 'Emma Rodriguez',
-        avatar: '👩‍💼',
-        points: 2150,
-        level: 7,
-        completedChallenges: 35,
-        isCurrentUser: false,
-      },
-      {
-        id: 5,
-        rank: 5,
-        name: user?.firstName + ' ' + user?.lastName || 'You',
-        avatar: '👤',
-        points: 1850,
-        level: 6,
-        completedChallenges: 28,
-        isCurrentUser: true,
-      },
-      {
-        id: 6,
-        rank: 6,
-        name: 'David Park',
-        avatar: '👨‍🎓',
-        points: 1720,
-        level: 6,
-        completedChallenges: 25,
-        isCurrentUser: false,
-      },
-      {
-        id: 7,
-        rank: 7,
-        name: 'Lisa Zhang',
-        avatar: '👩‍🔧',
-        points: 1650,
-        level: 5,
-        completedChallenges: 23,
-        isCurrentUser: false,
-      },
-    ];
+    let mounted = true;
 
-    setTimeout(() => {
-      setLeaderboardData(mockLeaderboardData);
-      setLoading(false);
-    }, 1000);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const params = { timeframe, category };
+        const res = await apiService.leaderboard.getGlobal(params);
+        const list = res.data?.leaderboard || res.data || [];
+        if (!mounted) return;
+        setLeaderboardData(list);
+      } catch (error) {
+        console.error('Failed to load leaderboard:', error);
+        if (!mounted) return;
+        setLeaderboardData([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
   }, [timeframe, category, user]);
 
   const getRankIcon = (rank) => {
     switch (rank) {
-    case 1: return '🥇';
-    case 2: return '🥈';
-    case 3: return '🥉';
-    default: return `#${rank}`;
+      case 1:
+        return '🥇';
+      case 2:
+        return '🥈';
+      case 3:
+        return '🥉';
+      default:
+        return `#${rank}`;
     }
   };
 
-  const currentUserRank = leaderboardData.find(user => user.isCurrentUser)?.rank || 0;
+  const currentUserRank =
+    leaderboardData.find((user) => user.isCurrentUser)?.rank || 0;
 
   return (
     <div className="leaderboard-page">
@@ -148,7 +101,11 @@ const LeaderboardPage = () => {
             <div className="rank-info">
               <span className="rank-number">#{currentUserRank}</span>
               <div className="rank-details">
-                <p>You're in the top {Math.round((currentUserRank / leaderboardData.length) * 100)}% of learners!</p>
+                <p>
+                  You're in the top{' '}
+                  {Math.round((currentUserRank / leaderboardData.length) * 100)}
+                  % of learners!
+                </p>
                 <small>Keep learning to climb higher!</small>
               </div>
             </div>
@@ -165,16 +122,17 @@ const LeaderboardPage = () => {
               <h2>Top Performers</h2>
               <div className="podium">
                 {leaderboardData.slice(0, 3).map((user, index) => (
-                  <div key={user.id} className={`podium-position position-${index + 1}`}>
+                  <div
+                    key={user.id}
+                    className={`podium-position position-${index + 1}`}
+                  >
                     <div className="podium-user">
                       <div className="user-avatar">{user.avatar}</div>
                       <h4>{user.name}</h4>
                       <p>{user.points} points</p>
                       <span className="level-badge">Level {user.level}</span>
                     </div>
-                    <div className="podium-rank">
-                      {getRankIcon(user.rank)}
-                    </div>
+                    <div className="podium-rank">{getRankIcon(user.rank)}</div>
                   </div>
                 ))}
               </div>
@@ -194,10 +152,14 @@ const LeaderboardPage = () => {
                 {leaderboardData.map((user) => (
                   <div
                     key={user.id}
-                    className={`table-row ${user.isCurrentUser ? 'current-user' : ''}`}
+                    className={`table-row ${
+                      user.isCurrentUser ? 'current-user' : ''
+                    }`}
                   >
                     <div className="col-rank">
-                      <span className="rank-icon">{getRankIcon(user.rank)}</span>
+                      <span className="rank-icon">
+                        {getRankIcon(user.rank)}
+                      </span>
                     </div>
                     <div className="col-user">
                       <div className="user-info">
