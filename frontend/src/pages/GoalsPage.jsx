@@ -2,11 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import GoalCard from '../components/goals/GoalCard';
 import { apiService } from '../services/api';
+import { useLayout } from '../contexts/LayoutContext';
 
 const GoalsPage = () => {
   const [goals, setGoals] = useState([]);
+
   useEffect(() => {
     let mounted = true;
+
     const loadGoals = async () => {
       try {
         const res = await apiService.goals.getAll();
@@ -21,12 +24,18 @@ const GoalsPage = () => {
     };
 
     loadGoals();
+
     return () => {
       mounted = false;
     };
   }, []);
+  const { setTitle, setSubtitle } = useLayout();
 
-  // TODO: Add goal creation, filtering, search, sorting
+  useEffect(() => {
+    setTitle('My Learning Goals');
+    setSubtitle('Create and track your learning goals');
+  }, [setTitle, setSubtitle]);
+
   return (
     <div className="goals-page">
       <div className="page-header">
@@ -35,7 +44,6 @@ const GoalsPage = () => {
       </div>
 
       <div className="goals-filters">
-        {/* TODO: Add filters for category, status, difficulty */}
         <select>
           <option value="">All Categories</option>
           <option value="programming">Programming</option>

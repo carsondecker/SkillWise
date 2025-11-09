@@ -15,7 +15,20 @@ const Navigation = ({ items, currentPath }) => {
           >
             <Link
               to={item.path}
-              className={`nav-link ${currentPath === item.path ? 'active' : ''}`}
+              className={`nav-link ${
+                currentPath === item.path ? 'active' : ''
+              }`}
+              onClick={() => {
+                try {
+                  // mark that this navigation originated from the sidebar
+                  sessionStorage.setItem(
+                    'skillwise:navigatedViaSidebar',
+                    'true',
+                  );
+                } catch (e) {
+                  /* ignore */
+                }
+              }}
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>

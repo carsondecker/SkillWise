@@ -1,6 +1,7 @@
 // TODO: Implement challenges browsing and participation page
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
+import { useLayout } from '../contexts/LayoutContext';
 import ChallengeCard from '../components/challenges/ChallengeCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
@@ -43,49 +44,51 @@ const ChallengesPage = () => {
     };
   }, []);
 
-  // Filter challenges based on current filters
+  // Apply filters
   useEffect(() => {
-    let filtered = challenges;
+    let filtered = [...challenges];
 
     if (filters.category) {
       filtered = filtered.filter(
-        (challenge) =>
-          challenge.category.toLowerCase() === filters.category.toLowerCase(),
+        (c) =>
+          (c.category || '').toLowerCase() === filters.category.toLowerCase(),
       );
     }
 
     if (filters.difficulty) {
       filtered = filtered.filter(
-        (challenge) =>
-          challenge.difficulty.toLowerCase() ===
+        (c) =>
+          (c.difficulty || '').toLowerCase() ===
           filters.difficulty.toLowerCase(),
       );
     }
 
     if (filters.search) {
-      filtered = filtered.filter(
-        (challenge) =>
-          challenge.title
-            .toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          challenge.description
-            .toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          challenge.tags.some((tag) =>
-            tag.toLowerCase().includes(filters.search.toLowerCase()),
-          ),
-      );
+      const q = filters.search.toLowerCase();
+      filtered = filtered.filter((c) => {
+        const inTitle = (c.title || '').toLowerCase().includes(q);
+        const inDesc = (c.description || '').toLowerCase().includes(q);
+        const inTags = (c.tags || []).some((tag) =>
+          tag.toLowerCase().includes(q),
+        );
+        return inTitle || inDesc || inTags;
+      });
     }
 
     setFilteredChallenges(filtered);
   }, [challenges, filters]);
 
   const handleFilterChange = (filterType, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [filterType]: value,
-    }));
+    setFilters((prev) => ({ ...prev, [filterType]: value }));
   };
+  const { setTitle, setSubtitle } = useLayout();
+
+  useEffect(() => {
+    setTitle('Challenges');
+    setSubtitle(
+      'Explore hands-on tasks to practice and demonstrate your skills',
+    );
+  }, [setTitle, setSubtitle]);
 
   return (
     <div className="challenges-page">

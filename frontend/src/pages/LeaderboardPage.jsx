@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
+import { useLayout } from '../contexts/LayoutContext';
 
 const LeaderboardPage = () => {
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -10,9 +11,12 @@ const LeaderboardPage = () => {
   const [timeframe, setTimeframe] = useState('all-time');
   const [category, setCategory] = useState('overall');
   const { user } = useAuth();
+  const { setTitle, setSubtitle } = useLayout();
 
   // Load leaderboard from backend
   useEffect(() => {
+    setTitle('Leaderboard');
+    setSubtitle('See how you compare with other learners');
     let mounted = true;
 
     const load = async () => {
@@ -57,11 +61,6 @@ const LeaderboardPage = () => {
 
   return (
     <div className="leaderboard-page">
-      <div className="page-header">
-        <h1>Leaderboard</h1>
-        <p>See how you compare with other learners</p>
-      </div>
-
       <div className="leaderboard-filters">
         <div className="filters-row">
           <div className="filter-group">

@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { apiService, getAccessToken, setAccessToken, clearTokens } from '../services/api';
+import {
+  apiService,
+  getAccessToken,
+  setAccessToken,
+  clearTokens,
+} from '../services/api';
 
 // Initial state
 const initialState = {
@@ -22,51 +27,51 @@ const AUTH_ACTIONS = {
 // Reducer function
 const authReducer = (state, action) => {
   switch (action.type) {
-  case AUTH_ACTIONS.SET_LOADING:
-    return {
-      ...state,
-      isLoading: action.payload,
-    };
+    case AUTH_ACTIONS.SET_LOADING:
+      return {
+        ...state,
+        isLoading: action.payload,
+      };
 
-  case AUTH_ACTIONS.LOGIN_SUCCESS:
-    return {
-      ...state,
-      user: action.payload.user,
-      isAuthenticated: true,
-      isLoading: false,
-      error: null,
-    };
+    case AUTH_ACTIONS.LOGIN_SUCCESS:
+      return {
+        ...state,
+        user: action.payload.user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      };
 
-  case AUTH_ACTIONS.LOGOUT:
-    return {
-      ...state,
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-    };
+    case AUTH_ACTIONS.LOGOUT:
+      return {
+        ...state,
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      };
 
-  case AUTH_ACTIONS.UPDATE_USER:
-    return {
-      ...state,
-      user: { ...state.user, ...action.payload },
-    };
+    case AUTH_ACTIONS.UPDATE_USER:
+      return {
+        ...state,
+        user: { ...state.user, ...action.payload },
+      };
 
-  case AUTH_ACTIONS.SET_ERROR:
-    return {
-      ...state,
-      error: action.payload,
-      isLoading: false,
-    };
+    case AUTH_ACTIONS.SET_ERROR:
+      return {
+        ...state,
+        error: action.payload,
+        isLoading: false,
+      };
 
-  case AUTH_ACTIONS.CLEAR_ERROR:
-    return {
-      ...state,
-      error: null,
-    };
+    case AUTH_ACTIONS.CLEAR_ERROR:
+      return {
+        ...state,
+        error: null,
+      };
 
-  default:
-    return state;
+    default:
+      return state;
   }
 };
 
@@ -80,13 +85,20 @@ export const AuthProvider = ({ children }) => {
   // Check if user is authenticated on app load
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = getAccessToken();
       console.log('🟢 [Auth Init] Starting initialization...');
-      console.log('📦 Stored Access Token:', token ? 'Found ✅' : 'Not Found ❌');
 
+      const token = getAccessToken();
+      console.log(
+        '📦 Stored Access Token:',
+        token ? 'Found ✅' : 'Not Found ❌',
+      );
+
+      // If access token exists, try to load profile. If it fails, attempt refresh.
       if (token) {
         try {
-          console.log('➡️ [Auth Init] Trying /users/profile with access token...');
+          console.log(
+            '➡️ [Auth Init] Trying /users/profile with access token...',
+          );
           const response = await apiService.user.getProfile();
           console.log('✅ [Auth Init] /users/profile success:', response.data);
 
@@ -94,48 +106,71 @@ export const AuthProvider = ({ children }) => {
             type: AUTH_ACTIONS.LOGIN_SUCCESS,
             payload: { user: response.data.user || response.data },
           });
-
+          return;
         } catch (error) {
-          console.warn('⚠️ [Auth Init] Access token invalid, trying silent refresh...');
-          console.error('❌ [Auth Init] Profile fetch failed:', error.response?.status, error.response?.data);
-
-          try {
-            console.log('➡️ [Auth Init] Trying /auth/refresh...');
-            const refreshResponse = await apiService.auth.refresh();
-            console.log('✅ [Auth Init] /auth/refresh success:', refreshResponse.data);
-
-            const { accessToken } = refreshResponse.data;
-
-            if (accessToken) {
-              console.log('💾 [Auth Init] New access token received, saving...');
-              setAccessToken(accessToken);
-
-              console.log('➡️ [Auth Init] Retrying /users/profile with new token...');
-              const profileRes = await apiService.user.getProfile();
-              console.log('✅ [Auth Init] /users/profile success (after refresh):', profileRes.data);
-
-              dispatch({
-                type: AUTH_ACTIONS.LOGIN_SUCCESS,
-                payload: { user: profileRes.data.user || profileRes.data },
-              });
-
-              console.log('🎉 [Auth Init] User restored successfully after refresh');
-              return;
-            } else {
-              console.error('🚫 [Auth Init] Refresh succeeded but no accessToken returned');
-            }
-          } catch (refreshError) {
-            console.error('❌ [Auth Init] Silent refresh failed:', refreshError.response?.status, refreshError.response?.data);
-            clearTokens();
-            dispatch({ type: AUTH_ACTIONS.LOGOUT });
-          }
+          console.warn(
+            '⚠️ [Auth Init] Access token invalid or expired, attempting refresh...',
+          );
+          console.error(
+            '❌ [Auth Init] Profile fetch failed:',
+            error.response?.status,
+            error.response?.data,
+          );
         }
-      } else {
-        console.log('🚫 [Auth Init] No token found — user is not logged in');
-        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       }
 
-      console.log('🔚 [Auth Init] Initialization complete');
+      // No valid access token or profile fetch failed — try silent refresh using httpOnly cookie
+      try {
+        console.log(
+          '➡️ [Auth Init] Attempting silent refresh via /auth/refresh...',
+        );
+        const refreshResponse = await apiService.auth.refresh();
+        console.log(
+          '✅ [Auth Init] /auth/refresh response:',
+          refreshResponse.data,
+        );
+
+        // Support multiple response shapes: { accessToken }, { token }, { tokens: { accessToken } }
+        const accessToken =
+          refreshResponse.data?.accessToken ||
+          refreshResponse.data?.token ||
+          refreshResponse.data?.tokens?.accessToken ||
+          refreshResponse.data?.tokens?.access_token;
+
+        if (accessToken) {
+          console.log('💾 [Auth Init] New access token received, saving...');
+          setAccessToken(accessToken);
+
+          console.log(
+            '➡️ [Auth Init] Fetching profile with refreshed token...',
+          );
+          const profileRes = await apiService.user.getProfile();
+          console.log(
+            '✅ [Auth Init] /users/profile success (after refresh):',
+            profileRes.data,
+          );
+
+          dispatch({
+            type: AUTH_ACTIONS.LOGIN_SUCCESS,
+            payload: { user: profileRes.data.user || profileRes.data },
+          });
+          return;
+        }
+
+        console.log('🚫 [Auth Init] Silent refresh returned no access token');
+        clearTokens();
+        dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      } catch (refreshError) {
+        console.warn(
+          '❌ [Auth Init] Silent refresh failed or no refresh cookie present:',
+          refreshError?.response?.status,
+          refreshError?.response?.data,
+        );
+        clearTokens();
+        dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      } finally {
+        console.log('🔚 [Auth Init] Initialization complete');
+      }
     };
 
     initializeAuth();
@@ -170,7 +205,10 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         setAccessToken(token);
       } else {
-        console.warn('⚠️ No access token found in login response:', response.data);
+        console.warn(
+          '⚠️ No access token found in login response:',
+          response.data,
+        );
       }
 
       dispatch({
@@ -208,7 +246,8 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      const errorMessage =
+        error.response?.data?.message || 'Registration failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -251,7 +290,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return { success: true, user: updatedUser };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Profile update failed';
+      const errorMessage =
+        error.response?.data?.message || 'Profile update failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -270,7 +310,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password change failed';
+      const errorMessage =
+        error.response?.data?.message || 'Password change failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -289,7 +330,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset request failed';
+      const errorMessage =
+        error.response?.data?.message || 'Password reset request failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -308,7 +350,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset failed';
+      const errorMessage =
+        error.response?.data?.message || 'Password reset failed';
       dispatch({
         type: AUTH_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -341,11 +384,7 @@ export const AuthProvider = ({ children }) => {
     clearError,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // Custom hook to use auth context

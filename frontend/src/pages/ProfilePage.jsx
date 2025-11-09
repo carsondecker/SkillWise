@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
+import { useLayout } from '../contexts/LayoutContext';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -70,6 +71,13 @@ const ProfilePage = () => {
       mounted = false;
     };
   }, [user]);
+
+  const { setTitle, setSubtitle } = useLayout();
+
+  useEffect(() => {
+    setTitle('Profile');
+    setSubtitle('View and manage your personal information and preferences');
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -143,12 +151,13 @@ const ProfilePage = () => {
     return `${Math.floor(diffInHours / 24)}d ago`;
   };
 
-  if (loading && !profileData) {
-    return <LoadingSpinner message="Loading profile..." />;
-  }
-
   return (
     <div className="profile-page">
+      {loading && !profileData && (
+        <div className="page-loading">
+          <LoadingSpinner message="Loading profile..." />
+        </div>
+      )}
       <div className="profile-header">
         <div className="profile-banner">
           <div className="profile-info">
@@ -158,9 +167,9 @@ const ProfilePage = () => {
             </div>
 
             <div className="profile-details">
-              <h1>
+              <h2>
                 {profileData?.firstName} {profileData?.lastName}
-              </h1>
+              </h2>
               <p className="profile-bio">{profileData?.bio}</p>
               <div className="profile-meta">
                 <span>📍 {profileData?.location}</span>

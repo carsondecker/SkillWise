@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
+import { useLayout } from '../contexts/LayoutContext';
 
 const PeerReviewPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -11,6 +12,7 @@ const PeerReviewPage = () => {
   const [activeTab, setActiveTab] = useState('review-others');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const { user } = useAuth();
+  const { setTitle, setSubtitle } = useLayout();
 
   // Load peer review queue and user's submissions from backend
   useEffect(() => {
@@ -88,13 +90,13 @@ const PeerReviewPage = () => {
     return `${Math.floor(diffInHours / 24)}d ago`;
   };
 
+  useEffect(() => {
+    setTitle('Peer Review');
+    setSubtitle('Collaborate with fellow learners and improve together');
+  }, []);
+
   return (
     <div className="peer-review-page">
-      <div className="page-header">
-        <h1>Peer Review</h1>
-        <p>Collaborate with fellow learners and improve together</p>
-      </div>
-
       <div className="review-tabs">
         <button
           className={`tab-button ${

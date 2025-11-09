@@ -61,7 +61,12 @@ export const authService = {
   // Refresh access token using httpOnly refresh cookie via shared api
   async refreshToken() {
     const response = await apiService.auth.refresh();
-    const accessToken = response.data?.accessToken;
+    // Accept multiple shapes for compatibility with backend
+    const accessToken =
+      response.data?.accessToken ||
+      response.data?.token ||
+      response.data?.tokens?.accessToken ||
+      response.data?.tokens?.access_token;
 
     if (accessToken) {
       setAccessToken(accessToken);
