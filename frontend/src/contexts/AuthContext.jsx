@@ -192,6 +192,21 @@ export const AuthProvider = ({ children }) => {
 
   // Login function
   const login = async (credentials) => {
+    // If server told us to cooldown, prevent login attempts client-side
+    try {
+      const cooldownUntil = localStorage.getItem('auth:cooldown_until');
+      if (cooldownUntil && Date.now() < Number(cooldownUntil)) {
+        const remaining = Math.ceil(
+          (Number(cooldownUntil) - Date.now()) / 1000,
+        );
+        const message = `Too many requests. Try again in ${remaining} seconds.`;
+        dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
+        return { success: false, error: message };
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+
     dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
@@ -200,7 +215,11 @@ export const AuthProvider = ({ children }) => {
       const { user, tokens } = response.data;
 
       // ✅ Support both field names
-      const token = tokens?.accessToken;
+      // Accept multiple token shapes (tokens.accessToken | accessToken | token)
+      const token =
+        tokens?.accessToken ||
+        response.data?.accessToken ||
+        response.data?.token;
 
       if (token) {
         setAccessToken(token);
@@ -209,6 +228,13 @@ export const AuthProvider = ({ children }) => {
           '⚠️ No access token found in login response:',
           response.data,
         );
+      }
+
+      // Persist user in localStorage for other helpers that rely on it
+      try {
+        if (user) localStorage.setItem('user', JSON.stringify(user));
+      } catch (e) {
+        // ignore storage errors
       }
 
       dispatch({

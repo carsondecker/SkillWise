@@ -1,6 +1,7 @@
 // TODO: Implement challenges browsing and participation page
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
+import '../styles/components/dashboard/ChallengesPage.scss';
 import { useLayout } from '../contexts/LayoutContext';
 import ChallengeCard from '../components/challenges/ChallengeCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';

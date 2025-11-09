@@ -11,18 +11,27 @@
   background: rgba(255, 255, 255, 0.6);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box; /* include padding in width calculations so 100% doesn't overflow */
+  max-width: 100%;
+  min-width: 0; /* allow it to shrink within flex containers */
+  overflow-x: hidden; /* prevent horizontal overflow from long children */
 
   .topbar-logo {
     font-weight: 700;
     font-size: 1.4rem;
     color: #6c63ff;
     letter-spacing: -0.5px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .topbar-actions {
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    flex: 0 0 auto;
+    min-width: 0;
   }
 
   .notification-icon {

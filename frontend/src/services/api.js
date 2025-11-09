@@ -40,6 +40,32 @@ const clearTokens = () => {
 let isRefreshing = false;
 let failedQueue = [];
 
+// Client-side rate limit cooldown (stored in localStorage to persist across tabs)
+const COOLDOWN_KEY = 'auth:cooldown_until';
+
+const setCooldown = (seconds) => {
+  try {
+    const until = Date.now() + seconds * 1000;
+    localStorage.setItem(COOLDOWN_KEY, String(until));
+  } catch (e) {
+    // ignore
+  }
+};
+
+const getCooldownUntil = () => {
+  try {
+    const v = localStorage.getItem(COOLDOWN_KEY);
+    return v ? parseInt(v, 10) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const isCooldownActive = () => {
+  const until = getCooldownUntil();
+  return !!until && Date.now() < until;
+};
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
@@ -102,8 +128,54 @@ api.interceptors.response.use(
       );
     }
 
+    // Handle 429 Too Many Requests: set a cooldown and notify app
+    if (error.response?.status === 429) {
+      // Try to read Retry-After header (seconds) or response body retryAfter
+      const retryAfterHeader = error.response.headers?.['retry-after'];
+      const retryAfterBody = error.response.data?.retryAfter;
+      let retrySeconds = 60; // default 1 minute
+
+      if (retryAfterHeader) {
+        const parsed = parseInt(retryAfterHeader, 10);
+        if (!Number.isNaN(parsed)) retrySeconds = parsed;
+      } else if (retryAfterBody && !Number.isNaN(Number(retryAfterBody))) {
+        retrySeconds = Number(retryAfterBody);
+      } else if (
+        error.response.data?.retryAfter &&
+        typeof error.response.data.retryAfter === 'string'
+      ) {
+        const parsed = parseInt(error.response.data.retryAfter, 10);
+        if (!Number.isNaN(parsed)) retrySeconds = parsed;
+      }
+
+      // store client-side cooldown to avoid spamming the server
+      setCooldown(retrySeconds);
+
+      // Dispatch an event so UI can show a rate-limit message if desired
+      window.dispatchEvent(
+        new CustomEvent('auth:rate-limited', {
+          detail: { retryAfter: retrySeconds, status: 429 },
+        }),
+      );
+
+      // Reject with a clear error
+      const rateError = new Error('Too many requests. Please try again later.');
+      rateError.retryAfter = retrySeconds;
+      rateError.status = 429;
+      return Promise.reject(rateError);
+    }
+
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // If server-side rate-limit cooldown still active on client, don't attempt refresh
+      if (isCooldownActive()) {
+        const until = getCooldownUntil();
+        const remaining = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+        const cooldownErr = new Error('Rate limit cooldown active');
+        cooldownErr.retryAfter = remaining;
+        cooldownErr.status = 429;
+        return Promise.reject(cooldownErr);
+      }
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -134,13 +206,19 @@ api.interceptors.response.use(
           },
         );
 
-        const { accessToken } = refreshResponse.data;
+        // Accept multiple possible shapes from backend refresh response
+        const data = refreshResponse.data || {};
+        const accessToken =
+          data?.accessToken ||
+          data?.token ||
+          data?.tokens?.accessToken ||
+          data?.tokens?.access_token ||
+          null;
 
         if (accessToken) {
-          // Update stored access token
+          // Update stored access token and axios defaults
           setAccessToken(accessToken);
 
-          // Update default authorization header
           api.defaults.headers.Authorization = `Bearer ${accessToken}`;
 
           // Process queued requests with new token
@@ -149,11 +227,14 @@ api.interceptors.response.use(
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
-          console.log('✅ Token refreshed successfully');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Token refreshed successfully');
+          }
+
           return api(originalRequest);
-        } else {
-          throw new Error('No access token received from refresh');
         }
+
+        throw new Error('No access token received from refresh');
       } catch (refreshError) {
         console.error('❌ Token refresh failed:', refreshError);
 

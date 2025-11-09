@@ -27,13 +27,13 @@ const logger = pino({
   transport:
     process.env.NODE_ENV === 'development'
       ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-        },
-      }
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname',
+          },
+        }
       : undefined,
 });
 
@@ -67,10 +67,10 @@ app.use(
     crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ['\'self\''],
-        styleSrc: ['\'self\'', '\'unsafe-inline\''],
-        scriptSrc: ['\'self\''],
-        imgSrc: ['\'self\'', 'data:', 'https:'],
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
       },
     },
   }),
@@ -93,25 +93,53 @@ app.use(
 
 // --------------------------------------------------
 // 🚦 Rate Limiting
+// Note: apply a global (conservative) limiter and a relaxed limiter for auth
+// endpoints so login/refresh flows aren't penalized with long retry windows.
 // --------------------------------------------------
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 min
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
+const GLOBAL_WINDOW_MS =
+  parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000; // 15 min
+const GLOBAL_MAX = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100;
+
+const globalLimiter = rateLimit({
+  windowMs: GLOBAL_WINDOW_MS,
+  max: GLOBAL_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
     res.status(429).json({
       status: 'fail',
       error: 'Too many requests, please try again later.',
-      retryAfter: Math.ceil(
-        (parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000) / 1000,
-      ),
+      retryAfter: Math.ceil(GLOBAL_WINDOW_MS / 1000),
       timestamp: new Date().toISOString(),
     });
   },
 });
 
-app.use(limiter);
+// Auth endpoints should be less punitive: shorter window and higher burst allowance
+const AUTH_WINDOW_MS =
+  parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000; // 1 minute
+const AUTH_MAX = parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS, 10) || 20; // allow bursts
+
+const authLimiter = rateLimit({
+  windowMs: AUTH_WINDOW_MS,
+  max: AUTH_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      status: 'fail',
+      error: 'Too many auth requests, please try again later.',
+      retryAfter: Math.ceil(AUTH_WINDOW_MS / 1000),
+      timestamp: new Date().toISOString(),
+    });
+  },
+});
+
+// Apply global limiter first
+app.use(globalLimiter);
+
+// Apply auth limiter specifically to auth routes (mounted under /api/auth)
+app.use('/api/auth', authLimiter);
 
 // --------------------------------------------------
 // 📦 Body Parsers

@@ -1,0 +1,68 @@
+.leaderboard-page {
+  .leaderboard-filters {
+    margin-bottom: 1rem;
+
+    .filters-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+
+      .filter-group {
+        label {
+          display: block;
+          font-weight: 600;
+          color: #444;
+          margin-bottom: 0.35rem;
+        }
+        select {
+          padding: 0.5rem 0.6rem;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+        }
+      }
+    }
+  }
+
+  .user-rank-summary {
+    margin-bottom: 1rem;
+  }
+
+  .podium-section,
+  .full-rankings,
+  .achievements-section {
+    background: rgba(255, 255, 255, 0.92);
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    box-shadow: 0 6px 18px rgba(18, 25, 40, 0.04);
+  }
+
+  .rankings-table {
+    .table-header,
+    .table-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 140px 120px 120px;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.6rem 0;
+    }
+
+    .table-row {
+      border-top: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .user-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f4f6ff;
+    }
+  }
+
+  .btn-primary {
+    margin-top: 0.5rem;
+  }
+}

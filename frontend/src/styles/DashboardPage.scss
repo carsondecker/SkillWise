@@ -12,14 +12,24 @@
 
 .dashboard-sidebar {
   width: 240px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  /* Make sidebar fully opaque and sticky to viewport */
+  background: #ffffff;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  overflow-x: hidden; /* prevent header/sidebar from causing horizontal scroll */
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0; /* allow children to shrink inside flex container */
   transition: width 0.3s ease;
+  position: sticky;
+  flex: 0 0 240px; /* keep sidebar a fixed-size flex item so main content can size correctly */
+  height: 100vh;
+  max-height: 100vh; /* ensure sidebar never grows beyond viewport */
+  box-sizing: border-box;
+  overflow: auto;
+  /* on very small screens allow sidebar to shrink proportionally */
+  max-width: 40vw;
 
   .sidebar-header {
     h2 {
@@ -38,6 +48,7 @@
     border: none;
     color: #555;
     cursor: pointer;
+    min-width: 0; /* allow header/content to shrink rather than overflow */
     margin-top: 1rem;
     font-size: 0.9rem;
   }
@@ -54,6 +65,7 @@
   .nav-link {
     display: flex;
     align-items: center;
+    min-width: 0; /* prevent child elements from forcing wider width */
     padding: 0.6rem 1rem;
     border-radius: 10px;
     color: #333;
@@ -81,24 +93,45 @@
 
 .dashboard-main {
   flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  /* allow children to size correctly for internal scrolling */
+  min-height: 0;
+}
+
+.dashboard-content {
+  /* content area (below header) scrolls independently */
+  flex: 1;
+  overflow: auto;
+  padding: 0 0 2rem 0;
 }
 
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+  padding: 1rem 0.5rem;
+  /* Make header opaque so it completely obscures content beneath */
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(28, 30, 40, 0.06);
+  border-radius: 8px;
+  z-index: 20;
+  box-sizing: border-box;
+  max-width: 100%;
+  max-height: 20vh; /* keep header from growing too tall */
+  overflow: auto;
 
   h1 {
-    font-size: 2rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: #333;
+    margin: 0;
   }
 
   p {
     color: #666;
+    margin: 0;
   }
 
   .sidebar-toggle {
@@ -108,5 +141,65 @@
     border-radius: 8px;
     padding: 0.4rem 0.8rem;
     cursor: pointer;
+  }
+
+  /* Ensure the left column (title/subtitle) can shrink/wrap instead of forcing overflow */
+  > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  h1 {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+/* Shared form and button styles for dashboard pages */
+
+.btn-primary {
+  background: linear-gradient(90deg, #6c63ff, #9b92ff);
+  color: #fff;
+  border: none;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-secondary {
+  background: #f8fafc;
+  color: #111;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+select,
+input[type='text'],
+input[type='search'],
+textarea {
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+  background: #fff;
+  color: #111;
+  font-size: 0.95rem;
+}
+
+/* make sure sidebar and header never force horizontal scroll */
+html,
+body,
+#root {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .dashboard-sidebar {
+    width: 180px;
+    max-width: 45vw;
+  }
+  .dashboard-header {
+    padding: 0.6rem;
   }
 }

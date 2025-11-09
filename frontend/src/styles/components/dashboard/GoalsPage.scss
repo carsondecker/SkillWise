@@ -1,0 +1,48 @@
+/* Styles for Goals page within the dashboard layout */
+.goals-page {
+  padding: 1rem 0;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #333;
+    }
+
+    .btn-primary {
+      background: #6c63ff;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  }
+
+  .goals-filters {
+    margin-bottom: 1rem;
+
+    select {
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+    }
+  }
+
+  .goals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  .empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: #666;
+  }
+}

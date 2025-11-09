@@ -1,0 +1,58 @@
+/* Styles for Challenges page within the dashboard layout */
+.challenges-page {
+  padding: 0.5rem 0;
+
+  .page-header {
+    margin-bottom: 1rem;
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      color: #333;
+    }
+
+    p {
+      margin: 0.25rem 0 0;
+      color: #666;
+    }
+  }
+
+  .challenges-filters {
+    margin-bottom: 1rem;
+
+    .filters-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      label {
+        font-size: 0.85rem;
+        color: #555;
+        margin-bottom: 0.25rem;
+      }
+
+      input,
+      select {
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        border: 1px solid #e6e6e6;
+      }
+    }
+  }
+
+  .challenges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+  }
+}

@@ -1,6 +1,7 @@
 // TODO: Implement goals management page
 import React, { useState, useEffect } from 'react';
 import GoalCard from '../components/goals/GoalCard';
+import '../styles/components/dashboard/GoalsPage.scss';
 import { apiService } from '../services/api';
 import { useLayout } from '../contexts/LayoutContext';
 

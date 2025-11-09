@@ -1,6 +1,7 @@
 // TODO: Implement leaderboard and rankings page
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import '../styles/components/dashboard/LeaderboardPage.scss';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
 import { useLayout } from '../contexts/LayoutContext';

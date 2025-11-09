@@ -1,0 +1,123 @@
+.profile-page {
+  display: block;
+
+  .profile-header {
+    margin-bottom: 1.25rem;
+
+    .profile-banner {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 1rem;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(18, 25, 40, 0.06);
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+
+      .profile-info {
+        display: flex;
+        gap: 1.25rem;
+        align-items: center;
+        width: 100%;
+      }
+
+      .profile-avatar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 88px;
+        height: 88px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f4f6ff, #ffffff);
+        font-size: 2rem;
+      }
+
+      .profile-details {
+        flex: 1;
+
+        h2 {
+          margin: 0;
+          font-size: 1.25rem;
+          color: #222;
+        }
+
+        .profile-bio {
+          margin-top: 0.35rem;
+          color: #555;
+        }
+
+        .profile-meta {
+          margin-top: 0.75rem;
+          display: flex;
+          gap: 1rem;
+          color: #6b7280;
+          font-size: 0.9rem;
+        }
+      }
+
+      .profile-stats {
+        display: flex;
+        gap: 0.75rem;
+
+        .stat-item {
+          background: rgba(108, 99, 255, 0.08);
+          padding: 0.6rem 0.8rem;
+          border-radius: 10px;
+          text-align: center;
+
+          strong {
+            display: block;
+            color: #111;
+          }
+          span {
+            color: #6b7280;
+            font-size: 0.85rem;
+          }
+        }
+      }
+
+      .btn-primary {
+        margin-left: 1rem;
+        align-self: flex-start;
+      }
+    }
+  }
+
+  .profile-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+
+    .tab-button {
+      background: transparent;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 0.55rem 0.85rem;
+      border-radius: 10px;
+      cursor: pointer;
+
+      &.active {
+        background: #6c63ff;
+        color: #fff;
+        border-color: rgba(108, 99, 255, 0.9);
+      }
+    }
+  }
+
+  .profile-content {
+    .overview-tab,
+    .skills-tab,
+    .badges-tab,
+    .settings-tab {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(18, 25, 40, 0.04);
+    }
+
+    .achievements-summary,
+    .recent-activity {
+      margin-top: 0.5rem;
+    }
+  }
+}

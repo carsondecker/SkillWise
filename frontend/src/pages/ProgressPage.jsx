@@ -1,6 +1,7 @@
 // TODO: Implement progress tracking and analytics page
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import '../styles/components/dashboard/ProgressPage.scss';
 import { apiService } from '../services/api';
 import { useLayout } from '../contexts/LayoutContext';
 
