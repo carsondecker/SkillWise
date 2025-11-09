@@ -8,6 +8,7 @@
 .dashboard-layout {
   display: flex;
   width: 100%;
+  align-items: stretch; /* ensure sidebar and main stretch to same height */
 }
 
 .dashboard-sidebar {
@@ -23,6 +24,7 @@
   min-width: 0; /* allow children to shrink inside flex container */
   transition: width 0.3s ease;
   position: sticky;
+  top: 0;
   flex: 0 0 240px; /* keep sidebar a fixed-size flex item so main content can size correctly */
   height: 100vh;
   max-height: 100vh; /* ensure sidebar never grows beyond viewport */
