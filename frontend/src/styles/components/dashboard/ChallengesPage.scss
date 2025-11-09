@@ -3,56 +3,175 @@
   padding: 0.5rem 0;
 
   .page-header {
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
 
     h1 {
       margin: 0;
-      font-size: 1.6rem;
-      color: #333;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
     }
 
     p {
-      margin: 0.25rem 0 0;
+      margin: 0.5rem 0 0;
       color: #666;
+      font-size: 0.95rem;
+      line-height: 1.5;
     }
   }
 
   .challenges-filters {
-    margin-bottom: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
 
     .filters-row {
       display: flex;
       gap: 1rem;
       flex-wrap: wrap;
+      margin-bottom: 1rem;
     }
 
     .filter-group {
       display: flex;
       flex-direction: column;
+      flex: 1;
+      min-width: 200px;
+
       label {
-        font-size: 0.85rem;
-        color: #555;
-        margin-bottom: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
       }
 
       input,
       select {
-        padding: 0.5rem 0.75rem;
+        padding: 0.625rem 0.875rem;
         border-radius: 8px;
-        border: 1px solid #e6e6e6;
+        border: 1px solid #dee2e6;
+        background: white;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        outline: none;
+
+        &:focus {
+          border-color: #4a90e2;
+          box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        &::placeholder {
+          color: #adb5bd;
+        }
+      }
+
+      select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23495057' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        padding-right: 2.5rem;
+      }
+    }
+
+    .results-summary {
+      padding-top: 0.5rem;
+      border-top: 1px solid #e9ecef;
+
+      p {
+        margin: 0;
+        color: #6c757d;
+        font-size: 0.875rem;
+        font-weight: 500;
       }
     }
   }
 
+  .challenges-content {
+    min-height: 300px;
+  }
+
   .challenges-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
   }
 
   .empty-state {
     text-align: center;
-    padding: 2rem;
-    color: #666;
+    padding: 4rem 2rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #dee2e6;
+
+    h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    p {
+      margin: 0 0 1.5rem;
+      font-size: 0.95rem;
+      color: #6c757d;
+    }
+
+    .btn-secondary {
+      padding: 0.625rem 1.5rem;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      color: #495057;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+      }
+
+      &:active {
+        transform: translateY(1px);
+      }
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .page-header {
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+
+    .challenges-filters {
+      padding: 1rem;
+
+      .filters-row {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .filter-group {
+        min-width: 100%;
+      }
+    }
+
+    .challenges-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .empty-state {
+      padding: 3rem 1.5rem;
+    }
   }
 }

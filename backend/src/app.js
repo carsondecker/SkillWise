@@ -97,7 +97,7 @@ app.use(
 // endpoints so login/refresh flows aren't penalized with long retry windows.
 // --------------------------------------------------
 const GLOBAL_WINDOW_MS =
-  parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000; // 15 min
+  parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 3 * 60 * 1000; // 3 min
 const GLOBAL_MAX = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100;
 
 const globalLimiter = rateLimit({
@@ -135,11 +135,27 @@ const authLimiter = rateLimit({
   },
 });
 
-// Apply global limiter first
+// Apply auth limiter specifically to auth routes (mounted under /api/auth)
+// NOTE: authLimiter must be applied before the global limiter so login/refresh
+// flows are governed by the relaxed auth rules. If globalLimiter runs first it
+// will also count requests to /api/auth and can return a much larger
+// retryAfter (e.g., when RATE_LIMIT_WINDOW_MS is large) which explains the
+// long blocks observed in some environments.
+app.use('/api/auth', authLimiter);
+
+// Apply global limiter after auth limiter
 app.use(globalLimiter);
 
-// Apply auth limiter specifically to auth routes (mounted under /api/auth)
-app.use('/api/auth', authLimiter);
+// Log rate-limit configuration for debugging (helps explain unexpected retryAfter)
+logger.info({
+  msg: 'rate-limit config',
+  globalWindowMs: GLOBAL_WINDOW_MS,
+  globalMax: GLOBAL_MAX,
+  authWindowMs: AUTH_WINDOW_MS,
+  authMax: AUTH_MAX,
+  globalRetryAfterSec: Math.ceil(GLOBAL_WINDOW_MS / 1000),
+  authRetryAfterSec: Math.ceil(AUTH_WINDOW_MS / 1000),
+});
 
 // --------------------------------------------------
 // 📦 Body Parsers
