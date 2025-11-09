@@ -4,6 +4,8 @@ import GoalCard from '../components/goals/GoalCard';
 import '../styles/components/dashboard/GoalsPage.scss';
 import { apiService } from '../services/api';
 import { useLayout } from '../contexts/LayoutContext';
+import Modal from '../components/ui/Modal';
+import GoalForm from '../components/goals/GoalForm';
 
 const GoalsPage = () => {
   const [goals, setGoals] = useState([]);
@@ -37,11 +39,18 @@ const GoalsPage = () => {
     setSubtitle('Create and track your learning goals');
   }, [setTitle, setSubtitle]);
 
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const openCreate = () => setShowCreateModal(true);
+  const closeCreate = () => setShowCreateModal(false);
+
   return (
     <div className="goals-page">
       <div className="page-header">
         <h1>My Learning Goals</h1>
-        <button className="btn-primary">Create New Goal</button>
+        <button className="btn-primary" onClick={openCreate}>
+          Create New Goal
+        </button>
       </div>
 
       <div className="goals-filters">
@@ -62,6 +71,20 @@ const GoalsPage = () => {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={showCreateModal}
+        onClose={closeCreate}
+        title="Create New Goal"
+      >
+        <GoalForm
+          onCreated={(created) => {
+            // Close modal and refresh list (optimistic insert)
+            closeCreate();
+            if (created) setGoals((prev) => [created, ...prev]);
+          }}
+        />
+      </Modal>
     </div>
   );
 };

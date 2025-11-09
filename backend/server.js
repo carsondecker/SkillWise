@@ -21,6 +21,30 @@ const ENV = process.env.NODE_ENV || 'development';
       process.exit(1);
     }
 
+    // --------------------------------------------------
+    // 🌱 Seed database in non-production environments
+    // --------------------------------------------------
+    try {
+      if (ENV !== 'production') {
+        // Allow the developer to skip seeding by setting SKIP_DB_SEED=true
+        if (process.env.SKIP_DB_SEED !== 'true') {
+          logger.info('🌱 Seeding database (development mode)');
+          // require the seed script and run the exported seedDatabase function
+          // scripts/seed.js uses its own PG pool and will exit cleanly after seeding
+          // We intentionally await here so the server starts with seeded data.
+          // eslint-disable-next-line global-require
+          const { seedDatabase } = require('./scripts/seed');
+          await seedDatabase();
+          logger.info('✅ Database seeding complete');
+        } else {
+          logger.info('⏭️ SKIP_DB_SEED is set - skipping database seeding');
+        }
+      }
+    } catch (seedErr) {
+      // Don't fail startup on seed errors, just log a warning so devs can inspect
+      logger.warn('⚠️ Database seeding failed:', seedErr?.message || seedErr);
+    }
+
     const server = app.listen(PORT, () => {
       logger.info('==============================================');
       logger.info('🚀 SkillWise API Server is running');

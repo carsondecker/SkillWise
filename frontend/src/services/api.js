@@ -22,12 +22,17 @@ const setAccessToken = (token) => {
     localStorage.setItem(TOKEN_KEY, token);
     // Keep axios default header in sync so non-interceptor requests also send auth
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
+    // If we were previously blocking requests because of logout/refresh
+    // failure, allow requests again when a valid token is set.
+    stopRequests = false;
   } else {
     localStorage.removeItem(TOKEN_KEY);
     // remove default header when token cleared
     delete api.defaults.headers.common.Authorization;
   }
 };
+
+// (stopRequests is re-enabled inside setAccessToken when a token is set)
 
 const clearTokens = () => {
   localStorage.removeItem(TOKEN_KEY);
@@ -39,6 +44,9 @@ const clearTokens = () => {
 // Flag to prevent multiple refresh attempts
 let isRefreshing = false;
 let failedQueue = [];
+// When true, request interceptor will immediately reject new requests.
+// This is set when the client is considered logged out (refresh failed)
+let stopRequests = false;
 
 // Client-side rate limit cooldown (stored in localStorage to persist across tabs)
 const COOLDOWN_KEY = 'auth:cooldown_until';
@@ -81,6 +89,11 @@ const processQueue = (error, token = null) => {
 // Request interceptor to add Bearer token
 api.interceptors.request.use(
   (config) => {
+    // If the client has been marked logged-out, short-circuit requests to avoid
+    // spamming the server while redirect/navigation is in progress.
+    if (stopRequests) {
+      return Promise.reject(new Error('Client logged out - requests blocked'));
+    }
     const token = getAccessToken();
 
     if (token) {
@@ -239,6 +252,8 @@ api.interceptors.response.use(
         console.error('❌ Token refresh failed:', refreshError);
 
         // Clear tokens and redirect to login
+        // Mark that we should block new outgoing requests immediately
+        stopRequests = true;
         clearTokens();
         processQueue(refreshError, null);
 
@@ -335,8 +350,14 @@ export const apiService = {
 
   // Leaderboard methods
   leaderboard: {
-    getGlobal: (params) => api.get('/leaderboard/global', { params }),
-    getUserRank: () => api.get('/leaderboard/user-rank'),
+    // Backend expects GET /api/leaderboard with optional query ?period=weekly|monthly|alltime&limit=50
+    getGlobal: (params) => api.get('/leaderboard', { params }),
+    // Get current user's rank and total points
+    getUserRank: () => api.get('/leaderboard/ranking'),
+    // Get detailed points breakdown for the logged-in user
+    getPointsBreakdown: () => api.get('/leaderboard/points'),
+    // Get achievements/badges for the logged-in user
+    getAchievements: () => api.get('/leaderboard/achievements'),
   },
 
   // Peer Review methods

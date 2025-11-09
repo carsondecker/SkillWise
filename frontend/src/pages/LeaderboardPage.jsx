@@ -23,9 +23,63 @@ const LeaderboardPage = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const params = { timeframe, category };
+        // Map UI timeframe values to API 'period' param accepted by backend
+        const timeframeMap = {
+          'all-time': 'alltime',
+          'this-month': 'monthly',
+          'this-week': 'weekly',
+          today: 'daily',
+        };
+
+        const params = {
+          period: timeframeMap[timeframe] || 'alltime',
+          category,
+          limit: 100,
+        };
+
         const res = await apiService.leaderboard.getGlobal(params);
-        const list = res.data?.leaderboard || res.data || [];
+        const rows = res.data?.leaderboard || res.data || [];
+
+        // Normalize backend rows to UI-friendly shape
+        const list = (rows || []).map((row, idx) => {
+          const first = row.first_name || '';
+          const last = row.last_name || '';
+          const username = row.username || `${first} ${last}`.trim();
+
+          const points = Number(
+            row.total_points ??
+              row.weekly_points ??
+              row.monthly_points ??
+              row.subject_points ??
+              0,
+          );
+
+          const completedChallenges = Number(
+            row.challenges_completed ??
+              row.weekly_completions ??
+              row.monthly_completions ??
+              row.subject_completions ??
+              0,
+          );
+
+          const name = username || `${first} ${last}`.trim() || 'Unknown';
+
+          const initials =
+            (first[0] || name[0] || '').toUpperCase() +
+            (last[0] || '').toUpperCase();
+
+          return {
+            id: row.id,
+            name,
+            points,
+            completedChallenges,
+            averageScore: Number(row.average_score ?? 0),
+            level: Math.max(1, Math.floor(points / 100)),
+            avatar: initials,
+            rank: idx + 1,
+            isCurrentUser: String(row.id) === String(user?.id),
+          };
+        });
         if (!mounted) return;
         setLeaderboardData(list);
       } catch (error) {
@@ -57,8 +111,60 @@ const LeaderboardPage = () => {
     }
   };
 
-  const currentUserRank =
-    leaderboardData.find((user) => user.isCurrentUser)?.rank || 0;
+  const [currentUserRank, setCurrentUserRank] = useState(0);
+  const [achievements, setAchievements] = useState([]);
+
+  // derive current user rank from loaded leaderboard or fallback to API
+  useEffect(() => {
+    let mounted = true;
+    const findRank = async () => {
+      const found = leaderboardData.find((u) => u.isCurrentUser);
+      if (found) {
+        if (mounted) setCurrentUserRank(found.rank || 0);
+        return;
+      }
+
+      // not in current list (outside top-N). Try to fetch points/rank for current user
+      if (!user) {
+        if (mounted) setCurrentUserRank(0);
+        return;
+      }
+
+      try {
+        // Prefer the /ranking endpoint that returns the user's rank and points
+        const rankResp = await apiService.leaderboard.getUserRank();
+        const rankData = rankResp.data?.ranking || rankResp.data || {};
+        const rankValue = rankData?.rank ?? rankData?.ranking?.rank ?? 0;
+        if (mounted) setCurrentUserRank(rankValue || 0);
+
+        // Also load achievements for the user (optional)
+        try {
+          const ach = await apiService.leaderboard.getAchievements();
+          const list = ach.data?.achievements || ach.data || [];
+          if (mounted) setAchievements(list);
+        } catch (achErr) {
+          // ignore achievements failure
+          if (mounted) setAchievements([]);
+        }
+      } catch (err) {
+        // fallback to points breakdown if ranking endpoint isn't available
+        try {
+          const res = await apiService.leaderboard.getPointsBreakdown();
+          const data = res.data || {};
+          const breakdown = data.breakdown || data.ranking || data;
+          const fallbackRank = breakdown?.rank ?? breakdown?.ranking?.rank ?? 0;
+          if (mounted) setCurrentUserRank(fallbackRank || 0);
+        } catch (err2) {
+          if (mounted) setCurrentUserRank(0);
+        }
+      }
+    };
+
+    findRank();
+    return () => {
+      mounted = false;
+    };
+  }, [leaderboardData, user]);
 
   return (
     <div className="leaderboard-page">
@@ -184,31 +290,24 @@ const LeaderboardPage = () => {
               </div>
             </div>
 
-            <div className="achievements-section">
-              <h2>Top Achievements This Week</h2>
-              <div className="achievements-grid">
-                <div className="achievement-card">
-                  <div className="achievement-icon">🚀</div>
-                  <h4>Challenge Master</h4>
-                  <p>Completed 5 challenges in one day</p>
-                  <small>Earned by Alex Johnson</small>
-                </div>
-
-                <div className="achievement-card">
-                  <div className="achievement-icon">🔥</div>
-                  <h4>Streak Legend</h4>
-                  <p>30-day learning streak</p>
-                  <small>Earned by Sarah Kim</small>
-                </div>
-
-                <div className="achievement-card">
-                  <div className="achievement-icon">🎯</div>
-                  <h4>Goal Crusher</h4>
-                  <p>Completed 3 learning goals</p>
-                  <small>Earned by Mike Chen</small>
+            {/* Achievements will be populated from backend in a follow-up change. Removed static placeholders. */}
+            {achievements.length > 0 && (
+              <div className="achievements-section">
+                <h2>Your Achievements</h2>
+                <div className="achievements-grid">
+                  {achievements.map((a) => (
+                    <div className="achievement-card" key={a.id || a.name}>
+                      <div className="achievement-icon">
+                        {a.badge_icon || '🏅'}
+                      </div>
+                      <h4>{a.name}</h4>
+                      <p>{a.description}</p>
+                      <small>{a.category}</small>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

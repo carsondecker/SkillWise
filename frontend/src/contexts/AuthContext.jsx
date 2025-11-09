@@ -181,6 +181,12 @@ export const AuthProvider = ({ children }) => {
     const handleLogout = (event) => {
       console.log('Logout event received:', event.detail?.reason);
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      // Ensure we navigate to login when a logout event occurs. Some code paths
+      // (e.g. axios interceptor) also redirect, but ensuring here covers cases
+      // where the interceptor couldn't perform the navigation.
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     };
 
     window.addEventListener('auth:logout', handleLogout);

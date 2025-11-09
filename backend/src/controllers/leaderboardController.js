@@ -11,6 +11,7 @@ const leaderboardQuerySchema = z.object({
     .regex(/^[0-9]+$/, 'Limit must be a number')
     .transform(Number)
     .default('50'),
+  category: z.string().optional(),
 });
 
 // ✅ Controller Implementation
@@ -21,7 +22,10 @@ const leaderboardController = {
   getLeaderboard: asyncHandler(async (req, res) => {
     const { period, limit } = leaderboardQuerySchema.parse(req.query);
 
-    const leaderboard = await leaderboardService.getLeaderboard({ period, limit });
+    const leaderboard = await leaderboardService.getLeaderboard({
+      period,
+      limit,
+    });
     res.json({ leaderboard });
   }),
 
@@ -29,7 +33,13 @@ const leaderboardController = {
   // Get user ranking
   // -------------------------
   getUserRanking: asyncHandler(async (req, res) => {
-    const userId = z.string().uuid().parse(req.params.userId);
+    // Support both: GET /leaderboard/ranking (authenticated user) or
+    // GET /leaderboard/ranking/:userId (if route later supports param)
+    let userId = req.params?.userId || req.user?.id;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'Missing user identifier' });
+    }
 
     const ranking = await leaderboardService.getUserRanking({ userId });
     if (!ranking) {
