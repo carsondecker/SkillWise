@@ -1,6 +1,9 @@
 // TODO: Implement challenges browsing and participation page
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
+import Modal from '../components/ui/Modal';
+import ChallengeForm from '../components/challenges/ChallengeForm';
 import '../styles/components/dashboard/ChallengesPage.scss';
 import { useLayout } from '../contexts/LayoutContext';
 import ChallengeCard from '../components/challenges/ChallengeCard';
@@ -15,6 +18,7 @@ const ChallengesPage = () => {
     difficulty: '',
     search: '',
   });
+  const { user } = useAuth();
 
   // Load challenges from backend
   useEffect(() => {
@@ -28,6 +32,7 @@ const ChallengesPage = () => {
         if (!mounted) return;
         setChallenges(list);
         setFilteredChallenges(list);
+        console.log(list);
       } catch (error) {
         console.error('Failed to load challenges:', error);
         if (!mounted) return;
@@ -146,6 +151,9 @@ const ChallengesPage = () => {
             Showing {filteredChallenges.length} of {challenges.length}{' '}
             challenges
           </p>
+          <div className="actions">
+            {/* Creation of challenges is now available from each Goal card. */}
+          </div>
         </div>
       </div>
 
@@ -173,6 +181,8 @@ const ChallengesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Challenge creation moved to Goal cards to link challenges to goals. */}
     </div>
   );
 };

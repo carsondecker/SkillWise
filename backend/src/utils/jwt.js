@@ -11,11 +11,15 @@ const signAccessToken = (payload) => {
 };
 
 const signRefreshToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: REFRESH_EXP });
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: REFRESH_EXP,
+  });
 };
 
 const signPasswordResetToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_RESET_SECRET, { expiresIn: RESET_EXP });
+  return jwt.sign(payload, process.env.JWT_RESET_SECRET, {
+    expiresIn: RESET_EXP,
+  });
 };
 
 const verifyAccessToken = (token) => {
@@ -30,7 +34,11 @@ const verifyRefreshToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
   } catch (err) {
-    throw new AppError('Invalid or expired refresh token', 401, 'INVALID_REFRESH');
+    throw new AppError(
+      'Invalid or expired refresh token',
+      401,
+      'INVALID_REFRESH'
+    );
   }
 };
 
@@ -57,8 +65,9 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    secure: false,
-    path: '/api/auth',
+    secure: process.env.NODE_ENV === 'production',
+    // set path to root so cross-origin requests (dev proxy or XHR) include cookie when allowed
+    path: '/',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 };
@@ -79,4 +88,3 @@ module.exports = {
   setAuthCookies,
   clearAuthCookies,
 };
-

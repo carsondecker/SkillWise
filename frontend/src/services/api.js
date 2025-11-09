@@ -36,9 +36,16 @@ const setAccessToken = (token) => {
 
 const clearTokens = () => {
   localStorage.removeItem(TOKEN_KEY);
+  try {
+    localStorage.removeItem('refresh_token');
+  } catch (e) {
+    // ignore storage errors
+  }
   // remove default header when clearing tokens
   delete api.defaults.headers.common.Authorization;
   // Note: httpOnly refresh token will be cleared by server
+  // Ensure requests are allowed again after tokens cleared so users can log back in
+  stopRequests = false;
 };
 
 // Flag to prevent multiple refresh attempts
@@ -92,7 +99,21 @@ api.interceptors.request.use(
     // If the client has been marked logged-out, short-circuit requests to avoid
     // spamming the server while redirect/navigation is in progress.
     if (stopRequests) {
-      return Promise.reject(new Error('Client logged out - requests blocked'));
+      // Allow auth-related requests to proceed even when requests are
+      // otherwise being blocked (e.g. after a failed refresh). This ensures
+      // users can still POST to /auth/login or /auth/register to sign in.
+      const url = (config.url || '').toString();
+      const authWhitelist = ['/auth/login', '/auth/register', '/auth/refresh'];
+      const isAuthRequest = authWhitelist.some((p) => url.includes(p));
+
+      if (!isAuthRequest) {
+        const err = new Error('Client logged out - requests blocked');
+        // mark with a status so response error handlers / UI can interpret it
+        err.status = 401;
+        err.isClientLoggedOut = true;
+        return Promise.reject(err);
+      }
+      // If it's an auth request, allow it through so the user can login.
     }
     const token = getAccessToken();
 
@@ -103,7 +124,7 @@ api.interceptors.request.use(
     // Log request in development
     if (process.env.NODE_ENV === 'development') {
       console.log(
-        `🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`,
+        `🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`
       );
     }
 
@@ -112,7 +133,7 @@ api.interceptors.request.use(
   (error) => {
     console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
-  },
+  }
 );
 
 // Response interceptor for token refresh logic
@@ -123,7 +144,7 @@ api.interceptors.response.use(
       console.log(
         `✅ API Response: ${response.config.method?.toUpperCase()} ${
           response.config.url
-        } - ${response.status}`,
+        } - ${response.status}`
       );
     }
 
@@ -132,13 +153,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Log error in development
+    // Log error in development — be defensive so we don't print 'undefined undefined - undefined'
     if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `❌ API Error: ${originalRequest?.method?.toUpperCase()} ${
-          originalRequest?.url
-        } - ${error.response?.status}`,
-      );
+      const cfg = originalRequest || {};
+      const method = (cfg.method || error?.request?.method || 'UNKNOWN')
+        .toString()
+        .toUpperCase();
+      const url = cfg.url || error?.request?.responseURL || 'UNKNOWN_URL';
+      const status =
+        error.response?.status || error.status || error.code || 'NO_STATUS';
+      console.log(`❌ API Error: ${method} ${url} - ${status}`);
     }
 
     // Handle 429 Too Many Requests: set a cooldown and notify app
@@ -168,7 +192,7 @@ api.interceptors.response.use(
       window.dispatchEvent(
         new CustomEvent('auth:rate-limited', {
           detail: { retryAfter: retrySeconds, status: 429 },
-        }),
+        })
       );
 
       // Reject with a clear error
@@ -180,6 +204,16 @@ api.interceptors.response.use(
 
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // If this error was returned for an auth endpoint (login/register),
+      // don't try to perform a silent refresh. Let the caller handle the
+      // 401 (e.g. show invalid credentials) instead of triggering global
+      // refresh/logout flows which could block sign-in attempts.
+      const reqUrl =
+        (originalRequest && (originalRequest.url || originalRequest.baseURL)) ||
+        '';
+      if (reqUrl.includes('/auth/login') || reqUrl.includes('/auth/register')) {
+        return Promise.reject(error);
+      }
       // If server-side rate-limit cooldown still active on client, don't attempt refresh
       if (isCooldownActive()) {
         const until = getCooldownUntil();
@@ -216,7 +250,7 @@ api.interceptors.response.use(
           {
             withCredentials: true, // Send httpOnly refresh cookie
             timeout: 5000,
-          },
+          }
         );
 
         // Accept multiple possible shapes from backend refresh response
@@ -251,9 +285,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error('❌ Token refresh failed:', refreshError);
 
-        // Clear tokens and redirect to login
-        // Mark that we should block new outgoing requests immediately
-        stopRequests = true;
+        // Clear tokens
         clearTokens();
         processQueue(refreshError, null);
 
@@ -261,7 +293,7 @@ api.interceptors.response.use(
         window.dispatchEvent(
           new CustomEvent('auth:logout', {
             detail: { reason: 'token_refresh_failed' },
-          }),
+          })
         );
 
         // Redirect to login page
@@ -282,7 +314,7 @@ api.interceptors.response.use(
       window.dispatchEvent(
         new CustomEvent('api:server-error', {
           detail: { error: error.response.data },
-        }),
+        })
       );
     }
 
@@ -292,13 +324,14 @@ api.interceptors.response.use(
       error.message =
         'Request timeout. Please check your connection and try again.';
     } else if (!error.response) {
+      // This covers network errors and client-blocked requests
       console.error('🔌 Network Error:', error.message);
       error.message =
         'Network error. Please check your connection and try again.';
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 // API service methods
@@ -309,6 +342,9 @@ export const apiService = {
     register: (userData) => api.post('/auth/register', userData),
     logout: () => api.post('/auth/logout'),
     refresh: () => api.post('/auth/refresh'),
+    // Retry refresh by supplying refresh token explicitly (used for dev fallback)
+    refreshWithToken: (refreshToken) =>
+      api.post('/auth/refresh', { refreshToken }),
     forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
     resetPassword: (token, password) =>
       api.post('/auth/reset-password', { token, password }),
@@ -334,10 +370,26 @@ export const apiService = {
   // Challenges methods
   challenges: {
     getAll: (params) => api.get('/challenges', { params }),
+    create: (data) => api.post('/challenges', data),
     getById: (id) => api.get(`/challenges/${id}`),
+    // Submit work for a challenge — prefer centralized /submissions endpoint
     submit: (id, submission) =>
-      api.post(`/challenges/${id}/submit`, submission),
+      api.post('/submissions', { challengeId: id, ...submission }),
     getSubmissions: (id) => api.get(`/challenges/${id}/submissions`),
+  },
+
+  // Submissions endpoints (new centralized API)
+  submissions: {
+    // Create a submission: { challengeId, content, files? }
+    create: (payload) => api.post('/submissions', payload),
+    // Mark a challenge as completed without upload
+    markComplete: (challengeId) =>
+      api.post(`/submissions/challenge/${challengeId}/complete`),
+    // Get a single submission
+    getById: (id) => api.get(`/submissions/${id}`),
+    // Update submission
+    update: (id, data) => api.put(`/submissions/${id}`, data),
+    // Get user's submissions (peer review page uses apiService.peerReview.getMySubmissions())
   },
 
   // Progress methods

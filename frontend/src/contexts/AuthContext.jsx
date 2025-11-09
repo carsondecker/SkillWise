@@ -90,14 +90,14 @@ export const AuthProvider = ({ children }) => {
       const token = getAccessToken();
       console.log(
         '📦 Stored Access Token:',
-        token ? 'Found ✅' : 'Not Found ❌',
+        token ? 'Found ✅' : 'Not Found ❌'
       );
 
       // If access token exists, try to load profile. If it fails, attempt refresh.
       if (token) {
         try {
           console.log(
-            '➡️ [Auth Init] Trying /users/profile with access token...',
+            '➡️ [Auth Init] Trying /users/profile with access token...'
           );
           const response = await apiService.user.getProfile();
           console.log('✅ [Auth Init] /users/profile success:', response.data);
@@ -109,12 +109,12 @@ export const AuthProvider = ({ children }) => {
           return;
         } catch (error) {
           console.warn(
-            '⚠️ [Auth Init] Access token invalid or expired, attempting refresh...',
+            '⚠️ [Auth Init] Access token invalid or expired, attempting refresh...'
           );
           console.error(
             '❌ [Auth Init] Profile fetch failed:',
             error.response?.status,
-            error.response?.data,
+            error.response?.data
           );
         }
       }
@@ -122,12 +122,12 @@ export const AuthProvider = ({ children }) => {
       // No valid access token or profile fetch failed — try silent refresh using httpOnly cookie
       try {
         console.log(
-          '➡️ [Auth Init] Attempting silent refresh via /auth/refresh...',
+          '➡️ [Auth Init] Attempting silent refresh via /auth/refresh...'
         );
         const refreshResponse = await apiService.auth.refresh();
         console.log(
           '✅ [Auth Init] /auth/refresh response:',
-          refreshResponse.data,
+          refreshResponse.data
         );
 
         // Support multiple response shapes: { accessToken }, { token }, { tokens: { accessToken } }
@@ -142,12 +142,12 @@ export const AuthProvider = ({ children }) => {
           setAccessToken(accessToken);
 
           console.log(
-            '➡️ [Auth Init] Fetching profile with refreshed token...',
+            '➡️ [Auth Init] Fetching profile with refreshed token...'
           );
           const profileRes = await apiService.user.getProfile();
           console.log(
             '✅ [Auth Init] /users/profile success (after refresh):',
-            profileRes.data,
+            profileRes.data
           );
 
           dispatch({
@@ -164,8 +164,40 @@ export const AuthProvider = ({ children }) => {
         console.warn(
           '❌ [Auth Init] Silent refresh failed or no refresh cookie present:',
           refreshError?.response?.status,
-          refreshError?.response?.data,
+          refreshError?.response?.data
         );
+        // Attempt a fallback: if a refresh token was saved to localStorage
+        // (dev convenience), retry refresh using that token once. This helps
+        // environments where httpOnly cookies are not sent in dev.
+        try {
+          const stored = localStorage.getItem('refresh_token');
+          if (stored) {
+            console.log(
+              '➡️ [Auth Init] Retrying refresh with stored refresh_token'
+            );
+            const retryRes = await apiService.auth.refreshWithToken(stored);
+            const accessToken =
+              retryRes.data?.accessToken ||
+              retryRes.data?.token ||
+              retryRes.data?.tokens?.accessToken ||
+              retryRes.data?.tokens?.access_token;
+            if (accessToken) {
+              setAccessToken(accessToken);
+              const profileRes = await apiService.user.getProfile();
+              dispatch({
+                type: AUTH_ACTIONS.LOGIN_SUCCESS,
+                payload: { user: profileRes.data.user || profileRes.data },
+              });
+              return;
+            }
+          }
+        } catch (retryErr) {
+          console.warn(
+            '[Auth Init] Refresh retry with stored token failed:',
+            retryErr?.response?.status
+          );
+        }
+
         clearTokens();
         dispatch({ type: AUTH_ACTIONS.LOGOUT });
       } finally {
@@ -203,7 +235,7 @@ export const AuthProvider = ({ children }) => {
       const cooldownUntil = localStorage.getItem('auth:cooldown_until');
       if (cooldownUntil && Date.now() < Number(cooldownUntil)) {
         const remaining = Math.ceil(
-          (Number(cooldownUntil) - Date.now()) / 1000,
+          (Number(cooldownUntil) - Date.now()) / 1000
         );
         const message = `Too many requests. Try again in ${remaining} seconds.`;
         dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
@@ -232,7 +264,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         console.warn(
           '⚠️ No access token found in login response:',
-          response.data,
+          response.data
         );
       }
 

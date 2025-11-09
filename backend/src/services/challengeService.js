@@ -4,12 +4,20 @@ const { AppError } = require('../middleware/errorHandler');
 const challengeService = {
   getChallenges: async (filters = {}) => {
     try {
-      const { difficulty, category, limit = 20, offset = 0 } = filters;
+      const {
+        difficulty,
+        category,
+        limit = 20,
+        offset = 0,
+        userId = null,
+      } = filters;
       let challenges;
 
-      if (difficulty) challenges = await Challenge.findByDifficulty(difficulty);
-      else if (category) challenges = await Challenge.findByCategory(category);
-      else challenges = await Challenge.findAll();
+      if (difficulty)
+        challenges = await Challenge.findByDifficulty(difficulty, userId);
+      else if (category)
+        challenges = await Challenge.findByCategory(category, userId);
+      else challenges = await Challenge.findAll(userId);
 
       return challenges.slice(offset, offset + limit);
     } catch (error) {

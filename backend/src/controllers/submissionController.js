@@ -99,13 +99,30 @@ const submissionController = {
     });
 
     if (!updated) {
-      return res.status(404).json({ message: 'Submission not found or unauthorized' });
+      return res
+        .status(404)
+        .json({ message: 'Submission not found or unauthorized' });
     }
 
     res.json({
       message: 'Submission updated successfully',
       submission: updated,
     });
+  }),
+
+  // -------------------------
+  // Mark a challenge complete (no submission content)
+  // -------------------------
+  completeChallenge: asyncHandler(async (req, res) => {
+    const challengeId = z.string().uuid().parse(req.params.challengeId);
+    const userId = req.user?.id;
+
+    const submission = await submissionService.completeChallenge({
+      userId,
+      challengeId,
+    });
+
+    res.status(201).json({ message: 'Challenge marked complete', submission });
   }),
 };
 

@@ -15,6 +15,20 @@ export const authService = {
         setAccessToken(tokens.accessToken);
       }
 
+      // Store refresh token for dev fallback retry (stored in localStorage).
+      // NOTE: This is a convenience for development environments only. In
+      // production you should prefer httpOnly cookies and avoid client storage
+      // of refresh tokens. If you want stricter behavior, guard this with
+      // NODE_ENV !== 'production'.
+      try {
+        // Only persist refresh token in non-production (dev) environments
+        if (process.env.NODE_ENV !== 'production' && tokens?.refreshToken) {
+          localStorage.setItem('refresh_token', tokens.refreshToken);
+        }
+      } catch (e) {
+        // ignore storage errors
+      }
+
       if (user) {
         localStorage.setItem('user', JSON.stringify(user));
       }
@@ -33,6 +47,13 @@ export const authService = {
       const { user, tokens } = response.data;
 
       if (tokens?.accessToken) setAccessToken(tokens.accessToken);
+      // Store refresh token for dev fallback (also on register)
+      try {
+        if (process.env.NODE_ENV !== 'production' && tokens?.refreshToken)
+          localStorage.setItem('refresh_token', tokens.refreshToken);
+      } catch (e) {
+        // ignore storage errors
+      }
       if (user) localStorage.setItem('user', JSON.stringify(user));
 
       return { user, tokens };
@@ -53,7 +74,7 @@ export const authService = {
 
       // Notify app that logout happened
       window.dispatchEvent(
-        new CustomEvent('auth:logout', { detail: { reason: 'user_logout' } }),
+        new CustomEvent('auth:logout', { detail: { reason: 'user_logout' } })
       );
     }
   },

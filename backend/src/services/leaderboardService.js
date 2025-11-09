@@ -35,33 +35,45 @@ const leaderboardService = {
         throw new AppError(
           'Invalid parameters for updating user points',
           400,
-          'INVALID_INPUT',
+          'INVALID_INPUT'
         );
       }
 
+      console.log(
+        `📈 leaderboardService.updateUserPoints called for user ${userId} +${points} (${reason})`
+      );
       await db.withTransaction(async (query) => {
-        // 1️⃣ Insert or update leaderboard total
+        // 1️⃣ Insert or update leaderboard points for an 'all-time' period row
+        // Use the existing schema column `points` and the unique index on (user_id, timeframe, period_start)
         await query(
           `
-          INSERT INTO leaderboard (user_id, total_points, updated_at)
-          VALUES ($1, $2, NOW())
-          ON CONFLICT (user_id)
+          INSERT INTO leaderboard (user_id, timeframe, points, rank_position, period_start, period_end, updated_at)
+          VALUES ($1, 'all-time', $2, 0, CURRENT_DATE, CURRENT_DATE, NOW())
+          ON CONFLICT (user_id, timeframe, period_start)
           DO UPDATE SET 
-            total_points = leaderboard.total_points + $2,
+            points = leaderboard.points + $2,
             updated_at = NOW()
           `,
-          [userId, points],
+          [userId, points]
         );
 
-        // 2️⃣ Log reason in user_statistics or audit table (if available)
+        // 2️⃣ Update user_statistics totals (upsert)
         await query(
           `
-          INSERT INTO user_statistics (user_id, action, points, created_at)
-          VALUES ($1, $2, $3, NOW())
+          INSERT INTO user_statistics (user_id, total_points, last_activity_date, created_at)
+          VALUES ($1, $2, CURRENT_DATE, NOW())
+          ON CONFLICT (user_id) DO UPDATE SET
+            total_points = user_statistics.total_points + $2,
+            last_activity_date = CURRENT_DATE,
+            updated_at = NOW()
           `,
-          [userId, reason, points],
+          [userId, points]
         );
       });
+
+      console.log(
+        `📈 leaderboardService.updateUserPoints completed for user ${userId}`
+      );
 
       return {
         message: `User ${userId} awarded ${points} points for ${reason}`,
@@ -85,14 +97,15 @@ const leaderboardService = {
         rank: index + 1,
         userId: entry.id,
         name: `${entry.first_name || ''} ${entry.last_name || ''}`.trim(),
-        totalPoints: Number(entry.total_points) || 0,
+        // leaderboard rows may provide `total_points` (from progress_events) or `points` (from leaderboard table)
+        totalPoints: Number(entry.total_points || entry.points) || 0,
         challengesCompleted: Number(entry.challenges_completed) || 0,
         averageScore: Number(entry.average_score) || 0,
       }));
     } catch (error) {
       throw new AppError(
         `Error fetching top performers: ${error.message}`,
-        500,
+        500
       );
     }
   },
@@ -195,7 +208,7 @@ const leaderboardService = {
     } catch (error) {
       throw new AppError(
         `Error fetching points breakdown: ${error.message}`,
-        500,
+        500
       );
     }
   },

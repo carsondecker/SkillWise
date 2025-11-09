@@ -20,11 +20,16 @@ const progressService = {
         totalPoints: Number(stats.total_points || 0),
         averageScore: Number(stats.average_score || 0),
         completionRate: stats.total_attempts
-          ? Math.round((stats.completed_challenges / stats.total_attempts) * 100)
+          ? Math.round(
+              (stats.completed_challenges / stats.total_attempts) * 100
+            )
           : 0,
       };
     } catch (error) {
-      throw new AppError(`Error calculating overall progress: ${error.message}`, 500);
+      throw new AppError(
+        `Error calculating overall progress: ${error.message}`,
+        500
+      );
     }
   },
 
@@ -39,7 +44,7 @@ const progressService = {
         INSERT INTO progress_events (user_id, event_type, event_data, created_at)
         VALUES ($1, $2, $3, NOW())
         `,
-        [userId, eventType, JSON.stringify(eventData)],
+        [userId, eventType, JSON.stringify(eventData)]
       );
 
       // If user completed a challenge, award points
@@ -51,8 +56,58 @@ const progressService = {
           userId,
           'challenge_completed',
           `You earned ${points} points for completing a challenge!`,
-          { challengeId: eventData.challenge_id },
+          { challengeId: eventData.challenge_id }
         );
+        // If this challenge is linked to a goal, recalculate goal progress for the user
+        if (eventData.related_goal_id) {
+          try {
+            const goalId = Number(eventData.related_goal_id);
+            // total challenges linked to the goal
+            const totalRes = await db.query(
+              'SELECT COUNT(*)::int AS total FROM challenges WHERE related_goal_id = $1 AND is_active = true',
+              [goalId]
+            );
+            const total = Number(totalRes.rows[0]?.total || 0);
+
+            if (total > 0) {
+              // count distinct challenges the user has completed for this goal
+              const completedRes = await db.query(
+                `
+                SELECT COUNT(DISTINCT c.id)::int AS completed
+                FROM challenges c
+                JOIN submissions s ON s.challenge_id = c.id
+                WHERE c.related_goal_id = $1
+                  AND s.user_id = $2
+                  AND (s.status = 'completed' OR (s.score IS NOT NULL AND s.score >= 70))
+                `,
+                [goalId, userId]
+              );
+
+              const completed = Number(completedRes.rows[0]?.completed || 0);
+              const pct = Math.min(100, Math.round((completed / total) * 100));
+
+              // Persist into goals table
+              await db.query(
+                'UPDATE goals SET progress_percentage = $1, updated_at = NOW() WHERE id = $2',
+                [pct, goalId]
+              );
+
+              // If reached or passed 100%, emit a goal_completed event
+              if (pct >= 100) {
+                // create a goal_completed event (this will also notify via trackEvent logic)
+                await progressService.trackEvent(userId, 'goal_completed', {
+                  goal_id: goalId,
+                });
+              }
+            }
+          } catch (err) {
+            // Best-effort: don't block main flow
+            console.error(
+              'Failed to update goal progress after challenge completion:',
+              err.message
+            );
+          }
+        }
       }
 
       // If user completed a goal, send milestone notification
@@ -61,7 +116,7 @@ const progressService = {
           userId,
           'goal_completed',
           '🎉 Congratulations on completing your goal!',
-          { goalId: eventData.goal_id },
+          { goalId: eventData.goal_id }
         );
       }
 
@@ -71,7 +126,10 @@ const progressService = {
         eventType,
       };
     } catch (error) {
-      throw new AppError(`Error tracking progress event: ${error.message}`, 500);
+      throw new AppError(
+        `Error tracking progress event: ${error.message}`,
+        500
+      );
     }
   },
 
@@ -83,8 +141,10 @@ const progressService = {
   generateAnalytics: async (userId, timeframe = 'weekly') => {
     try {
       let dateFilter = '';
-      if (timeframe === 'weekly') dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\'';
-      else if (timeframe === 'monthly') dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'30 days\'';
+      if (timeframe === 'weekly')
+        dateFilter = "AND p.created_at >= NOW() - INTERVAL '7 days'";
+      else if (timeframe === 'monthly')
+        dateFilter = "AND p.created_at >= NOW() - INTERVAL '30 days'";
 
       const result = await db.query(
         `
@@ -99,7 +159,7 @@ const progressService = {
         GROUP BY DATE_TRUNC('day', p.created_at)
         ORDER BY date ASC
         `,
-        [userId],
+        [userId]
       );
 
       return {
@@ -154,13 +214,14 @@ const progressService = {
 
       // Award points + notifications for new milestones
       for (const achievement of achievements) {
-        const points = leaderboardService.calculateAchievementPoints(achievement);
+        const points =
+          leaderboardService.calculateAchievementPoints(achievement);
         await leaderboardService.updateUserPoints(userId, points, 'milestone');
         await notificationService.sendNotification(
           userId,
           'achievement',
           `🏆 ${achievement.title} — ${achievement.description}`,
-          achievement,
+          achievement
         );
       }
 

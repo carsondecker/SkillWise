@@ -9,6 +9,7 @@ const createSchema = z.object({
   category: z.string().min(1),
   difficulty_level: z.enum(['easy', 'medium', 'hard']).default('medium'),
   points_reward: z.number().int().optional(),
+  relatedGoalId: z.number().int().optional(),
 });
 
 const updateSchema = createSchema.partial();
@@ -16,7 +17,14 @@ const updateSchema = createSchema.partial();
 const challengeController = {
   getChallenges: asyncHandler(async (req, res) => {
     const { difficulty, category, limit, offset } = req.query;
-    const challenges = await challengeService.getChallenges({ difficulty, category, limit, offset });
+    const userId = req.user?.id;
+    const challenges = await challengeService.getChallenges({
+      difficulty,
+      category,
+      limit,
+      offset,
+      userId,
+    });
     res.json({ challenges });
   }),
 
@@ -27,9 +35,27 @@ const challengeController = {
   }),
 
   createChallenge: asyncHandler(async (req, res) => {
+    // Ensure user is authenticated
+    if (!req.user || !req.user.id) {
+      return res
+        .status(401)
+        .json({ message: 'Authentication required to create challenges' });
+    }
+
+    // Parse and validate request body
     const data = createSchema.parse(req.body);
+    // Map camelCase API field to snake_case DB field expected by model
+    if (data.relatedGoalId) {
+      data.related_goal_id = data.relatedGoalId;
+      delete data.relatedGoalId;
+    }
+    // Attach creator id and user_id so backend can set ownership
+    data.created_by = req.user.id;
+    data.user_id = req.user.id;
     const challenge = await challengeService.createChallenge(data);
-    res.status(201).json({ message: 'Challenge created successfully', challenge });
+    res
+      .status(201)
+      .json({ message: 'Challenge created successfully', challenge });
   }),
 
   updateChallenge: asyncHandler(async (req, res) => {

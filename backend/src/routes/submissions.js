@@ -23,4 +23,12 @@ router.post('/', auth, submissionController.submitWork);
 // 🟣 Update an existing submission (e.g., resubmit or edit)
 router.put('/:id', auth, submissionController.updateSubmission);
 
+// 🟩 Mark a challenge as complete (no submission body needed)
+// POST /submissions/challenge/:challengeId/complete
+router.post(
+  '/challenge/:challengeId/complete',
+  auth,
+  submissionController.completeChallenge
+);
+
 module.exports = router;

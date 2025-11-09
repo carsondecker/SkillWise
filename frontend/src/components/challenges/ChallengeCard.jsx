@@ -1,5 +1,7 @@
 // TODO: Implement challenge card component
-import React from 'react';
+import React, { useState } from 'react';
+import { apiService } from '../../services/api';
+import '../../styles/components/challenges/ChallengeCard.scss';
 
 const ChallengeCard = ({ challenge }) => {
   // TODO: Add difficulty indicators, estimated time, tags, actions
@@ -45,9 +47,56 @@ const ChallengeCard = ({ challenge }) => {
       </div>
 
       <div className="challenge-footer">
-        <button className="btn-primary">Start Challenge</button>
+        <button
+          className="btn-primary"
+          onClick={() => window.location.assign(`/challenges/${challenge.id}`)}
+        >
+          Start Challenge
+        </button>
+
+        {/* Mark complete quickly without submission */}
+        <MarkCompleteButton challengeId={challenge.id} />
       </div>
     </div>
+  );
+};
+
+const MarkCompleteButton = ({ challengeId }) => {
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleMark = async () => {
+    if (loading || done) return;
+    setLoading(true);
+    try {
+      await apiService.submissions.markComplete(challengeId);
+      // let other parts of the app refresh (goal cards, leaderboard)
+      window.dispatchEvent(
+        new CustomEvent('challenge:completed', { detail: { challengeId } })
+      );
+      setDone(true);
+    } catch (err) {
+      console.error('Failed to mark challenge complete', err);
+      // Basic user feedback — ideally replace with toast
+      alert(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to mark complete'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      className="btn-secondary"
+      onClick={handleMark}
+      disabled={loading || done}
+      title={done ? 'Completed' : 'Mark this challenge as complete'}
+    >
+      {done ? 'Completed' : loading ? 'Marking...' : 'Mark Complete'}
+    </button>
   );
 };
 

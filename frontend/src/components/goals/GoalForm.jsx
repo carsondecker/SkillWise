@@ -39,11 +39,21 @@ const GoalForm = ({ onCreated }) => {
       };
 
       const res = await apiService.goals.create(payload);
-      const created = res.data?.goal || res.data || null;
+      // Normalize created payload — backend may return { message, goal }
+      let created = null;
+      if (res?.data) {
+        created = res.data?.goal || res.data?.data || res.data || null;
+        // If we accidentally wrapped the goal inside a message object, handle that
+        if (created && created.goal) created = created.goal;
+      }
+
       if (onCreated) onCreated(created);
     } catch (err) {
       console.error('Failed to create goal', err);
-      setError(err?.message || 'Failed to create goal');
+      // Prefer server-provided message when possible
+      const serverMsg =
+        err?.response?.data?.message || err?.response?.data || null;
+      setError(serverMsg || err?.message || 'Failed to create goal');
     } finally {
       setLoading(false);
     }

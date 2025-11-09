@@ -28,6 +28,7 @@ describe('ChallengeController', () => {
         instructions: 'y',
         category: 'c',
       },
+      user: { id: 1 },
     };
     const res = { status: jest.fn(() => res), json: jest.fn() };
     const next = jest.fn();
