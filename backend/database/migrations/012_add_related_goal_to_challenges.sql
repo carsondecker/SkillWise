@@ -1,4 +1,4 @@
--- Migration 014: add related_goal_id to challenges so challenges can be linked to goals
+-- Migration 012: add related_goal_id to challenges so challenges can be linked to goals
 ALTER TABLE challenges
 ADD COLUMN IF NOT EXISTS related_goal_id INTEGER REFERENCES goals(id);
 

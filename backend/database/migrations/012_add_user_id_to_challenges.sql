@@ -1,4 +1,4 @@
--- Migration 012: Add user_id to challenges and backfill from created_by
+-- Migration 014: Add user_id to challenges and backfill from created_by
 
 ALTER TABLE challenges ADD COLUMN IF NOT EXISTS user_id INTEGER;
 

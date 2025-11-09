@@ -4,20 +4,30 @@ const { AppError } = require('../middleware/errorHandler');
 const challengeService = {
   getChallenges: async (filters = {}) => {
     try {
-      const {
-        difficulty,
-        category,
-        limit = 20,
-        offset = 0,
-        userId = null,
-      } = filters;
+      const { difficulty, category, limit = 20, offset = 0 } = filters;
+
+      // Normalize possible user id values. The caller may pass `userId` (number)
+      // or a string (from query params) or `user_id`. Coerce to integer or null.
+      let userId = null;
+      if (filters.userId !== undefined && filters.userId !== null) {
+        const parsed = Number.parseInt(filters.userId, 10);
+        userId =
+          Number.isFinite(parsed) && !Number.isNaN(parsed) ? parsed : null;
+      } else if (filters.user_id !== undefined && filters.user_id !== null) {
+        const parsed = Number.parseInt(filters.user_id, 10);
+        userId =
+          Number.isFinite(parsed) && !Number.isNaN(parsed) ? parsed : null;
+      }
+
       let challenges;
 
-      if (difficulty)
+      if (difficulty) {
         challenges = await Challenge.findByDifficulty(difficulty, userId);
-      else if (category)
+      } else if (category) {
         challenges = await Challenge.findByCategory(category, userId);
-      else challenges = await Challenge.findAll(userId);
+      } else {
+        challenges = await Challenge.findAll(userId);
+      }
 
       return challenges.slice(offset, offset + limit);
     } catch (error) {
@@ -25,9 +35,9 @@ const challengeService = {
     }
   },
 
-  getChallengeById: async (id) => {
+  getChallengeById: async (id, userId = null) => {
     try {
-      const challenge = await Challenge.findById(id);
+      const challenge = await Challenge.findById(id, userId);
       if (!challenge) throw new AppError('Challenge not found', 404);
       return challenge;
     } catch (error) {

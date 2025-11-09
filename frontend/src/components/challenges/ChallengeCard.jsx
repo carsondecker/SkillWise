@@ -23,6 +23,11 @@ const ChallengeCard = ({ challenge }) => {
             {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
           </span>
           <span className="points">+{points} pts</span>
+          {(challenge?.is_completed ||
+            challenge?.completed ||
+            challenge?.status === 'completed') && (
+            <span className="badge badge-completed">Completed</span>
+          )}
         </div>
       </div>
 
@@ -55,15 +60,22 @@ const ChallengeCard = ({ challenge }) => {
         </button>
 
         {/* Mark complete quickly without submission */}
-        <MarkCompleteButton challengeId={challenge.id} />
+        <MarkCompleteButton
+          challengeId={challenge.id}
+          initiallyDone={Boolean(
+            challenge?.is_completed ||
+              challenge?.completed ||
+              challenge?.status === 'completed'
+          )}
+        />
       </div>
     </div>
   );
 };
 
-const MarkCompleteButton = ({ challengeId }) => {
+const MarkCompleteButton = ({ challengeId, initiallyDone = false }) => {
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(Boolean(initiallyDone));
 
   const handleMark = async () => {
     if (loading || done) return;

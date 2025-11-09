@@ -30,7 +30,8 @@ const challengeController = {
 
   getChallengeById: asyncHandler(async (req, res) => {
     const id = parseInt(req.params.id, 10);
-    const challenge = await challengeService.getChallengeById(id);
+    const userId = req.user?.id;
+    const challenge = await challengeService.getChallengeById(id, userId);
     res.json({ challenge });
   }),
 
@@ -49,9 +50,8 @@ const challengeController = {
       data.related_goal_id = data.relatedGoalId;
       delete data.relatedGoalId;
     }
-    // Attach creator id and user_id so backend can set ownership
+    // Attach creator id so backend can set ownership (use created_by column)
     data.created_by = req.user.id;
-    data.user_id = req.user.id;
     const challenge = await challengeService.createChallenge(data);
     res
       .status(201)

@@ -14,7 +14,7 @@ const submissionService = {
    */
   createSubmission: async (submissionData) => {
     try {
-      const { userId, challengeId, content, files, language } = submissionData;
+      const { userId, challengeId, content, files } = submissionData;
 
       if (!userId || !challengeId || !content) {
         throw new AppError(
@@ -27,11 +27,11 @@ const submissionService = {
       // Use DB column names used in migrations: submission_text, submission_files
       const result = await db.query(
         `
-        INSERT INTO submissions (user_id, challenge_id, submission_text, submission_files, language, status, submitted_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, 'submitted', NOW(), NOW())
+        INSERT INTO submissions (user_id, challenge_id, submission_text, submission_files, status, submitted_at, updated_at)
+        VALUES ($1, $2, $3, $4, 'submitted', NOW(), NOW())
         RETURNING *
         `,
-        [userId, challengeId, content, files || null, language || 'text']
+        [userId, challengeId, content, files || null]
       );
 
       const submission = result.rows[0];
@@ -365,14 +365,14 @@ const submissionService = {
       // Create a lightweight submission record to represent completion
       const result = await db.query(
         `
-        INSERT INTO submissions (user_id, challenge_id, submission_text, submission_files, language, status, score, feedback, submitted_at, graded_at, updated_at)
-        VALUES ($1, $2, $3, $4, 'text', 'completed', $5, $6, NOW(), NOW(), NOW())
+        INSERT INTO submissions (user_id, challenge_id, submission_text, submission_files, status, score, feedback, submitted_at, graded_at, updated_at)
+        VALUES ($1, $2, $3, $4, 'completed', $5, $6, NOW(), NOW(), NOW())
         RETURNING *
         `,
         [
           userId,
           challengeId,
-          null,
+          '', // submission_text is NOT NULL in DB migrations; use empty string for mark-complete
           null,
           points >= 0 ? Math.round(points * 10) : 100,
           'Marked completed by user',

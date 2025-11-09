@@ -84,29 +84,33 @@ const GoalCard = ({ goal }) => {
           <div className="goal-progress">
             {(() => {
               // Resolve progress from multiple possible backend fields, or compute from linked challenges
-              const raw = normalizedGoal.progress || 0;
+              // Compute progress strictly from linked challenges per spec:
+              // - If there are no challenges linked to this goal -> 0%
+              // - Otherwise compute completed / total * 100 using completed and uncompleted challenges
+              const ch = Array.isArray(normalizedGoal.challenges)
+                ? normalizedGoal.challenges.filter(Boolean)
+                : [];
 
-              // If there is no explicit percent but we have challenges, compute by completed / total
-              const computeFromChallenges = () => {
-                const ch = Array.isArray(normalizedGoal.challenges)
-                  ? normalizedGoal.challenges
-                  : [];
-                if (ch.length === 0) return null;
-                const completed = ch.filter(
-                  (c) =>
-                    c?.status === 'completed' || c?.is_completed || c?.completed
-                ).length;
-                return Math.round((completed / ch.length) * 100);
-              };
-
-              let pct = Number(raw || 0);
-              if (!pct || Number.isNaN(pct)) {
-                const fromCh = computeFromChallenges();
-                pct = fromCh != null ? fromCh : 0;
+              if (ch.length === 0) {
+                return <ProgressBar value={0} label="Progress" />;
               }
 
-              // Clamp and ensure integer
-              pct = Math.max(0, Math.min(100, Math.round(pct)));
+              const total =
+                ch.filter((c) => c && (c.id || c.id === 0)).length || ch.length;
+              // Determine completion using backend-provided `is_completed` when available,
+              // otherwise fall back to common fields/status values.
+              const completed = ch.filter((c) => {
+                if (!c) return false;
+                if (typeof c.is_completed === 'boolean') return c.is_completed;
+                if (typeof c.completed === 'boolean') return c.completed;
+                const status = (c.status || '').toString().toLowerCase();
+                return status === 'completed' || status === 'graded';
+              }).length;
+
+              const pct = Math.max(
+                0,
+                Math.min(100, Math.round((completed / total) * 100))
+              );
 
               return <ProgressBar value={pct} label="Progress" />;
             })()}
