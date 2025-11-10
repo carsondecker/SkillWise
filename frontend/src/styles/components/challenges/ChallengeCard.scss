@@ -124,28 +124,34 @@
 
   .challenge-footer {
     display: flex;
-    gap: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
     padding-top: 1rem;
     border-top: 1px solid #f1f3f5;
 
-    button {
-      flex: 1;
-      padding: 0.625rem 1.25rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border: none;
-      outline: none;
+    .primary-actions {
+      display: flex;
+      gap: 0.75rem;
 
-      &:active:not(:disabled) {
-        transform: translateY(1px);
-      }
+      button {
+        flex: 1;
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        outline: none;
 
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+        &:active:not(:disabled) {
+          transform: translateY(1px);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
       }
     }
 
@@ -182,6 +188,38 @@
       &:disabled {
         background: #f8f9fa;
         color: #6c757d;
+      }
+    }
+
+    /* Danger / Delete button (placed below primary actions) */
+    .delete-row {
+      margin-top: 0.5rem;
+
+      .btn-danger {
+        width: 100%;
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: none;
+        outline: none;
+        background: #e55353; /* nice red */
+        color: #fff;
+
+        &:hover:not(:disabled) {
+          background: #c82333;
+        }
+
+        &:active:not(:disabled) {
+          transform: translateY(1px);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
       }
     }
   }

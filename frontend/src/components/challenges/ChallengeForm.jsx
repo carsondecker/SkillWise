@@ -66,10 +66,12 @@ const ChallengeForm = ({ onCreated, onCancel, initialData = {} }) => {
         ai_suggest: aiSuggest,
         ai_prompt_variant: aiPromptVariant,
       };
-      // If initialData contains a related goal id, include it so backend can link the challenge
-      if (initialData.related_goal_id || initialData.goalId) {
-        payload.related_goal_id =
-          initialData.related_goal_id || initialData.goalId;
+      // If initialData contains a related goal id, include it so backend can link the challenge.
+      // Send both snake_case and camelCase keys to be robust against backend validation/mapping.
+      const relatedId = initialData.related_goal_id || initialData.goalId;
+      if (relatedId !== undefined && relatedId !== null) {
+        payload.related_goal_id = relatedId;
+        payload.relatedGoalId = relatedId;
       }
 
       const res = await apiService.challenges.create(payload);

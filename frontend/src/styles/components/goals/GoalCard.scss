@@ -148,6 +148,25 @@
           box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
         }
       }
+      /* Danger / Delete button styling */
+      .btn-danger {
+        background: #e55353; /* nice red */
+        color: #fff;
+        border: none;
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-top: 0.5rem; /* little space above delete */
+
+        &:hover:not(:disabled) {
+          background: #c82333;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
     }
   }
 

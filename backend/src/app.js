@@ -56,7 +56,7 @@ app.use(
         statusCode: res.statusCode,
       }),
     },
-  }),
+  })
 );
 
 // --------------------------------------------------
@@ -73,7 +73,7 @@ app.use(
         imgSrc: ["'self'", 'data:', 'https:'],
       },
     },
-  }),
+  })
 );
 
 // Trust proxy (important for rate limiting behind proxies like Heroku)
@@ -88,7 +88,7 @@ app.use(
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  }),
+  })
 );
 
 // --------------------------------------------------
@@ -96,9 +96,12 @@ app.use(
 // Note: apply a global (conservative) limiter and a relaxed limiter for auth
 // endpoints so login/refresh flows aren't penalized with long retry windows.
 // --------------------------------------------------
+// Increase conservative defaults so clients can make more requests before being rate-limited.
+// These can still be overridden via environment variables if you need tighter limits.
 const GLOBAL_WINDOW_MS =
   parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 3 * 60 * 1000; // 3 min
-const GLOBAL_MAX = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100;
+// Default global max raised from 100 -> 1000 to allow higher throughput by default
+const GLOBAL_MAX = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 1000;
 
 const globalLimiter = rateLimit({
   windowMs: GLOBAL_WINDOW_MS,
@@ -116,9 +119,12 @@ const globalLimiter = rateLimit({
 });
 
 // Auth endpoints should be less punitive: shorter window and higher burst allowance
+// Auth endpoints often need more generous burst quotas for real users performing
+// login/refresh/register actions across devices. Keep window small but allow larger bursts.
 const AUTH_WINDOW_MS =
   parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000; // 1 minute
-const AUTH_MAX = parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS, 10) || 20; // allow bursts
+// Default auth max raised from 20 -> 200 to allow more auth attempts/bursts by default
+const AUTH_MAX = parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS, 10) || 200; // allow bursts
 
 const authLimiter = rateLimit({
   windowMs: AUTH_WINDOW_MS,
@@ -164,14 +170,14 @@ app.use(
   express.json({
     limit: '10mb',
     strict: true,
-  }),
+  })
 );
 
 app.use(
   express.urlencoded({
     extended: true,
     limit: '10mb',
-  }),
+  })
 );
 
 // --------------------------------------------------

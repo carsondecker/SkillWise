@@ -1,10 +1,12 @@
-// TODO: Implement challenge card component
 import React, { useState } from 'react';
 import { apiService } from '../../services/api';
 import '../../styles/components/challenges/ChallengeCard.scss';
 
 const ChallengeCard = ({ challenge }) => {
-  // TODO: Add difficulty indicators, estimated time, tags, actions
+  const [removed, setRemoved] = useState(false);
+
+  if (removed) return null;
+
   const difficulty = (
     challenge?.difficulty ||
     challenge?.difficulty_level ||
@@ -52,22 +54,32 @@ const ChallengeCard = ({ challenge }) => {
       </div>
 
       <div className="challenge-footer">
-        <button
-          className="btn-primary"
-          onClick={() => window.location.assign(`/challenges/${challenge.id}`)}
-        >
-          Start Challenge
-        </button>
+        <div className="primary-actions">
+          <button
+            className="btn-primary"
+            onClick={() =>
+              window.location.assign(`/challenges/${challenge.id}`)
+            }
+          >
+            Start Challenge
+          </button>
 
-        {/* Mark complete quickly without submission */}
-        <MarkCompleteButton
-          challengeId={challenge.id}
-          initiallyDone={Boolean(
-            challenge?.is_completed ||
-              challenge?.completed ||
-              challenge?.status === 'completed'
-          )}
-        />
+          <MarkCompleteButton
+            challengeId={challenge.id}
+            initiallyDone={Boolean(
+              challenge?.is_completed ||
+                challenge?.completed ||
+                challenge?.status === 'completed'
+            )}
+          />
+        </div>
+
+        <div className="delete-row">
+          <DeleteChallengeButton
+            challengeId={challenge.id}
+            onDeleted={() => setRemoved(true)}
+          />
+        </div>
       </div>
     </div>
   );
@@ -82,14 +94,12 @@ const MarkCompleteButton = ({ challengeId, initiallyDone = false }) => {
     setLoading(true);
     try {
       await apiService.submissions.markComplete(challengeId);
-      // let other parts of the app refresh (goal cards, leaderboard)
       window.dispatchEvent(
         new CustomEvent('challenge:completed', { detail: { challengeId } })
       );
       setDone(true);
     } catch (err) {
       console.error('Failed to mark challenge complete', err);
-      // Basic user feedback — ideally replace with toast
       alert(
         err?.response?.data?.message ||
           err?.message ||
@@ -108,6 +118,49 @@ const MarkCompleteButton = ({ challengeId, initiallyDone = false }) => {
       title={done ? 'Completed' : 'Mark this challenge as complete'}
     >
       {done ? 'Completed' : loading ? 'Marking...' : 'Mark Complete'}
+    </button>
+  );
+};
+
+const DeleteChallengeButton = ({ challengeId, onDeleted }) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    if (!challengeId) return;
+    const ok = window.confirm(
+      'Delete this challenge? This action cannot be undone.'
+    );
+    if (!ok) return;
+    setLoading(true);
+    try {
+      await apiService.challenges.delete(challengeId);
+      window.dispatchEvent(
+        new CustomEvent('challenge:deleted', { detail: { challengeId } })
+      );
+      if (window.location.pathname.includes(`/challenges/${challengeId}`)) {
+        window.location.href = '/challenges';
+      }
+      if (onDeleted) onDeleted();
+    } catch (err) {
+      console.error('Failed to delete challenge', err);
+      alert(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to delete challenge'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      className="btn-danger"
+      onClick={handleDelete}
+      disabled={loading}
+      title={loading ? 'Deleting...' : 'Delete challenge'}
+    >
+      {loading ? 'Deleting...' : 'Delete'}
     </button>
   );
 };

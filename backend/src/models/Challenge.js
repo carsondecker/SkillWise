@@ -214,6 +214,16 @@ class Challenge {
     );
     return result.rows[0] || null;
   }
+
+  // Delete all challenges linked to a given goal id
+  static async deleteByRelatedGoalId(goalId) {
+    if (!goalId) return { rowCount: 0 };
+    const result = await db.query(
+      'DELETE FROM challenges WHERE related_goal_id = $1 RETURNING id',
+      [goalId]
+    );
+    return result;
+  }
 }
 
 module.exports = Challenge;

@@ -372,6 +372,7 @@ export const apiService = {
     getAll: (params) => api.get('/challenges', { params }),
     create: (data) => api.post('/challenges', data),
     getById: (id) => api.get(`/challenges/${id}`),
+    delete: (id) => api.delete(`/challenges/${id}`),
     // Submit work for a challenge — prefer centralized /submissions endpoint
     submit: (id, submission) =>
       api.post('/submissions', { challengeId: id, ...submission }),

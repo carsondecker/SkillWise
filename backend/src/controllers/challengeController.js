@@ -45,10 +45,17 @@ const challengeController = {
 
     // Parse and validate request body
     const data = createSchema.parse(req.body);
-    // Map camelCase API field to snake_case DB field expected by model
+    // Map either camelCase or snake_case related goal fields to DB column name
+    // Accept: relatedGoalId (camelCase) or related_goal_id (snake_case)
     if (data.relatedGoalId) {
       data.related_goal_id = data.relatedGoalId;
       delete data.relatedGoalId;
+    } else if (
+      req.body &&
+      (req.body.related_goal_id || req.body.relatedGoalId)
+    ) {
+      // preserve validated fields and copy raw body related_goal_id if present
+      data.related_goal_id = req.body.related_goal_id || req.body.relatedGoalId;
     }
     // Attach creator id so backend can set ownership (use created_by column)
     data.created_by = req.user.id;
