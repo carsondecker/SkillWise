@@ -4,8 +4,15 @@ const submissionService = require('../services/submissionService');
 const { asyncHandler } = require('../utils/helpers');
 
 // ✅ Validation Schemas
+// Accept either a numeric id (string or number) or a uuid for challengeId
+const idOrUuid = z.preprocess((val) => {
+  // If it's a numeric string, coerce to number
+  if (typeof val === 'string' && /^[0-9]+$/.test(val)) return Number(val);
+  return val;
+}, z.union([z.number().int().positive(), z.string().uuid()]));
+
 const submitWorkSchema = z.object({
-  challengeId: z.string().uuid(),
+  challengeId: idOrUuid,
   content: z.string().min(1, 'Submission content is required'),
   files: z.array(z.string().url()).optional(), // e.g. uploaded file URLs
 });
@@ -53,7 +60,14 @@ const submissionController = {
   // Get a single submission by ID
   // -------------------------
   getSubmission: asyncHandler(async (req, res) => {
-    const submissionId = z.string().uuid().parse(req.params.id);
+    // submissions use integer IDs in the DB; accept numeric ids or uuids
+    const submissionIdRaw = z
+      .preprocess((val) => {
+        if (typeof val === 'string' && /^[0-9]+$/.test(val)) return Number(val);
+        return val;
+      }, z.union([z.number().int().positive(), z.string().uuid()]))
+      .parse(req.params.id);
+    const submissionId = submissionIdRaw;
     const userId = req.user?.id;
 
     const submission = await submissionService.getSubmission({
@@ -88,7 +102,13 @@ const submissionController = {
   // Update an existing submission
   // -------------------------
   updateSubmission: asyncHandler(async (req, res) => {
-    const submissionId = z.string().uuid().parse(req.params.id);
+    const submissionIdRaw = z
+      .preprocess((val) => {
+        if (typeof val === 'string' && /^[0-9]+$/.test(val)) return Number(val);
+        return val;
+      }, z.union([z.number().int().positive(), z.string().uuid()]))
+      .parse(req.params.id);
+    const submissionId = submissionIdRaw;
     const userId = req.user?.id;
     const payload = updateSubmissionSchema.parse(req.body);
 
@@ -99,13 +119,37 @@ const submissionController = {
     });
 
     if (!updated) {
-      return res.status(404).json({ message: 'Submission not found or unauthorized' });
+      return res
+        .status(404)
+        .json({ message: 'Submission not found or unauthorized' });
     }
 
     res.json({
       message: 'Submission updated successfully',
       submission: updated,
     });
+  }),
+
+  // -------------------------
+  // Mark a challenge complete (no submission content)
+  // -------------------------
+  completeChallenge: asyncHandler(async (req, res) => {
+    // Accept numeric challenge IDs (most DBs use serial ints) or uuids
+    const challengeIdRaw = z
+      .preprocess((val) => {
+        if (typeof val === 'string' && /^[0-9]+$/.test(val)) return Number(val);
+        return val;
+      }, z.union([z.number().int().positive(), z.string().uuid()]))
+      .parse(req.params.challengeId);
+    const challengeId = challengeIdRaw;
+    const userId = req.user?.id;
+
+    const submission = await submissionService.completeChallenge({
+      userId,
+      challengeId,
+    });
+
+    res.status(201).json({ message: 'Challenge marked complete', submission });
   }),
 };
 

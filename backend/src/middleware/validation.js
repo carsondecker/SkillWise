@@ -23,10 +23,16 @@ const registerSchema = z.object({
         .min(8, 'Password must be at least 8 characters')
         .regex(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-          'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+          'Password must contain at least one lowercase letter, one uppercase letter, and one number'
         ),
-      firstName: z.string().min(1, 'First name is required').max(50, 'First name too long'),
-      lastName: z.string().min(1, 'Last name is required').max(50, 'Last name too long'),
+      firstName: z
+        .string()
+        .min(1, 'First name is required')
+        .max(50, 'First name too long'),
+      lastName: z
+        .string()
+        .min(1, 'Last name is required')
+        .max(50, 'Last name too long'),
       confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
@@ -38,7 +44,10 @@ const registerSchema = z.object({
 // ✅ Goal Schema
 const goalSchema = z.object({
   body: z.object({
-    title: z.string().min(1, 'Goal title is required').max(255, 'Title too long'),
+    title: z
+      .string()
+      .min(1, 'Goal title is required')
+      .max(255, 'Title too long'),
     description: z.string().max(1000, 'Description too long').optional(),
     category: z.string().max(100, 'Category too long').optional(),
     difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
@@ -49,7 +58,10 @@ const goalSchema = z.object({
 // ✅ Challenge Schema
 const challengeSchema = z.object({
   body: z.object({
-    title: z.string().min(1, 'Challenge title is required').max(255, 'Title too long'),
+    title: z
+      .string()
+      .min(1, 'Challenge title is required')
+      .max(255, 'Title too long'),
     description: z.string().min(1, 'Description is required'),
     instructions: z.string().min(1, 'Instructions are required'),
     category: z.string().min(1, 'Category is required'),
@@ -57,6 +69,8 @@ const challengeSchema = z.object({
     estimatedTimeMinutes: z.number().int().positive().optional(),
     pointsReward: z.number().int().positive().default(10),
     maxAttempts: z.number().int().positive().default(3),
+    // Link to a goal (camelCase). Controller will map to DB snake_case field.
+    relatedGoalId: z.number().int().optional(),
   }),
 });
 
@@ -84,8 +98,8 @@ const validate = (schema) => {
           new AppError(
             `Validation failed: ${errors.map((e) => e.message).join(', ')}`,
             400,
-            'VALIDATION_ERROR',
-          ),
+            'VALIDATION_ERROR'
+          )
         );
       }
 
@@ -93,7 +107,9 @@ const validate = (schema) => {
       req.validated = result.data;
       next();
     } catch (error) {
-      next(new AppError('Unexpected validation error', 400, 'VALIDATION_ERROR'));
+      next(
+        new AppError('Unexpected validation error', 400, 'VALIDATION_ERROR')
+      );
     }
   };
 };

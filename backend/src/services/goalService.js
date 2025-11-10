@@ -1,4 +1,3 @@
-
 // src/services/goalService.js
 const Goal = require('../models/Goal');
 const { AppError } = require('../middleware/errorHandler');
@@ -10,7 +9,7 @@ const goalService = {
   getGoals: async ({ userId, limit = 20, offset = 0 }) => {
     try {
       const goals = await Goal.findByUserId(userId, limit, offset);
-      return goals.map(goal => ({
+      return goals.map((goal) => ({
         ...goal,
         completion: goalService.calculateCompletion(goal),
       }));
@@ -34,7 +33,13 @@ const goalService = {
   /**
    * 🧾 Create a new goal
    */
-  createGoal: async ({ userId, title, description, category, target_completion_date }) => {
+  createGoal: async ({
+    userId,
+    title,
+    description,
+    category,
+    target_completion_date,
+  }) => {
     try {
       if (!title || title.trim() === '') {
         throw new AppError('Title is required', 400, 'VALIDATION_ERROR');
@@ -77,8 +82,13 @@ const goalService = {
    */
   deleteGoal: async ({ userId, goalId }) => {
     try {
+      // Remove dependent challenges first to avoid foreign key constraint violations.
+      const removed =
+        await require('../models/Challenge').deleteByRelatedGoalId(goalId);
+      // then delete the goal itself
       const deletedGoal = await Goal.delete(goalId);
-      if (!deletedGoal) throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
+      if (!deletedGoal)
+        throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
       return deletedGoal;
     } catch (error) {
       throw new AppError(`Error deleting goal: ${error.message}`, 500);

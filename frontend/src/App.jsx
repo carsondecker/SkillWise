@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import DashboardLayout from './components/layouts/DashboardLayout';
 
 // Import all pages
 import HomePage from './pages/HomePage';
@@ -37,63 +38,22 @@ function App() {
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/error" element={<ErrorPage />} />
 
-              {/* Protected routes */}
+              {/* Protected dashboard routes mounted under a single layout so it stays mounted */}
               <Route
-                path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <DashboardPage />
+                    <DashboardLayout />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/goals"
-                element={
-                  <ProtectedRoute>
-                    <GoalsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/challenges"
-                element={
-                  <ProtectedRoute>
-                    <ChallengesPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/progress"
-                element={
-                  <ProtectedRoute>
-                    <ProgressPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/leaderboard"
-                element={
-                  <ProtectedRoute>
-                    <LeaderboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/peer-review"
-                element={
-                  <ProtectedRoute>
-                    <PeerReviewPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
+              >
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/goals" element={<GoalsPage />} />
+                <Route path="/challenges" element={<ChallengesPage />} />
+                <Route path="/progress" element={<ProgressPage />} />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/peer-review" element={<PeerReviewPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Route>
 
               {/* Catch-all route for 404 */}
               <Route path="*" element={<NotFoundPage />} />

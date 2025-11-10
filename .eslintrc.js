@@ -4,9 +4,7 @@ module.exports = {
     es2021: true,
     browser: true,
   },
-  extends: [
-    'eslint:recommended',
-  ],
+  extends: ['eslint:recommended'],
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
@@ -14,12 +12,6 @@ module.exports = {
   rules: {
     'no-unused-vars': 'warn',
     'no-console': 'warn',
-    'indent': ['error', 2],
-    'quotes': ['error', 'single'],
-    'semi': ['error', 'always'],
-    'comma-dangle': ['error', 'always-multiline'],
-    'no-trailing-spaces': 'error',
-    'eol-last': 'error',
   },
   overrides: [
     {
@@ -33,6 +25,12 @@ module.exports = {
         ecmaFeatures: {
           jsx: true,
         },
+      },
+      rules: {
+        'no-unused-vars': 'warn',
+        'no-console': 'warn',
+        'comma-dangle': 'warn',
+        'no-useless-escape': 'warn',
       },
     },
     {

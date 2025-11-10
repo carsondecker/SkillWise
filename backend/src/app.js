@@ -27,13 +27,13 @@ const logger = pino({
   transport:
     process.env.NODE_ENV === 'development'
       ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-        },
-      }
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname',
+          },
+        }
       : undefined,
 });
 
@@ -56,7 +56,7 @@ app.use(
         statusCode: res.statusCode,
       }),
     },
-  }),
+  })
 );
 
 // --------------------------------------------------
@@ -67,13 +67,13 @@ app.use(
     crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ['\'self\''],
-        styleSrc: ['\'self\'', '\'unsafe-inline\''],
-        scriptSrc: ['\'self\''],
-        imgSrc: ['\'self\'', 'data:', 'https:'],
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
       },
     },
-  }),
+  })
 );
 
 // Trust proxy (important for rate limiting behind proxies like Heroku)
@@ -88,30 +88,80 @@ app.use(
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  }),
+  })
 );
 
 // --------------------------------------------------
 // 🚦 Rate Limiting
+// Note: apply a global (conservative) limiter and a relaxed limiter for auth
+// endpoints so login/refresh flows aren't penalized with long retry windows.
 // --------------------------------------------------
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 min
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
+// Increase conservative defaults so clients can make more requests before being rate-limited.
+// These can still be overridden via environment variables if you need tighter limits.
+const GLOBAL_WINDOW_MS =
+  parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 3 * 60 * 1000; // 3 min
+// Default global max raised from 100 -> 1000 to allow higher throughput by default
+const GLOBAL_MAX = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 1000;
+
+const globalLimiter = rateLimit({
+  windowMs: GLOBAL_WINDOW_MS,
+  max: GLOBAL_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
     res.status(429).json({
       status: 'fail',
       error: 'Too many requests, please try again later.',
-      retryAfter: Math.ceil(
-        (parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000) / 1000,
-      ),
+      retryAfter: Math.ceil(GLOBAL_WINDOW_MS / 1000),
       timestamp: new Date().toISOString(),
     });
   },
 });
 
-app.use(limiter);
+// Auth endpoints should be less punitive: shorter window and higher burst allowance
+// Auth endpoints often need more generous burst quotas for real users performing
+// login/refresh/register actions across devices. Keep window small but allow larger bursts.
+const AUTH_WINDOW_MS =
+  parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000; // 1 minute
+// Default auth max raised from 20 -> 200 to allow more auth attempts/bursts by default
+const AUTH_MAX = parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS, 10) || 200; // allow bursts
+
+const authLimiter = rateLimit({
+  windowMs: AUTH_WINDOW_MS,
+  max: AUTH_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      status: 'fail',
+      error: 'Too many auth requests, please try again later.',
+      retryAfter: Math.ceil(AUTH_WINDOW_MS / 1000),
+      timestamp: new Date().toISOString(),
+    });
+  },
+});
+
+// Apply auth limiter specifically to auth routes (mounted under /api/auth)
+// NOTE: authLimiter must be applied before the global limiter so login/refresh
+// flows are governed by the relaxed auth rules. If globalLimiter runs first it
+// will also count requests to /api/auth and can return a much larger
+// retryAfter (e.g., when RATE_LIMIT_WINDOW_MS is large) which explains the
+// long blocks observed in some environments.
+app.use('/api/auth', authLimiter);
+
+// Apply global limiter after auth limiter
+app.use(globalLimiter);
+
+// Log rate-limit configuration for debugging (helps explain unexpected retryAfter)
+logger.info({
+  msg: 'rate-limit config',
+  globalWindowMs: GLOBAL_WINDOW_MS,
+  globalMax: GLOBAL_MAX,
+  authWindowMs: AUTH_WINDOW_MS,
+  authMax: AUTH_MAX,
+  globalRetryAfterSec: Math.ceil(GLOBAL_WINDOW_MS / 1000),
+  authRetryAfterSec: Math.ceil(AUTH_WINDOW_MS / 1000),
+});
 
 // --------------------------------------------------
 // 📦 Body Parsers
@@ -120,14 +170,14 @@ app.use(
   express.json({
     limit: '10mb',
     strict: true,
-  }),
+  })
 );
 
 app.use(
   express.urlencoded({
     extended: true,
     limit: '10mb',
-  }),
+  })
 );
 
 // --------------------------------------------------

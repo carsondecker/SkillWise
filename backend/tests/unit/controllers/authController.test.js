@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../../../src/app');
-const db = require('../../../src/database/connection');
+const { testPool, clearTestData } = require('../../setup');
 
 describe('🔐 Authentication Integration', () => {
   let testUser = {
@@ -14,7 +14,7 @@ describe('🔐 Authentication Integration', () => {
   let tokens = {};
 
   afterAll(async () => {
-    await db.end();
+    await clearTestData();
   });
 
   describe('POST /api/auth/register', () => {
@@ -46,8 +46,10 @@ describe('🔐 Authentication Integration', () => {
         .expect(200);
 
       expect(res.body).toHaveProperty('message', 'Login successful');
-      tokens.accessToken = res.body.accessToken;
-      tokens.refreshToken = res.body.refreshToken;
+      expect(res.body.tokens.accessToken).toBeDefined();
+      expect(res.body.tokens.refreshToken).toBeDefined();
+      tokens.accessToken = res.body.tokens.accessToken;
+      tokens.refreshToken = res.body.tokens.refreshToken;
     });
 
     it('should reject invalid credentials', async () => {
@@ -68,7 +70,11 @@ describe('🔐 Authentication Integration', () => {
         .expect(200);
 
       expect(res.body).toHaveProperty('accessToken');
-      expect(res.body).toHaveProperty('refreshToken');
+
+      expect(res.headers['set-cookie']).toBeDefined();
+
+      const cookies = res.headers['set-cookie'].join(';');
+      expect(cookies).toMatch(/refreshToken=/);
     });
   });
 });

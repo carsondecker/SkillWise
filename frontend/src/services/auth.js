@@ -1,70 +1,113 @@
-// TODO: Implement authentication API service
-import api from './api';
+// Authentication service using shared API client
+import { apiService, setAccessToken, clearTokens } from './api';
 
 export const authService = {
-  // TODO: Login user
+  // Login user via backend and store user + access token
   async login(email, password) {
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const { token, refreshToken, user } = response.data;
+      const response = await apiService.auth.login({ email, password });
 
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Backend responds with { user, tokens: { accessToken, refreshToken } }
+      const { user, tokens } = response.data;
 
-      return { token, refreshToken, user };
+      if (tokens?.accessToken) {
+        // Use shared token setter so interceptors and storage stay consistent
+        setAccessToken(tokens.accessToken);
+      }
+
+      // Store refresh token for dev fallback retry (stored in localStorage).
+      // NOTE: This is a convenience for development environments only. In
+      // production you should prefer httpOnly cookies and avoid client storage
+      // of refresh tokens. If you want stricter behavior, guard this with
+      // NODE_ENV !== 'production'.
+      try {
+        // Only persist refresh token in non-production (dev) environments
+        if (process.env.NODE_ENV !== 'production' && tokens?.refreshToken) {
+          localStorage.setItem('refresh_token', tokens.refreshToken);
+        }
+      } catch (e) {
+        // ignore storage errors
+      }
+
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+
+      return { user, tokens };
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Login failed');
     }
   },
 
-  // TODO: Register new user
+  // Register new user
   async register(userData) {
     try {
-      const response = await api.post('/auth/register', userData);
-      return response.data;
+      const response = await apiService.auth.register(userData);
+
+      const { user, tokens } = response.data;
+
+      if (tokens?.accessToken) setAccessToken(tokens.accessToken);
+      // Store refresh token for dev fallback (also on register)
+      try {
+        if (process.env.NODE_ENV !== 'production' && tokens?.refreshToken)
+          localStorage.setItem('refresh_token', tokens.refreshToken);
+      } catch (e) {
+        // ignore storage errors
+      }
+      if (user) localStorage.setItem('user', JSON.stringify(user));
+
+      return { user, tokens };
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Registration failed');
     }
   },
 
-  // TODO: Logout user
+  // Logout user (server-side cookie cleared) and local cleanup
   async logout() {
     try {
-      await api.post('/auth/logout');
+      await apiService.auth.logout();
     } catch (error) {
-      // Continue with local cleanup even if API call fails
       console.warn('Logout API call failed:', error);
     } finally {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
+      clearTokens();
       localStorage.removeItem('user');
+
+      // Notify app that logout happened
+      window.dispatchEvent(
+        new CustomEvent('auth:logout', { detail: { reason: 'user_logout' } })
+      );
     }
   },
 
-  // TODO: Refresh token
+  // Refresh access token using httpOnly refresh cookie via shared api
   async refreshToken() {
-    try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      const response = await api.post('/auth/refresh', { refreshToken });
-      const { token } = response.data;
+    const response = await apiService.auth.refresh();
+    // Accept multiple shapes for compatibility with backend
+    const accessToken =
+      response.data?.accessToken ||
+      response.data?.token ||
+      response.data?.tokens?.accessToken ||
+      response.data?.tokens?.access_token;
 
-      localStorage.setItem('authToken', token);
-      return token;
-    } catch (error) {
-      throw new Error('Token refresh failed');
+    if (accessToken) {
+      setAccessToken(accessToken);
+      return accessToken;
     }
+
+    throw new Error('No access token returned from refresh');
   },
 
-  // TODO: Get current user
+  // Get current user from localStorage
   getCurrentUser() {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   },
 
-  // TODO: Check if user is authenticated
+  // Check if user is authenticated (access token present)
   isAuthenticated() {
-    return !!localStorage.getItem('authToken');
+    return (
+      !!localStorage.getItem('access_token') || !!localStorage.getItem('user')
+    );
   },
 };
 
