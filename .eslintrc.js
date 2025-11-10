@@ -2,7 +2,7 @@ module.exports = {
   env: {
     node: true,
     es2021: true,
-    browser: true,
+    jest: true,
   },
   extends: ['eslint:recommended'],
   parserOptions: {
@@ -11,32 +11,17 @@ module.exports = {
   },
   rules: {
     'no-unused-vars': 'warn',
-    'no-console': 'warn',
+    'no-console': 'off', // Allow console for logging
+    indent: ['error', 2],
+    quotes: ['error', 'single'],
+    semi: ['error', 'always'],
+    'comma-dangle': ['error', 'always-multiline'],
+    'no-trailing-spaces': 'error',
+    'eol-last': 'error',
+    'object-curly-spacing': ['error', 'always'],
+    'array-bracket-spacing': ['error', 'never'],
+    'space-before-function-paren': ['error', 'always'],
+    'keyword-spacing': 'error',
+    'space-infix-ops': 'error',
   },
-  overrides: [
-    {
-      files: ['frontend/**/*.{js,jsx}'],
-      extends: ['eslint:recommended'],
-      env: {
-        browser: true,
-        es6: true,
-      },
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-      rules: {
-        'no-unused-vars': 'warn',
-        'no-console': 'warn',
-      },
-    },
-    {
-      files: ['backend/**/*.js'],
-      env: {
-        node: true,
-        jest: true,
-      },
-    },
-  ],
 };
