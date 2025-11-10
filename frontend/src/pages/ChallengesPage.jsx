@@ -2,83 +2,94 @@
 import React, { useState, useEffect } from 'react';
 import ChallengeCard from '../components/challenges/ChallengeCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import api from '../services/api';
 
 const ChallengesPage = () => {
   const [challenges, setChallenges] = useState([]);
   const [filteredChallenges, setFilteredChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     category: '',
     difficulty: '',
     search: '',
   });
 
-  // Mock data - TODO: Replace with API call
-  useEffect(() => {
-    const mockChallenges = [
-      {
-        id: 1,
-        title: 'Build a React Component',
-        description: 'Create a reusable React component with props and state management.',
-        category: 'Programming',
-        difficulty: 'Medium',
-        points: 50,
-        estimatedTime: 45,
-        tags: ['React', 'JavaScript', 'Frontend'],
-      },
-      {
-        id: 2,
-        title: 'Design a Logo',
-        description: 'Design a professional logo using design principles and color theory.',
-        category: 'Design',
-        difficulty: 'Easy',
-        points: 30,
-        estimatedTime: 60,
-        tags: ['Design', 'Branding', 'Creative'],
-      },
-      {
-        id: 3,
-        title: 'Database Optimization',
-        description: 'Optimize a slow database query and improve performance metrics.',
-        category: 'Backend',
-        difficulty: 'Hard',
-        points: 100,
-        estimatedTime: 120,
-        tags: ['SQL', 'Database', 'Performance'],
-      },
-    ];
+  const fetchChallenges = async (opts = {}) => {
+    setLoading(true);
+    setError(null);
 
-    setTimeout(() => {
-      setChallenges(mockChallenges);
-      setFilteredChallenges(mockChallenges);
+    const params = {
+      category: filters.category || undefined,
+      difficulty: filters.difficulty || undefined,
+      search: filters.search || undefined,
+      limit: opts.limit || 50,
+      page: opts.page || 1,
+    };
+
+    // remove undefined keys
+    Object.keys(params).forEach(k => params[k] === undefined && delete params[k]);
+
+    try {
+      const res = await api.get('/challenges', { params });
+      const payload = res?.data;
+      let items = [];
+
+      if (Array.isArray(payload)) {
+        items = payload;
+      } else if (Array.isArray(payload?.challenges)) {
+        items = payload.challenges;
+      } else if (Array.isArray(payload?.data)) {
+        items = payload.data;
+      } else if (Array.isArray(payload?.results)) {
+        items = payload.results;
+      }
+
+      setChallenges(items);
+      setFilteredChallenges(items);
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || 'Failed to load challenges');
+      setChallenges([]);
+      setFilteredChallenges([]);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  // initial load
+  useEffect(() => {
+    fetchChallenges();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filter challenges based on current filters
+  // refetch when filters change (debounced)
+  useEffect(() => {
+    const t = setTimeout(() => fetchChallenges(), 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.category, filters.difficulty, filters.search]);
+
+  // client-side filtering fallback (keeps behaviour if server doesn't support all params)
   useEffect(() => {
     let filtered = challenges;
-
     if (filters.category) {
-      filtered = filtered.filter(challenge =>
-        challenge.category.toLowerCase() === filters.category.toLowerCase(),
+      filtered = filtered.filter(ch =>
+        (ch.category || '').toLowerCase() === filters.category.toLowerCase()
       );
     }
-
     if (filters.difficulty) {
-      filtered = filtered.filter(challenge =>
-        challenge.difficulty.toLowerCase() === filters.difficulty.toLowerCase(),
+      filtered = filtered.filter(ch =>
+        (ch.difficulty || '').toLowerCase() === filters.difficulty.toLowerCase()
       );
     }
-
     if (filters.search) {
-      filtered = filtered.filter(challenge =>
-        challenge.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        challenge.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-        challenge.tags.some(tag => tag.toLowerCase().includes(filters.search.toLowerCase())),
+      const q = filters.search.toLowerCase();
+      filtered = filtered.filter(ch =>
+        (ch.title || '').toLowerCase().includes(q) ||
+        (ch.description || '').toLowerCase().includes(q) ||
+        ((ch.tags || []).some(tag => tag.toLowerCase().includes(q)))
       );
     }
-
     setFilteredChallenges(filtered);
   }, [challenges, filters]);
 
@@ -148,6 +159,12 @@ const ChallengesPage = () => {
       <div className="challenges-content">
         {loading ? (
           <LoadingSpinner message="Loading challenges..." />
+        ) : error ? (
+          <div className="error-state">
+            <h3>Unable to load challenges</h3>
+            <p>{error}</p>
+            <button className="btn-secondary" onClick={() => fetchChallenges()}>Retry</button>
+          </div>
         ) : filteredChallenges.length > 0 ? (
           <div className="challenges-grid">
             {filteredChallenges.map(challenge => (
