@@ -22,6 +22,8 @@ const GoalsPage = () => {
     difficulty: 'medium',
     target_date: '',
     progress: 0,
+    points_reward: 0,
+    is_public: false,
   });
 
   // 🔹 Fetch all goals
@@ -30,11 +32,9 @@ const GoalsPage = () => {
       try {
         setLoading(true);
         const res = await apiService.goals.getAll();
-
         const fetchedGoals = Array.isArray(res.data)
           ? res.data
           : res.data?.goals || [];
-
         setGoals(fetchedGoals);
         setFilteredGoals(fetchedGoals);
       } catch (err) {
@@ -45,8 +45,7 @@ const GoalsPage = () => {
         setLoading(false);
       }
     };
-
-    fetchGoals();
+    void fetchGoals();
   }, []);
 
   // 🔹 Filter + Search Logic
@@ -66,6 +65,11 @@ const GoalsPage = () => {
     setNewGoal((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleBoolChange = (e) => {
+    const { name, value } = e.target;
+    setNewGoal((prev) => ({ ...prev, [name]: value === 'true' }));
+  };
+
   // 🔹 Create goal
   const handleCreateGoal = async (e) => {
     e.preventDefault();
@@ -80,6 +84,8 @@ const GoalsPage = () => {
         target_date: newGoal.target_date
           ? new Date(newGoal.target_date).toISOString()
           : null,
+        points_reward: Number(newGoal.points_reward) || 0,
+        is_public: !!newGoal.is_public,
       };
 
       const res = await apiService.goals.create(payload);
@@ -97,6 +103,8 @@ const GoalsPage = () => {
         difficulty: 'medium',
         target_date: '',
         progress: 0,
+        points_reward: 0,
+        is_public: false,
       });
     } catch (error) {
       console.error('❌ Failed to create goal:', error);
@@ -231,6 +239,33 @@ const GoalsPage = () => {
                   value={newGoal.target_date}
                   onChange={handleInputChange}
                 />
+              </div>
+
+              {/* 🧩 Points Reward + Public Toggle */}
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Points Reward</label>
+                  <input
+                    type="number"
+                    name="points_reward"
+                    min="0"
+                    value={newGoal.points_reward}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 50"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Visibility</label>
+                  <select
+                    name="is_public"
+                    value={newGoal.is_public ? 'true' : 'false'}
+                    onChange={handleBoolChange}
+                  >
+                    <option value="false">Private</option>
+                    <option value="true">Public</option>
+                  </select>
+                </div>
               </div>
 
               <div className="modal-actions">

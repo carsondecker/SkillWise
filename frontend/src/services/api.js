@@ -234,9 +234,30 @@ export const apiService = {
     getAll: (params) => api.get('/challenges', { params }),
     getById: (id) => api.get(`/challenges/${id}`),
     create: (data) => api.post('/challenges', data),
-    submit: (id, submission) =>
-      api.post(`/challenges/${id}/submit`, submission),
-    getSubmissions: (id) => api.get(`/challenges/${id}/submissions`),
+    update: (id, data) => api.put(`/challenges/${id}`, data), // ✅ added update
+  },
+  // --------------------------------
+  // 🧩 Submission Endpoints
+  // --------------------------------
+  submissions: {
+    // 🟢 Get all submissions for a user
+    getUserSubmissions: (userId, params) =>
+      api.get(`/submissions/user/${userId}`, { params }),
+
+    // 🟡 Get a single submission by ID
+    getById: (id) => api.get(`/submissions/${id}`),
+
+    getForChallenge: (challengeId) =>
+      api.get(`/submissions/challenge/${challengeId}`),
+
+    // 🔵 Submit a new solution (with text + optional file)
+    create: (formData) =>
+      api.post('/submissions', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+
+    // 🟣 Update or resubmit an existing submission
+    update: (id, data) => api.put(`/submissions/${id}`, data),
   },
 
   // Progress methods
@@ -250,8 +271,44 @@ export const apiService = {
 
   // Leaderboard methods
   leaderboard: {
-    getGlobal: (params) => api.get('/leaderboard/global', { params }),
-    getUserRank: () => api.get('/leaderboard/user-rank'),
+    /**
+     * 🏆 Get leaderboard (global / weekly / monthly)
+     * Example usage:
+     *   apiService.leaderboard.get({ timeframe: 'weekly', limit: 20 })
+     */
+    get: (params = {}) => api.get('/leaderboard', { params }),
+
+    /**
+     * 🥇 Get top global performers
+     * Example usage:
+     *   apiService.leaderboard.getTop({ limit: 10 })
+     */
+    getTop: (params = {}) => api.get('/leaderboard/top', { params }),
+
+    /**
+     * 👤 Get a specific user’s rank
+     * Example usage:
+     *   apiService.leaderboard.getUserRank(3)
+     */
+    getUserRank: (userId) => api.get(`/leaderboard/user/${userId}`),
+
+    /**
+     * 📚 Get leaderboard for a specific challenge category
+     * Example usage:
+     *   apiService.leaderboard.getByCategory('programming')
+     */
+    getByCategory: (category, params = {}) =>
+      api.get('/leaderboard/category', { params: { category, ...params } }),
+
+    /**
+     * 💎 Preview calculated achievement points
+     * Example usage:
+     *   apiService.leaderboard.previewAchievementPoints({
+     *     difficulty: 'hard', category: 'goal_completion'
+     *   })
+     */
+    previewAchievementPoints: (data) =>
+      api.post('/leaderboard/achievement-points', data),
   },
 
   // Peer Review methods

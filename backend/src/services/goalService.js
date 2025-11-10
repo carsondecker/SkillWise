@@ -40,6 +40,9 @@ const goalService = {
     category,
     difficulty_level,
     target_date,
+    points_reward,
+    is_public,
+    progress_percentage,
   }) => {
     try {
       if (!title || title.trim() === '') {
@@ -53,6 +56,9 @@ const goalService = {
         category: category || 'General',
         difficulty_level: difficulty_level || 'medium',
         target_date: target_date || null,
+        points_reward: Number(points_reward) || 0,
+        is_public: !!is_public,
+        progress_percentage: progress_percentage ?? 0,
       });
 
       return newGoal;
@@ -64,7 +70,7 @@ const goalService = {
   /**
    * ✏️ Update existing goal
    */
-  updateGoal: async ({ userId, goalId, data }) => {
+  updateGoal: async ({ goalId, data }) => {
     try {
       const updated = await Goal.update(goalId, data);
       if (!updated) {

@@ -1,4 +1,3 @@
-// src/routes/leaderboard.js
 const express = require('express');
 const router = express.Router();
 
@@ -6,20 +5,31 @@ const leaderboardController = require('../controllers/leaderboardController');
 const auth = require('../middleware/auth');
 
 // --------------------------------------------------
-// 🔹 Leaderboard Routes (Protected)
+// 🧭 Leaderboard Routes (Protected)
 // --------------------------------------------------
 
-// 🟢 Get global leaderboard
-// Optional query params: ?period=weekly|monthly|alltime&limit=10
+// 🏆 Get global / weekly / monthly leaderboard
+// Example: GET /leaderboard?timeframe=weekly&limit=10
 router.get('/', auth, leaderboardController.getLeaderboard);
 
-// 🟢 Get current user's ranking and total points
-router.get('/ranking', auth, leaderboardController.getUserRanking);
+// 🥇 Get top global performers (shortcut)
+// Example: GET /leaderboard/top?limit=5
+router.get('/top', auth, leaderboardController.getTopPerformers);
 
-// 🟡 Get detailed points breakdown for the logged-in user
-router.get('/points', auth, leaderboardController.getPointsBreakdown);
+// 👤 Get specific user's ranking
+// Example: GET /leaderboard/user/:userId
+router.get('/user/:userId', auth, leaderboardController.getUserRanking);
 
-// 🟣 Get user achievements and badges
-router.get('/achievements', auth, leaderboardController.getAchievements);
+// 📚 Get category-specific leaderboard
+// Example: GET /leaderboard/category?category=programming&limit=10
+router.get('/category', auth, leaderboardController.getCategoryLeaderboard);
+
+// 💎 Preview achievement point calculation
+// Example: POST /leaderboard/achievement-points
+router.post(
+  '/achievement-points',
+  auth,
+  leaderboardController.calculateAchievementPoints
+);
 
 module.exports = router;

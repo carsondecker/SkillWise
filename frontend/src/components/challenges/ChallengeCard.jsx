@@ -2,10 +2,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/components/Challenge/ChallengeCard.scss';
 
 const ChallengeCard = ({ challenge, onEdit }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const {
     title,
     difficulty_level,
@@ -45,6 +48,7 @@ const ChallengeCard = ({ challenge, onEdit }) => {
           className="btn-primary"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          onClick={() => navigate(`/challenges/${challenge.id}/submit`)}
         >
           Start Challenge
         </motion.button>

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import ChallengeCard from '../components/challenges/ChallengeCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth'; // ✅ import auth hook
 import '../styles/ChallengesPage.scss';
-import { validateChallenge } from '../validation/challengeValidation';
+import ChallengeModal from '../components/challenges/ChallengeModal';
 
 const ChallengesPage = () => {
   const { user } = useAuth(); // ✅ get current logged-in user
@@ -13,26 +13,12 @@ const ChallengesPage = () => {
   const [filteredChallenges, setFilteredChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const modalRef = useRef(); // 👈 ref to talk to the modal
+  const [editingChallenge, setEditingChallenge] = useState(null);
   const [filters, setFilters] = useState({
     category: '',
     difficulty: '',
     search: '',
-  });
-  const [newChallenge, setNewChallenge] = useState({
-    title: '',
-    description: '',
-    instructions: '',
-    category: '',
-    difficulty_level: 'medium',
-    points_reward: 10,
-    estimated_time_minutes: 30,
-    max_attempts: 3,
-    requires_peer_review: false,
-    is_active: true,
-    prerequisites: '',
-    tags: '',
-    learning_objectives: '',
   });
 
   // 🔹 Fetch challenges from API
@@ -93,62 +79,13 @@ const ChallengesPage = () => {
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
-
-  // 🔹 Form input handler
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewChallenge((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // 🔹 Create new challenge
-  // 🔹 Create new challenge
-  const handleCreateChallenge = async (e) => {
-    e.preventDefault();
-    setCreating(true);
-
-    try {
-      // 1️⃣ Run validation first
-      const validation = validateChallenge(newChallenge);
-      if (!validation.success) {
-        alert(validation.error); // or toast
-        setCreating(false);
-        return;
-      }
-
-      // 2️⃣ Use validated + normalized data
-      const payload = validation.data;
-      payload.created_by = user?.id || 1;
-
-      // 3️⃣ Send to API
-      const res = await apiService.challenges.create(payload);
-      const created = res.data.challenge || res.data;
-
-      // 4️⃣ Update local state
-      setChallenges((prev) => [created, ...prev]);
-      setFilteredChallenges((prev) => [created, ...prev]);
-      setShowModal(false);
-
-      // 5️⃣ Reset form
-      setNewChallenge({
-        title: '',
-        description: '',
-        instructions: '',
-        category: '',
-        difficulty_level: 'medium',
-        points_reward: 10,
-        estimated_time_minutes: 30,
-        max_attempts: 3,
-        requires_peer_review: false,
-        is_active: true,
-        prerequisites: '',
-        tags: '',
-        learning_objectives: '',
-      });
-    } catch (error) {
-      console.error('❌ Failed to create challenge:', error);
-    } finally {
-      setCreating(false);
-    }
+  const handleEdit = (challenge) => {
+    setEditingChallenge(challenge);
+    setShowModal(true);
+    // Hack: wait a tick then prefill using ref
+    setTimeout(() => {
+      if (modalRef.current) modalRef.current.prefillForm(challenge);
+    }, 0);
   };
 
   return (
@@ -227,7 +164,11 @@ const ChallengesPage = () => {
         ) : filteredChallenges.length > 0 ? (
           <div className="challenges-grid">
             {filteredChallenges.map((challenge) => (
-              <ChallengeCard key={challenge.id} challenge={challenge} />
+              <ChallengeCard
+                key={challenge.id}
+                challenge={challenge}
+                onEdit={handleEdit}
+              />
             ))}
           </div>
         ) : (
@@ -248,199 +189,18 @@ const ChallengesPage = () => {
 
       {/* ✅ Create Challenge Modal (Admin only) */}
       {user?.role === 'admin' && showModal && (
-        <div
-          className="modal-backdrop"
-          onClick={(e) =>
-            e.target.classList.contains('modal-backdrop') && setShowModal(false)
-          }
-        >
-          <motion.div
-            className="modal"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            <h2>Create New Challenge</h2>
-            <form onSubmit={handleCreateChallenge}>
-              <div className="form-group">
-                <label>Title</label>
-                <input
-                  name="title"
-                  value={newChallenge.title}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  name="description"
-                  rows="3"
-                  value={newChallenge.description}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Instructions</label>
-                <textarea
-                  name="instructions"
-                  rows="2"
-                  value={newChallenge.instructions}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Category</label>
-                  <select
-                    name="category"
-                    value={newChallenge.category}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    <option value="programming">Programming</option>
-                    <option value="design">Design</option>
-                    <option value="backend">Backend</option>
-                    <option value="data-science">Data Science</option>
-                    <option value="business">Business</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Difficulty</label>
-                  <select
-                    name="difficulty_level"
-                    value={newChallenge.difficulty_level}
-                    onChange={handleInputChange}
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Points Reward</label>
-                  <input
-                    type="number"
-                    name="points_reward"
-                    value={newChallenge.points_reward}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Estimated Time (min)</label>
-                  <input
-                    type="number"
-                    name="estimated_time_minutes"
-                    value={newChallenge.estimated_time_minutes}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Max Attempts</label>
-                  <input
-                    type="number"
-                    name="max_attempts"
-                    value={newChallenge.max_attempts}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Requires Peer Review?</label>
-                  <select
-                    name="requires_peer_review"
-                    value={newChallenge.requires_peer_review ? 'true' : 'false'}
-                    onChange={(e) =>
-                      setNewChallenge((prev) => ({
-                        ...prev,
-                        requires_peer_review: e.target.value === 'true',
-                      }))
-                    }
-                  >
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Active Status</label>
-                  <select
-                    name="is_active"
-                    value={newChallenge.is_active ? 'true' : 'false'}
-                    onChange={(e) =>
-                      setNewChallenge((prev) => ({
-                        ...prev,
-                        is_active: e.target.value === 'true',
-                      }))
-                    }
-                  >
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Prerequisites (comma-separated)</label>
-                  <input
-                    name="prerequisites"
-                    value={newChallenge.prerequisites}
-                    onChange={handleInputChange}
-                    placeholder="e.g., HTML Basics, JS Arrays"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Tags (comma-separated)</label>
-                <input
-                  name="tags"
-                  value={newChallenge.tags}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Learning Objectives (comma-separated)</label>
-                <input
-                  name="learning_objectives"
-                  value={newChallenge.learning_objectives}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={creating}
-                >
-                  {creating ? 'Creating...' : 'Create Challenge'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
+        <ChallengeModal
+          ref={modalRef}
+          onClose={() => setShowModal(false)}
+          onCreatedOrUpdated={(challenge) => {
+            setChallenges((prev) => {
+              const exists = prev.some((c) => c.id === challenge.id);
+              return exists
+                ? prev.map((c) => (c.id === challenge.id ? challenge : c))
+                : [challenge, ...prev];
+            });
+          }}
+        />
       )}
     </div>
   );

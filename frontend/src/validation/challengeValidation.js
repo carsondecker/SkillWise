@@ -90,3 +90,84 @@ export const validateChallenge = (formData) => {
     return { success: false, error: firstError };
   }
 };
+export const updateChallengeSchema = z.object({
+  id: z.number().int('Challenge ID must be a valid integer'),
+
+  title: z.string().min(1).max(255).optional(),
+
+  description: z.string().min(1).max(5000).optional(),
+
+  instructions: z.string().min(1).max(5000).optional(),
+
+  category: z.string().min(1).max(100).optional(),
+
+  difficulty_level: z.enum(['easy', 'medium', 'hard']).optional(),
+
+  estimated_time_minutes: z.number().int().positive().max(600).optional(),
+
+  points_reward: z.number().int().positive().optional(),
+
+  max_attempts: z.number().int().positive().optional(),
+
+  requires_peer_review: z.boolean().optional(),
+
+  is_active: z.boolean().optional(),
+
+  prerequisites: z.array(z.string().min(1)).optional(),
+
+  tags: z.array(z.string().min(1)).optional(),
+
+  learning_objectives: z.array(z.string().min(1)).optional(),
+});
+
+/**
+ * 🧠 Utility function for validation before update API call
+ */
+export const validateChallengeUpdate = (formData) => {
+  try {
+    // Normalize and coerce data before validation
+    const parsed = updateChallengeSchema.parse({
+      ...formData,
+      id: Number(formData.id),
+      points_reward:
+        formData.points_reward !== undefined
+          ? Number(formData.points_reward)
+          : undefined,
+      estimated_time_minutes:
+        formData.estimated_time_minutes !== undefined
+          ? Number(formData.estimated_time_minutes)
+          : undefined,
+      max_attempts:
+        formData.max_attempts !== undefined
+          ? Number(formData.max_attempts)
+          : undefined,
+      requires_peer_review:
+        formData.requires_peer_review === true ||
+        formData.requires_peer_review === 'true',
+      is_active: formData.is_active === true || formData.is_active === 'true',
+      tags: formData.tags
+        ? formData.tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : undefined,
+      prerequisites: formData.prerequisites
+        ? formData.prerequisites
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : undefined,
+      learning_objectives: formData.learning_objectives
+        ? formData.learning_objectives
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : undefined,
+    });
+
+    return { success: true, data: parsed };
+  } catch (err) {
+    const firstError = err.errors?.[0]?.message || 'Invalid input';
+    return { success: false, error: firstError };
+  }
+};

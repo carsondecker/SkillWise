@@ -22,6 +22,7 @@ import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import ErrorPage from './pages/ErrorPage';
 import Topbar from './components/common/TopBar';
+import ChallengeSubmissionPage from './pages/ChallengeSubmissionPage';
 
 /* ==============================
    🔹 Split into two components
@@ -67,6 +68,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ChallengesPage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/challenges/:id/submit"
+          element={
+            <ProtectedRoute>
+              <ChallengeSubmissionPage key={user?.id || 'guest'} />
             </ProtectedRoute>
           }
         />
@@ -117,7 +126,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppContent /> {/* ✅ useLocation is safe here */}
+        <AppContent />
       </Router>
     </AuthProvider>
   );

@@ -76,3 +76,48 @@ CREATE TRIGGER after_user_insert_create_stats
     EXECUTE FUNCTION create_user_statistics();
 END IF;
 END $$ LANGUAGE plpgsql;
+
+------------------------------------------
+DO $outer$
+BEGIN
+  -- ✅ Create the trigger function only if it doesn't already exist
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc WHERE proname = 'update_user_stats_on_goal_completion'
+  ) THEN
+    EXECUTE $body$
+      CREATE OR REPLACE FUNCTION update_user_stats_on_goal_completion()
+      RETURNS TRIGGER AS $$
+BEGIN
+        -- 🧠 Fire only when goal transitions from incomplete → complete
+        IF NEW.is_completed = TRUE AND (OLD.is_completed IS DISTINCT FROM TRUE) THEN
+
+UPDATE user_statistics
+SET
+    total_goals_completed = total_goals_completed + 1,
+    total_points = total_points + COALESCE(NEW.points_reward, 0),
+    last_activity_date = NOW(),
+    updated_at = NOW()
+WHERE user_id = NEW.user_id;
+
+END IF;
+
+RETURN NEW;
+END;
+      $$ LANGUAGE plpgsql;
+    $body$;
+END IF;
+END $outer$;
+
+-- ✅ Create the trigger only if it doesn’t already exist
+DO $outer$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'tr_update_user_stats_on_goal_completion'
+  ) THEN
+CREATE TRIGGER tr_update_user_stats_on_goal_completion
+    AFTER UPDATE OF is_completed ON goals
+    FOR EACH ROW
+    WHEN (NEW.is_completed = TRUE)
+    EXECUTE FUNCTION update_user_stats_on_goal_completion();
+END IF;
+END $outer$;
