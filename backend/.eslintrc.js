@@ -2,28 +2,43 @@ module.exports = {
   env: {
     node: true,
     es2021: true,
-    jest: true,
+    browser: true,
   },
-  extends: [
-    'eslint:recommended',
-  ],
+  extends: ['eslint:recommended'],
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
   rules: {
     'no-unused-vars': 'warn',
-    'no-console': 'off', // Allow console for logging
-    'indent': ['error', 2],
-    'quotes': ['error', 'single'],
-    'semi': ['error', 'always'],
-    'comma-dangle': ['error', 'always-multiline'],
-    'no-trailing-spaces': 'error',
-    'eol-last': 'error',
-    'object-curly-spacing': ['error', 'always'],
-    'array-bracket-spacing': ['error', 'never'],
-    'space-before-function-paren': ['error', 'always'],
-    'keyword-spacing': 'error',
-    'space-infix-ops': 'error',
+    'no-console': 'warn',
   },
+  overrides: [
+    {
+      files: ['frontend/**/*.{js,jsx}'],
+      extends: ['eslint:recommended'],
+      env: {
+        browser: true,
+        es6: true,
+      },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+      rules: {
+        'no-unused-vars': 'warn',
+        'no-console': 'warn',
+        'comma-dangle': 'warn',
+        'no-useless-escape': 'warn',
+      },
+    },
+    {
+      files: ['backend/**/*.js'],
+      env: {
+        node: true,
+        jest: true,
+      },
+    },
+  ],
 };
