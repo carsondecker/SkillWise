@@ -81,7 +81,8 @@ jobs:
         working-directory: ./frontend
         env:
           CI: true
-        run: npm test -- --watchAll=false --silent
+        # Allow CI to pass even when there are no frontend tests yet
+        run: npm test -- --watchAll=false --silent --passWithNoTests
 
       - name: Start backend server (background)
         run: |
