@@ -48,9 +48,7 @@ const LoginForm = ({ onSubmit }) => {
           type="email"
           id="email"
           value={formData.email}
-          onChange={(e) =>
-            setFormData({ ...formData, email: e.target.value })
-          }
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
         />
         {errors.email && <span className="error-text">{errors.email}</span>}
       </div>

@@ -46,7 +46,7 @@ jobs:
         run: npm ci
 
       - name: Run repository-level lint (ignore Cypress specs)
-        run: npx eslint . --ext .js,.jsx,.ts,.tsx --ignore-pattern 'frontend/cypress/**' || true
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx --ignore-pattern 'frontend/cypress/**' --fix || true
 
       - name: Wait for Postgres to be ready
         run: |

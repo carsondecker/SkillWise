@@ -23,7 +23,7 @@ const Navigation = ({ items, currentPath }) => {
                   // mark that this navigation originated from the sidebar
                   sessionStorage.setItem(
                     'skillwise:navigatedViaSidebar',
-                    'true',
+                    'true'
                   );
                 } catch (e) {
                   /* ignore */
