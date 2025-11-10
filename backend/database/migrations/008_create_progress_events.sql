@@ -58,69 +58,55 @@ CREATE TRIGGER update_progress_events_updated_at
 END IF;
 END $$;
 
--- ===========================================
--- 🧩 Trigger Function: log_goal_completion_event
--- ===========================================
-DO $outer$
+-- -- ===========================================
+-- -- 🧩 Trigger Function: log_goal_completion_event (fixed)
+-- -- ===========================================
+CREATE OR REPLACE FUNCTION log_goal_completion_event()
+RETURNS TRIGGER AS $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_proc WHERE proname = 'log_goal_completion_event'
-  ) THEN
-    EXECUTE $inner$
-      CREATE OR REPLACE FUNCTION log_goal_completion_event()
-      RETURNS TRIGGER AS $$
-BEGIN
-        -- Only fire when goal becomes completed
-        IF NEW.is_completed = TRUE AND (OLD.is_completed IS DISTINCT FROM TRUE) THEN
-          INSERT INTO progress_events (
-            user_id,
-            event_type,
-            event_data,
-            points_earned,
-            related_goal_id,
-            timestamp_occurred,
-            created_at
-          )
-          VALUES (
-            NEW.user_id,
-            'goal_completed',
-            jsonb_build_object(
-              'goal_id', NEW.id,
-              'title', NEW.title,
-              'category', NEW.category,
-              'difficulty_level', NEW.difficulty_level,
-              'progress_percentage', NEW.progress_percentage,
-              'completed_at', COALESCE(NEW.completion_date, NOW())
-            ),
-            COALESCE(NEW.points_reward, 0),
-            NEW.id,
-            NOW(),
-            NOW()
-          );
+  -- Only fire when goal changes from incomplete → completed
+  IF NEW.is_completed = TRUE AND COALESCE(OLD.is_completed, FALSE) = FALSE THEN
+    INSERT INTO progress_events (
+      user_id,
+      event_type,
+      event_data,
+      points_earned,
+      related_goal_id,
+      timestamp_occurred,
+      created_at
+    )
+    VALUES (
+      NEW.user_id,
+      'goal_completed',
+      jsonb_build_object(
+        'goal_id', NEW.id,
+        'title', NEW.title,
+        'category', NEW.category,
+        'difficulty_level', NEW.difficulty_level,
+        'progress_percentage', NEW.progress_percentage,
+        'completed_at', COALESCE(NEW.completion_date, NOW())
+      ),
+      COALESCE(NEW.points_reward, 0),
+      NEW.id,
+      NOW(),
+      NOW()
+    );
 END IF;
+
 RETURN NEW;
 END;
-      $$ LANGUAGE plpgsql;
-    $inner$;
-END IF;
-END $outer$;
+$$ LANGUAGE plpgsql;
 
 -- ===========================================
 -- 🧩 Trigger: tr_goal_completion_progress_event
 -- ===========================================
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger WHERE tgname = 'tr_goal_completion_progress_event'
-  ) THEN
+DROP TRIGGER IF EXISTS tr_goal_completion_progress_event ON goals;
+
 CREATE TRIGGER tr_goal_completion_progress_event
-    AFTER UPDATE OF is_completed ON goals
+    AFTER UPDATE ON goals
     FOR EACH ROW
-    WHEN (NEW.is_completed = TRUE)
     EXECUTE FUNCTION log_goal_completion_event();
-END IF;
-END $$;
-------------
+-- ------------
 -- ===========================================
 -- 🧩 Trigger Function: log_submission_created_event
 -- ===========================================

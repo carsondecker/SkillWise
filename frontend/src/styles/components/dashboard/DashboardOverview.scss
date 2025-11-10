@@ -1,51 +1,171 @@
 .dashboard-overview {
-  .overview-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
+  font-family: 'Inter', sans-serif;
+  padding: 2.5rem;
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
 
-    h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
+  /* 🧠 AI Top Section */
+  .ai-top-section {
+    text-align: center;
+    margin-bottom: 3rem;
+    position: relative;
+
+    .ai-top-lottie {
+      width: 150px;
+      height: 150px;
+      margin: 0 auto 1rem;
     }
 
-    .overview-lottie {
-      width: 100px;
-      height: 100px;
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+
+    p {
+      color: #4b5563;
+      font-size: 1rem;
+      margin-top: 0.4rem;
     }
   }
 
+  /* 📊 Stats Grid */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.5rem;
+    margin-bottom: 2.5rem;
   }
 
   .stat-card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    padding: 1.2rem;
+    background: white;
     border-radius: 16px;
+    padding: 1.4rem;
     text-align: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    transition: 0.3s ease;
 
     &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     }
 
     h3 {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-      color: #333;
+      font-size: 1rem;
+      color: #374151;
+      margin-bottom: 0.3rem;
     }
 
     .stat-number {
       font-size: 1.8rem;
       font-weight: 700;
-      color: #6c63ff;
+    }
+  }
+
+  /* 📈 Dashboard Grid */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.3fr;
+    gap: 2rem;
+    margin-top: 2rem;
+
+    @media (max-width: 1000px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Chart Section */
+  .progress-chart {
+    background: white;
+    padding: 1.8rem;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+
+    h3 {
+      font-weight: 600;
+      color: #1e3a8a;
+      margin-bottom: 1rem;
+    }
+
+    .chart-container {
+      height: 280px;
+    }
+  }
+
+  /* 💬 AI Chat Section */
+  .ai-chat-section {
+    background: linear-gradient(135deg, #6c63ff, #3b82f6);
+    color: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 8px 25px rgba(108, 99, 255, 0.3);
+
+    h3 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .chat-box {
+      flex-grow: 1;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      max-height: 250px;
+    }
+
+    .chat-bubble {
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      max-width: 85%;
+      line-height: 1.4;
+
+      &.ai {
+        background: rgba(255, 255, 255, 0.2);
+        align-self: flex-start;
+      }
+
+      &.user {
+        background: #ffffff;
+        color: #1e3a8a;
+        align-self: flex-end;
+      }
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1rem;
+
+      input {
+        flex: 1;
+        padding: 0.8rem;
+        border-radius: 10px;
+        border: none;
+        font-size: 1rem;
+        outline: none;
+      }
+
+      button {
+        background: white;
+        color: #3b82f6;
+        font-weight: 600;
+        border: none;
+        border-radius: 10px;
+        padding: 0.8rem 1.2rem;
+        cursor: pointer;
+        transition: 0.3s;
+
+        &:hover {
+          background: #f1f5f9;
+        }
+      }
     }
   }
 }

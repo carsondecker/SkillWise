@@ -215,6 +215,7 @@ export const apiService = {
   // User methods
   user: {
     getProfile: () => api.get('/users/profile'),
+    getStatistics: () => api.get('/users/statistics'),
     updateProfile: (data) => api.put('/users/profile', data),
     deleteAccount: () => api.delete('/users/profile'),
     changePassword: (data) => api.put('/users/change-password', data),
@@ -263,6 +264,7 @@ export const apiService = {
   // Progress methods
   progress: {
     getProgress: () => api.get('/progress'),
+    getLatestProgress: () => api.get('/progress/latest'),
     getOverview: () => api.get('/progress/overview'),
     getSkills: () => api.get('/progress/skills'),
     getActivity: (params) => api.get('/progress/activity', { params }),

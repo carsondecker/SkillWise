@@ -82,6 +82,58 @@ const progressService = {
       );
     }
   },
+  getProgressLatest: async ({ userId }) => {
+    try {
+      if (!userId) {
+        throw new AppError('User ID is required', 400, 'INVALID_INPUT');
+      }
+
+      const query = `
+        SELECT
+          p.id,
+          p.user_id,
+          p.related_goal_id AS goal_id,
+          p.related_challenge_id AS challenge_id,
+          p.event_type,
+          p.created_at,
+          p.updated_at,
+          g.title AS goal_title,
+          g.category AS goal_category,
+          c.title AS challenge_title,
+          c.difficulty_level AS challenge_difficulty
+        FROM progress_events p
+               LEFT JOIN goals g ON p.related_goal_id = g.id
+               LEFT JOIN challenges c ON p.related_challenge_id = c.id
+        WHERE p.user_id = $1
+        ORDER BY p.updated_at DESC
+          LIMIT 3
+      `;
+
+      const { rows } = await db.query(query, [userId]);
+
+      // Normalize for consistent frontend format
+      return rows.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        eventType: row.event_type,
+        activityType: row.activity_type, // "goal" | "challenge" | "other"
+        title: row.activity_title,
+        category: row.activity_category,
+        goalId: row.goal_id,
+        challengeId: row.challenge_id,
+        goalTitle: row.goal_title,
+        challengeTitle: row.challenge_title,
+        challengeDifficulty: row.challenge_difficulty,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+    } catch (error) {
+      throw new AppError(
+        `Error fetching latest progress: ${error.message}`,
+        500
+      );
+    }
+  },
 
   /**
    * 📈 Generate progress analytics over time

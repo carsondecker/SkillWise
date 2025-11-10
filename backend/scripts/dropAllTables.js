@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Drop all user tables from the connected PostgreSQL database.
- * ⚠️ WARNING: This deletes ALL data and schema objects (except system catalogs).
+ * 🔥 Drop all user-defined tables, triggers, and functions from the public schema.
+ * ⚠️ WARNING: This will delete ALL user data and schema objects.
  */
 
 const { Pool } = require('pg');
@@ -13,45 +13,91 @@ const pool = new Pool({
     'postgresql://skillwise_user:skillwise_pass@localhost:5433/skillwise_db',
 });
 
-async function dropAllTables() {
+async function dropAllUserObjects() {
   try {
-    console.log('🚨 WARNING: Dropping all tables from database...');
+    console.log(
+      '🚨 WARNING: Dropping all user-defined tables, triggers, and functions...'
+    );
 
-    // Fetch all non-system tables (public schema only)
-    const { rows } = await pool.query(`
+    // Disable FK checks
+    await pool.query('SET session_replication_role = replica;');
+
+    // 1️⃣ Drop all triggers from all tables
+    const triggersRes = await pool.query(`
+      SELECT event_object_table AS table_name, trigger_name
+      FROM information_schema.triggers
+      WHERE trigger_schema = 'public';
+    `);
+
+    if (triggersRes.rows.length) {
+      console.log(`🧩 Found ${triggersRes.rows.length} triggers. Dropping...`);
+      for (const { table_name, trigger_name } of triggersRes.rows) {
+        console.log(`   🔻 Dropping trigger: ${trigger_name} ON ${table_name}`);
+        await pool.query(
+          `DROP TRIGGER IF EXISTS "${trigger_name}" ON "${table_name}" CASCADE;`
+        );
+      }
+    } else {
+      console.log('✅ No user triggers found.');
+    }
+
+    // 2️⃣ Drop all functions (procedures) in public schema
+    const functionsRes = await pool.query(`
+      SELECT routine_name
+      FROM information_schema.routines
+      WHERE specific_schema = 'public';
+    `);
+
+    if (functionsRes.rows.length) {
+      console.log(
+        `🧠 Found ${functionsRes.rows.length} functions. Dropping...`
+      );
+      for (const { routine_name } of functionsRes.rows) {
+        console.log(`   🧨 Dropping function: ${routine_name}`);
+        await pool
+          .query(`DROP FUNCTION IF EXISTS "${routine_name}"() CASCADE;`)
+          .catch(async () => {
+            // Retry for overloaded functions
+            await pool.query(
+              `DROP FUNCTION IF EXISTS "${routine_name}" CASCADE;`
+            );
+          });
+      }
+    } else {
+      console.log('✅ No user functions found.');
+    }
+
+    // 3️⃣ Drop all tables
+    const tablesRes = await pool.query(`
       SELECT tablename
       FROM pg_tables
       WHERE schemaname = 'public';
     `);
 
-    if (rows.length === 0) {
+    if (tablesRes.rows.length) {
+      console.log(`🧱 Found ${tablesRes.rows.length} tables. Dropping...`);
+      for (const { tablename } of tablesRes.rows) {
+        console.log(`   🗑️  Dropping table: ${tablename}`);
+        await pool.query(`DROP TABLE IF EXISTS "${tablename}" CASCADE;`);
+      }
+    } else {
       console.log('✅ No user tables found.');
-      return;
-    }
-
-    console.log(`🧱 Found ${rows.length} tables. Dropping...`);
-
-    // Disable FK checks (optional safety)
-    await pool.query('SET session_replication_role = replica;');
-
-    for (const { tablename } of rows) {
-      console.log(`🗑️  Dropping table: ${tablename}`);
-      await pool.query(`DROP TABLE IF EXISTS "${tablename}" CASCADE;`);
     }
 
     // Re-enable FK checks
     await pool.query('SET session_replication_role = DEFAULT;');
 
-    console.log('✅ All tables dropped successfully.');
+    console.log('✅ All tables, triggers, and functions dropped successfully.');
   } catch (err) {
-    console.error('❌ Failed to drop tables:', err.message);
+    console.error('❌ Error while dropping objects:', err.message);
   } finally {
     await pool.end();
   }
 }
 
+// Run script if called directly
 if (require.main === module) {
-  dropAllTables();
+  dropAllUserObjects();
 }
 
-module.exports = { dropAllTables };
+module.exports = { dropAllUserObjects };

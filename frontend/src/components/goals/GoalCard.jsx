@@ -53,8 +53,8 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
         progress_percentage: 100,
       });
       const updated = res.data.goal || res.data;
-      onUpdated?.(updated);
       alert('🎉 Goal marked as completed!');
+      onUpdated?.(updated); // ✅ refresh parent list
     } catch (err) {
       console.error('Failed to mark goal complete:', err);
       alert('❌ Failed to mark goal complete.');

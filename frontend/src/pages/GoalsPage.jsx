@@ -112,6 +112,21 @@ const GoalsPage = () => {
       setCreating(false);
     }
   };
+  const handleRefreshGoals = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.goals.getAll();
+      const fetchedGoals = Array.isArray(res.data)
+        ? res.data
+        : res.data?.goals || [];
+      setGoals(fetchedGoals);
+      setFilteredGoals(fetchedGoals);
+    } catch (err) {
+      console.error('Failed to refresh goals:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="goals-page">
@@ -154,7 +169,14 @@ const GoalsPage = () => {
       ) : filteredGoals.length > 0 ? (
         <div className="goals-grid">
           {filteredGoals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} />
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onUpdated={() => handleRefreshGoals()} // 👈 refresh after update
+              onDeleted={(id) =>
+                setGoals((prev) => prev.filter((g) => g.id !== id))
+              }
+            />
           ))}
         </div>
       ) : (

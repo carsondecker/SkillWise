@@ -6,57 +6,82 @@ import '../styles/ProfilePage.scss';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const { user, updateProfile } = useAuth();
 
-  // ✅ Fetch actual user profile + statistics from backend
+  // ✅ Fetch profile + statistics + latest progress
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
 
-        // Parallel API calls for user and stats
-        const [profileRes, statsRes] = await Promise.all([
+        const [profileRes, statsRes, progressRes] = await Promise.all([
           apiService.user.getProfile(),
-          apiService.progress.getProgress(),
+          apiService.user.getStatistics(),
+          apiService.progress.getLatestProgress(), // 👈 new API call
         ]);
 
         const userData = profileRes.data.user || profileRes.data;
         const statsData = statsRes.data.statistics || statsRes.data;
+        const progressData = progressRes.data.latest || [];
+        console.log(progressData);
 
-        // Merge backend user + stats
+        // ✅ Normalize progress for UI (latest 3 activities)
+        // ✅ Normalize latest progress (works with camelCase API)
+        const formattedActivity = progressData.map((p) => {
+          const isChallenge = !!p.challengeId;
+          const isGoal = !!p.goalId;
+
+          return {
+            id: p.id,
+            type: isChallenge ? 'challenge' : isGoal ? 'goal' : 'progress',
+            title: p.challengeTitle || p.goalTitle || 'Progress Update',
+            date: p.updatedAt || p.createdAt,
+            category: p.challengeDifficulty || p.goalCategory || '',
+            points: p.pointsEarned || 10, // backend could include this later
+            note:
+              p.eventType === 'goal_completed'
+                ? 'Goal completed!'
+                : p.eventType === 'challenge_completed'
+                ? 'Challenge finished!'
+                : '',
+          };
+        });
+
+        // ✅ Merge user data
         const fullProfile = {
           id: userData.id,
           firstName: userData.firstName,
           lastName: userData.lastName,
           email: userData.email,
-          avatar: '👤',
+          avatar: userData.profileImage || '👤',
           bio: userData.bio || '',
           location: userData.location || 'Not specified',
           website: userData.website || '',
-          joinedDate: userData.createdAt || new Date().toISOString(),
+          joinedDate:
+            userData.createdAt ||
+            userData.joinedDate ||
+            new Date().toISOString(),
+
           level: statsData.level || 1,
-          totalPoints: statsData.total_points || 0,
-          completedChallenges: statsData.completed_challenges || 0,
-          goalsAchieved: statsData.goals_achieved || 0,
-          currentStreak: statsData.current_streak || 0,
-          longestStreak: statsData.longest_streak || 0,
-          skills: statsData.skills || [],
-          badges: statsData.badges || [],
-          recentActivity: statsData.recent_activity || [],
-          preferences: statsData.preferences || {
-            emailNotifications: true,
-            pushNotifications: false,
-            weeklyDigest: true,
-            publicProfile: true,
-            showProgress: true,
-          },
+          totalPoints: Number(statsData.total_points || 0),
+          completedChallenges: Number(
+            statsData.total_challenges_completed || 0
+          ),
+          goalsAchieved: Number(statsData.total_goals_completed || 0),
+          currentStreak: Number(statsData.current_streak_days || 0),
+          longestStreak: Number(statsData.longest_streak_days || 0),
+
+          badges: userData.badges || [],
+          preferences: userData.preferences || {},
         };
 
         setProfileData(fullProfile);
+        setRecentActivity(formattedActivity);
         setFormData(fullProfile);
       } catch (error) {
         console.error('❌ Failed to load profile:', error);
@@ -65,10 +90,10 @@ const ProfilePage = () => {
       }
     };
 
-    fetchProfile();
+    void fetchProfile();
   }, [user]);
 
-  // ✅ Handle input changes for both form fields & checkboxes
+  // ✅ Input handler
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -77,18 +102,17 @@ const ProfilePage = () => {
     }));
   };
 
-  // ✅ Save profile updates via API
+  // ✅ Save profile updates
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const updatePayload = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         bio: formData.bio,
-        location: formData.location,
-        website: formData.website,
+        profileImage: formData.avatar,
       };
 
       const response = await apiService.user.updateProfile(updatePayload);
@@ -98,14 +122,7 @@ const ProfilePage = () => {
         ...response.data.user,
       }));
 
-      await updateProfile({
-        firstName: response.data.user.first_name,
-        lastName: response.data.user.last_name,
-        bio: response.data.user.bio,
-        location: response.data.user.location,
-        website: response.data.user.website,
-      });
-
+      await updateProfile(response.data.user);
       setIsEditing(false);
     } catch (error) {
       console.error('❌ Profile update failed:', error);
@@ -114,6 +131,7 @@ const ProfilePage = () => {
     }
   };
 
+  // ✅ Helper: icons for activity
   const getActivityIcon = (type) => {
     const icons = {
       challenge: '🏆',
@@ -124,18 +142,10 @@ const ProfilePage = () => {
     return icons[type] || '📝';
   };
 
-  const formatDate = (dateString) =>
-    new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
   const formatTimeAgo = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${diffInHours}h ago`;
     return `${Math.floor(diffInHours / 24)}d ago`;
@@ -147,6 +157,7 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-page">
+      {/* HEADER */}
       <div className="profile-header">
         <div className="profile-banner">
           <div className="profile-info">
@@ -159,10 +170,15 @@ const ProfilePage = () => {
               <h1>
                 {profileData?.firstName} {profileData?.lastName}
               </h1>
-              <p className="profile-bio">{profileData?.bio}</p>
+              <p className="profile-bio">{profileData?.bio || 'No bio yet.'}</p>
               <div className="profile-meta">
                 <span>📍 {profileData?.location}</span>
-                <span>📅 Joined {formatDate(profileData?.joinedDate)}</span>
+                <span>
+                  📅 Joined{' '}
+                  {new Date(profileData?.joinedDate).toLocaleDateString(
+                    'en-US'
+                  )}
+                </span>
                 {profileData?.website && (
                   <span>
                     🌐{' '}
@@ -188,8 +204,8 @@ const ProfilePage = () => {
                 <span>Challenges</span>
               </div>
               <div className="stat-item">
-                <strong>{profileData?.currentStreak}</strong>
-                <span>Day Streak</span>
+                <strong>{profileData?.goalsAchieved}</strong>
+                <span>Goals</span>
               </div>
             </div>
 
@@ -203,7 +219,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* TABS */}
       <div className="profile-tabs">
         {['overview', 'skills', 'badges', 'settings'].map((tab) => (
           <button
@@ -216,141 +232,61 @@ const ProfilePage = () => {
         ))}
       </div>
 
-      {/* Content */}
+      {/* CONTENT */}
       <div className="profile-content">
-        {isEditing ? (
-          <form onSubmit={handleSubmit} className="edit-profile-form">
-            <div className="form-section">
-              <h3>Personal Information</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="firstName">First Name</label>
-                  <input
-                    type="text"
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="lastName">Last Name</label>
-                  <input
-                    type="text"
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="bio">Bio</label>
-                <textarea
-                  id="bio"
-                  name="bio"
-                  value={formData.bio || ''}
-                  onChange={handleInputChange}
-                  rows="3"
-                  placeholder="Tell us about yourself..."
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="location">Location</label>
-                  <input
-                    type="text"
-                    id="location"
-                    name="location"
-                    value={formData.location || ''}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="website">Website</label>
-                  <input
-                    type="url"
-                    id="website"
-                    name="website"
-                    value={formData.website || ''}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-actions">
-              <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? 'Saving...' : 'Save Changes'}
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <>
-            {activeTab === 'overview' && (
-              <div className="overview-tab">
-                <div className="overview-grid">
-                  <div className="recent-activity">
-                    <h3>Recent Activity</h3>
-                    {profileData?.recentActivity?.length > 0 ? (
-                      <div className="activity-list">
-                        {profileData.recentActivity.map((activity) => (
-                          <div key={activity.id} className="activity-item">
-                            <div className="activity-icon">
-                              {getActivityIcon(activity.type)}
-                            </div>
-                            <div className="activity-info">
-                              <h4>{activity.title}</h4>
-                              <div className="activity-meta">
-                                <span>{formatTimeAgo(activity.date)}</span>
-                                <span className="points">
-                                  +{activity.points} points
-                                </span>
-                              </div>
-                            </div>
+        {activeTab === 'overview' && (
+          <div className="overview-tab">
+            <div className="overview-grid">
+              <div className="recent-activity">
+                <h3>Recent Activity</h3>
+                {recentActivity.length > 0 ? (
+                  <div className="activity-list">
+                    {recentActivity.map((activity) => (
+                      <div key={activity.id} className="activity-item">
+                        <div className="activity-icon">
+                          {getActivityIcon(activity.type)}
+                        </div>
+                        <div className="activity-info">
+                          <h4>{activity.title}</h4>
+                          <div className="activity-meta">
+                            <span>{formatTimeAgo(activity.date)}</span>
+                            <span className="points">
+                              +{activity.points} pts
+                            </span>
                           </div>
-                        ))}
+                          {activity.note && (
+                            <p className="activity-note">{activity.note}</p>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <p>No recent activity yet.</p>
-                    )}
+                    ))}
                   </div>
+                ) : (
+                  <p>No recent activity yet.</p>
+                )}
+              </div>
 
-                  <div className="achievements-summary">
-                    <h3>Achievements</h3>
-                    <div className="achievements-stats">
-                      <div className="achievement-stat">
-                        <strong>{profileData?.goalsAchieved}</strong>
-                        <span>Goals Achieved</span>
-                      </div>
-                      <div className="achievement-stat">
-                        <strong>{profileData?.longestStreak}</strong>
-                        <span>Longest Streak</span>
-                      </div>
-                      <div className="achievement-stat">
-                        <strong>
-                          {profileData?.badges?.filter((b) => b.earned)
-                            .length || 0}
-                        </strong>
-                        <span>Badges Earned</span>
-                      </div>
-                    </div>
+              <div className="achievements-summary">
+                <h3>Achievements</h3>
+                <div className="achievements-stats">
+                  <div className="achievement-stat">
+                    <strong>{profileData.goalsAchieved}</strong>
+                    <span>Goals Achieved</span>
+                  </div>
+                  <div className="achievement-stat">
+                    <strong>{profileData.longestStreak}</strong>
+                    <span>Longest Streak</span>
+                  </div>
+                  <div className="achievement-stat">
+                    <strong>
+                      {profileData.badges?.filter((b) => b.earned).length || 0}
+                    </strong>
+                    <span>Badges Earned</span>
                   </div>
                 </div>
               </div>
-            )}
-          </>
+            </div>
+          </div>
         )}
       </div>
     </div>
