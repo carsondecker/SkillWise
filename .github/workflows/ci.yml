@@ -88,15 +88,30 @@ jobs:
         run: |
           nohup node backend/server.js > backend.log 2>&1 &
 
-      - name: Start frontend dev server (background)
+      - name: Build and serve frontend (background, stable for CI)
         working-directory: ./frontend
+        env:
+          CI: true
         run: |
-          nohup npm start > frontend.log 2>&1 &
+          echo "Building frontend..."
+          npm run build
+          echo "Serving static build on port 3000"
+          nohup npx serve -s build -l 3000 > ../frontend.log 2>&1 &
 
-      - name: Wait for frontend and backend to be ready
+      - name: Wait for backend and frontend to be ready (with timeouts)
         run: |
-          npx wait-on http://localhost:3000 || (cat frontend/frontend.log || true)
-          npx wait-on http://localhost:3001/api || (cat backend/backend.log || true)
+          echo "Waiting for backend at http://localhost:3001/api (timeout 120s)..."
+          npx wait-on --timeout 120000 http://localhost:3001/api || (
+            echo "Backend did not become ready within timeout. Dumping backend log:";
+            sed -n '1,200p' backend.log || true;
+            exit 1
+          )
+          echo "Backend ready. Waiting for frontend at http://localhost:3000 (timeout 120s)..."
+          npx wait-on --timeout 120000 http://localhost:3000 || (
+            echo "Frontend did not become ready within timeout. Dumping frontend log:";
+            sed -n '1,200p' frontend/frontend.log || true;
+            exit 1
+          )
 
       - name: Run Cypress tests
         working-directory: ./frontend
