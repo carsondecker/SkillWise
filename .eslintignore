@@ -13,3 +13,4 @@ coverage/
 docs/
 cypress/videos/
 cypress/screenshots/
+*.cy.js
