@@ -1,7 +1,8 @@
 // TODO: Implement peer review and collaboration features
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { useAuth } from '../hooks/useAuth';
+import api from '../services/api';
+import useAuth from '../hooks/useAuth';
 
 const PeerReviewPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -9,105 +10,84 @@ const PeerReviewPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('review-others');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const { user } = useAuth();
+  const [error, setError] = useState(null);
+  const { user } = useAuth() || {};
 
-  // Mock data - TODO: Replace with API calls
-  useEffect(() => {
-    const mockReviews = [
-      {
-        id: 1,
-        submissionId: 'sub_001',
-        title: 'React Component Optimization',
-        author: 'Sarah Kim',
-        authorAvatar: '👩‍🎨',
-        category: 'React',
-        difficulty: 'Intermediate',
-        submittedAt: '2024-01-15T10:00:00Z',
-        description: 'Created a custom hook for data fetching with caching',
-        codeSnippet: 'const useDataFetch = (url) => { ... }',
-        needsReview: true,
-        reviewsCount: 2,
-        maxReviews: 3
-      },
-      {
-        id: 2,
-        submissionId: 'sub_002',
-        title: 'Algorithm Implementation',
-        author: 'Mike Chen',
-        authorAvatar: '👨‍🔬',
-        category: 'Algorithms',
-        difficulty: 'Advanced',
-        submittedAt: '2024-01-14T15:30:00Z',
-        description: 'Implemented merge sort with performance optimizations',
-        codeSnippet: 'function mergeSort(arr) { ... }',
-        needsReview: true,
-        reviewsCount: 1,
-        maxReviews: 3
-      },
-      {
-        id: 3,
-        submissionId: 'sub_003',
-        title: 'Database Design Pattern',
-        author: 'Emma Rodriguez',
-        authorAvatar: '👩‍💼',
-        category: 'Database',
-        difficulty: 'Intermediate',
-        submittedAt: '2024-01-13T09:15:00Z',
-        description: 'Repository pattern implementation with TypeORM',
-        codeSnippet: 'class UserRepository extends Repository { ... }',
-        needsReview: false,
-        reviewsCount: 3,
-        maxReviews: 3
+  // helpers to normalize various API response shapes
+  const extractItems = (payload) => {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.results)) return payload.results;
+    if (Array.isArray(payload?.submissions)) return payload.submissions;
+    if (Array.isArray(payload?.assignments)) return payload.assignments;
+    return [];
+  };
+
+  const loadData = async (opts = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // attempt two endpoints: assignments (to review) and submissions (my submissions)
+      const paramsAssignments = {};
+      if (opts.category && opts.category !== 'all') paramsAssignments.category = opts.category;
+
+      // run both in parallel; if one fails, still show the other
+      const [assignRes, myRes] = await Promise.allSettled([
+        api.get('/peer-review/assignments', { params: paramsAssignments }),
+        api.get('/peer-review/submissions', { params: { userId: user?.id } }),
+      ]);
+
+      if (assignRes.status === 'fulfilled') {
+        const items = extractItems(assignRes.value?.data);
+        setReviews(items);
+      } else {
+        // fallback: try common endpoint if first failed
+        try {
+          const fallback = await api.get('/peer-review', { params: paramsAssignments });
+          setReviews(extractItems(fallback.data));
+        } catch (e) {
+          setReviews([]); // nothing available
+        }
       }
-    ];
 
-    const mockMySubmissions = [
-      {
-        id: 1,
-        submissionId: 'my_sub_001',
-        title: 'CSS Grid Layout Challenge',
-        category: 'CSS',
-        difficulty: 'Beginner',
-        submittedAt: '2024-01-12T14:20:00Z',
-        status: 'under-review',
-        reviewsReceived: 2,
-        maxReviews: 3,
-        averageRating: 4.5,
-        feedback: 'Great responsive design approach!'
-      },
-      {
-        id: 2,
-        submissionId: 'my_sub_002',
-        title: 'API Integration Pattern',
-        category: 'JavaScript',
-        difficulty: 'Intermediate',
-        submittedAt: '2024-01-10T11:45:00Z',
-        status: 'completed',
-        reviewsReceived: 3,
-        maxReviews: 3,
-        averageRating: 4.7,
-        feedback: 'Excellent error handling and clean code structure'
+      if (myRes.status === 'fulfilled') {
+        setMySubmissions(extractItems(myRes.value?.data));
+      } else {
+        // fallback try /submissions endpoint scoped to user
+        try {
+          const fallbackMy = await api.get('/submissions', { params: { userId: user?.id } });
+          setMySubmissions(extractItems(fallbackMy.data));
+        } catch (e) {
+          setMySubmissions([]);
+        }
       }
-    ];
-
-    setTimeout(() => {
-      setReviews(mockReviews);
-      setMySubmissions(mockMySubmissions);
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || 'Failed to load peer review data');
+      setReviews([]);
+      setMySubmissions([]);
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
 
-  const filteredReviews = reviews.filter(review => 
-    selectedCategory === 'all' || review.category.toLowerCase() === selectedCategory.toLowerCase()
+  // load on mount and when category or user changes
+  useEffect(() => {
+    loadData({ category: selectedCategory });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, user?.id]);
+
+  const filteredReviews = reviews.filter(review =>
+    selectedCategory === 'all' || (review.category || '').toLowerCase() === selectedCategory.toLowerCase()
   );
 
   const getStatusBadge = (status) => {
     const statusConfig = {
       'under-review': { text: 'Under Review', className: 'status-pending' },
       'completed': { text: 'Completed', className: 'status-completed' },
-      'needs-revision': { text: 'Needs Revision', className: 'status-warning' }
+      'needs-revision': { text: 'Needs Revision', className: 'status-warning' },
     };
-    const config = statusConfig[status] || { text: status, className: 'status-default' };
+    const config = statusConfig[status] || { text: status || 'Unknown', className: 'status-default' };
     return <span className={`status-badge ${config.className}`}>{config.text}</span>;
   };
 
@@ -115,19 +95,22 @@ const PeerReviewPage = () => {
     const colors = {
       'Beginner': '#4CAF50',
       'Intermediate': '#FF9800',
-      'Advanced': '#F44336'
+      'Advanced': '#F44336',
+      'beginner': '#4CAF50',
+      'intermediate': '#FF9800',
+      'advanced': '#F44336',
     };
     return colors[difficulty] || '#757575';
   };
 
   const formatTimeAgo = (dateString) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    return `${Math.floor(diffInHours / 24)}d ago`;
+    const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${Math.floor(diffHours / 24)}d ago`;
   };
 
   return (
@@ -142,7 +125,7 @@ const PeerReviewPage = () => {
           className={`tab-button ${activeTab === 'review-others' ? 'active' : ''}`}
           onClick={() => setActiveTab('review-others')}
         >
-          Review Others ({reviews.filter(r => r.needsReview).length})
+          Review Others ({reviews.filter(r => r.needsReview || r.reviewsNeeded || r.reviews_count === 0).length})
         </button>
         <button
           className={`tab-button ${activeTab === 'my-submissions' ? 'active' : ''}`}
@@ -173,20 +156,26 @@ const PeerReviewPage = () => {
 
           {loading ? (
             <LoadingSpinner message="Loading submissions for review..." />
+          ) : error ? (
+            <div className="error-state">
+              <h3>Unable to load submissions</h3>
+              <p>{error}</p>
+              <button className="btn-secondary" onClick={() => loadData({ category: selectedCategory })}>Retry</button>
+            </div>
           ) : (
             <div className="reviews-grid">
               {filteredReviews.map((review) => (
-                <div key={review.id} className="review-card">
+                <div key={review.id || review.submissionId} className="review-card">
                   <div className="review-header">
                     <div className="author-info">
-                      <span className="author-avatar">{review.authorAvatar}</span>
+                      <span className="author-avatar">{review.authorAvatar || '👤'}</span>
                       <div>
-                        <h4>{review.title}</h4>
-                        <p>by {review.author}</p>
+                        <h4>{review.title || review.submissionTitle}</h4>
+                        <p>by {review.author || review.ownerName || 'Unknown'}</p>
                       </div>
                     </div>
                     <div className="review-meta">
-                      <span 
+                      <span
                         className="difficulty-badge"
                         style={{ backgroundColor: getDifficultyColor(review.difficulty) }}
                       >
@@ -198,21 +187,27 @@ const PeerReviewPage = () => {
 
                   <div className="review-content">
                     <p>{review.description}</p>
-                    <div className="code-preview">
-                      <code>{review.codeSnippet}</code>
-                    </div>
+                    {review.codeSnippet && (
+                      <div className="code-preview">
+                        <code>{review.codeSnippet}</code>
+                      </div>
+                    )}
                   </div>
 
                   <div className="review-footer">
                     <div className="review-stats">
-                      <span className="time-ago">{formatTimeAgo(review.submittedAt)}</span>
+                      <span className="time-ago">{formatTimeAgo(review.submittedAt || review.createdAt)}</span>
                       <span className="reviews-count">
-                        {review.reviewsCount}/{review.maxReviews} reviews
+                        {review.reviewsCount ?? review.reviews_received ?? 0}/{review.maxReviews ?? review.reviews_required ?? 3} reviews
                       </span>
                     </div>
-                    
-                    {review.needsReview ? (
-                      <button className="btn-primary">
+
+                    {review.needsReview || (review.reviewsCount ?? 0) < (review.maxReviews ?? 3) ? (
+                      <button className="btn-primary" onClick={() => {
+                        // navigate to review page if available
+                        if (review.submissionId) window.location.href = `/peer-review/${review.submissionId}`;
+                        else if (review.id) window.location.href = `/peer-review/${review.id}`;
+                      }}>
                         Start Review
                       </button>
                     ) : (
@@ -240,23 +235,29 @@ const PeerReviewPage = () => {
         <div className="my-submissions-section">
           <div className="section-header">
             <h2>Your Submissions</h2>
-            <button className="btn-primary">
+            <button className="btn-primary" onClick={() => window.location.href = '/submissions/new'}>
               Submit New Work
             </button>
           </div>
 
           {loading ? (
             <LoadingSpinner message="Loading your submissions..." />
+          ) : error ? (
+            <div className="error-state">
+              <h3>Unable to load your submissions</h3>
+              <p>{error}</p>
+              <button className="btn-secondary" onClick={() => loadData({ category: selectedCategory })}>Retry</button>
+            </div>
           ) : (
             <div className="submissions-list">
               {mySubmissions.map((submission) => (
-                <div key={submission.id} className="submission-card">
+                <div key={submission.id || submission.submissionId} className="submission-card">
                   <div className="submission-header">
                     <div className="submission-info">
                       <h4>{submission.title}</h4>
                       <div className="submission-meta">
                         <span className="category-badge">{submission.category}</span>
-                        <span 
+                        <span
                           className="difficulty-badge"
                           style={{ backgroundColor: getDifficultyColor(submission.difficulty) }}
                         >
@@ -266,21 +267,21 @@ const PeerReviewPage = () => {
                       </div>
                     </div>
                     <div className="submission-actions">
-                      <button className="btn-secondary">View Details</button>
+                      <button className="btn-secondary" onClick={() => window.location.href = `/submissions/${submission.id || submission.submissionId}`}>View Details</button>
                     </div>
                   </div>
 
                   <div className="submission-stats">
                     <div className="stat-item">
-                      <strong>{submission.reviewsReceived}</strong>
+                      <strong>{submission.reviewsReceived ?? submission.reviews_received ?? 0}</strong>
                       <span>Reviews Received</span>
                     </div>
                     <div className="stat-item">
-                      <strong>{submission.averageRating}</strong>
+                      <strong>{submission.averageRating ?? submission.avg_rating ?? '—'}</strong>
                       <span>Average Rating</span>
                     </div>
                     <div className="stat-item">
-                      <strong>{formatTimeAgo(submission.submittedAt)}</strong>
+                      <strong>{formatTimeAgo(submission.submittedAt || submission.createdAt)}</strong>
                       <span>Submitted</span>
                     </div>
                   </div>
@@ -294,13 +295,15 @@ const PeerReviewPage = () => {
 
                   <div className="progress-bar">
                     <div className="progress-label">
-                      Review Progress: {submission.reviewsReceived}/{submission.maxReviews}
+                      Review Progress: {submission.reviewsReceived ?? submission.reviews_received ?? 0}/{submission.maxReviews ?? submission.reviews_required ?? 3}
                     </div>
-                    <div className="progress-track">
-                      <div 
+                    <div className="progress-track" style={{ background: '#f3f4f6', borderRadius: 8, height: 8, overflow: 'hidden' }}>
+                      <div
                         className="progress-fill"
-                        style={{ 
-                          width: `${(submission.reviewsReceived / submission.maxReviews) * 100}%` 
+                        style={{
+                          width: `${((submission.reviewsReceived ?? submission.reviews_received ?? 0) / (submission.maxReviews ?? submission.reviews_required ?? 3)) * 100}%`,
+                          background: '#3b82f6',
+                          height: '100%',
                         }}
                       ></div>
                     </div>
@@ -313,7 +316,7 @@ const PeerReviewPage = () => {
                   <div className="empty-icon">📤</div>
                   <h3>No submissions yet</h3>
                   <p>Submit your first piece of work to get feedback from peers!</p>
-                  <button className="btn-primary">Submit Your Work</button>
+                  <button className="btn-primary" onClick={() => window.location.href = '/submissions/new'}>Submit Your Work</button>
                 </div>
               )}
             </div>

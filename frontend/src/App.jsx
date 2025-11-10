@@ -28,7 +28,7 @@ function App() {
         <div className="App">
           {/* TODO: Add Navbar component */}
           {/* <Navbar /> */}
-          
+
           <main className="main-content">
             <Routes>
               {/* Public routes */}
@@ -36,70 +36,70 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/error" element={<ErrorPage />} />
-              
+
               {/* Protected routes */}
-              <Route 
-                path="/dashboard" 
+              <Route
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <DashboardPage />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/goals" 
+              <Route
+                path="/goals"
                 element={
                   <ProtectedRoute>
                     <GoalsPage />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/challenges" 
+              <Route
+                path="/challenges"
                 element={
                   <ProtectedRoute>
                     <ChallengesPage />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/progress" 
+              <Route
+                path="/progress"
                 element={
                   <ProtectedRoute>
                     <ProgressPage />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/leaderboard" 
+              <Route
+                path="/leaderboard"
                 element={
                   <ProtectedRoute>
                     <LeaderboardPage />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/peer-review" 
+              <Route
+                path="/peer-review"
                 element={
                   <ProtectedRoute>
                     <PeerReviewPage />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/profile" 
+              <Route
+                path="/profile"
                 element={
                   <ProtectedRoute>
                     <ProfilePage />
                   </ProtectedRoute>
-                } 
+                }
               />
-              
+
               {/* Catch-all route for 404 */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </main>
-          
+
           {/* TODO: Add Footer component */}
           {/* <Footer /> */}
         </div>

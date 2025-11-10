@@ -1,19 +1,26 @@
-// TODO: Implement submission routes
+// src/routes/submissions.js
 const express = require('express');
 const router = express.Router();
+
 const submissionController = require('../controllers/submissionController');
 const auth = require('../middleware/auth');
 
-// TODO: Add POST / route for submitting work
-router.post('/', auth, submissionController.submitWork);
+// --------------------------------------------------
+// 🔹 Submission Routes (Protected)
+// --------------------------------------------------
 
-// TODO: Add GET /:id route for getting submission
-router.get('/:id', auth, submissionController.getSubmission);
-
-// TODO: Add GET /user/:userId route for user submissions
+// 🟢 Get all submissions for a specific user
+// Optional query params: ?limit=10&offset=0
 router.get('/user/:userId', auth, submissionController.getUserSubmissions);
 
-// TODO: Add PUT /:id route for updating submission
+// 🟡 Get a specific submission by ID
+router.get('/:id', auth, submissionController.getSubmission);
+
+// 🔵 Submit new work for a challenge
+// Expected body: { challengeId, content, files? }
+router.post('/', auth, submissionController.submitWork);
+
+// 🟣 Update an existing submission (e.g., resubmit or edit)
 router.put('/:id', auth, submissionController.updateSubmission);
 
 module.exports = router;

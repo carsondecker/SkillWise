@@ -22,51 +22,51 @@ const AUTH_ACTIONS = {
 // Reducer function
 const authReducer = (state, action) => {
   switch (action.type) {
-    case AUTH_ACTIONS.SET_LOADING:
-      return {
-        ...state,
-        isLoading: action.payload,
-      };
+  case AUTH_ACTIONS.SET_LOADING:
+    return {
+      ...state,
+      isLoading: action.payload,
+    };
 
-    case AUTH_ACTIONS.LOGIN_SUCCESS:
-      return {
-        ...state,
-        user: action.payload.user,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      };
+  case AUTH_ACTIONS.LOGIN_SUCCESS:
+    return {
+      ...state,
+      user: action.payload.user,
+      isAuthenticated: true,
+      isLoading: false,
+      error: null,
+    };
 
-    case AUTH_ACTIONS.LOGOUT:
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      };
+  case AUTH_ACTIONS.LOGOUT:
+    return {
+      ...state,
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+    };
 
-    case AUTH_ACTIONS.UPDATE_USER:
-      return {
-        ...state,
-        user: { ...state.user, ...action.payload },
-      };
+  case AUTH_ACTIONS.UPDATE_USER:
+    return {
+      ...state,
+      user: { ...state.user, ...action.payload },
+    };
 
-    case AUTH_ACTIONS.SET_ERROR:
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false,
-      };
+  case AUTH_ACTIONS.SET_ERROR:
+    return {
+      ...state,
+      error: action.payload,
+      isLoading: false,
+    };
 
-    case AUTH_ACTIONS.CLEAR_ERROR:
-      return {
-        ...state,
-        error: null,
-      };
+  case AUTH_ACTIONS.CLEAR_ERROR:
+    return {
+      ...state,
+      error: null,
+    };
 
-    default:
-      return state;
+  default:
+    return state;
   }
 };
 
@@ -81,24 +81,61 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const token = getAccessToken();
-      
+      console.log('🟢 [Auth Init] Starting initialization...');
+      console.log('📦 Stored Access Token:', token ? 'Found ✅' : 'Not Found ❌');
+
       if (token) {
         try {
-          // Validate token by fetching user profile
+          console.log('➡️ [Auth Init] Trying /users/profile with access token...');
           const response = await apiService.user.getProfile();
+          console.log('✅ [Auth Init] /users/profile success:', response.data);
+
           dispatch({
             type: AUTH_ACTIONS.LOGIN_SUCCESS,
-            payload: { user: response.data },
+            payload: { user: response.data.user || response.data },
           });
+
         } catch (error) {
-          console.error('Token validation failed:', error);
-          // Token is invalid, clear it
-          clearTokens();
-          dispatch({ type: AUTH_ACTIONS.LOGOUT });
+          console.warn('⚠️ [Auth Init] Access token invalid, trying silent refresh...');
+          console.error('❌ [Auth Init] Profile fetch failed:', error.response?.status, error.response?.data);
+
+          try {
+            console.log('➡️ [Auth Init] Trying /auth/refresh...');
+            const refreshResponse = await apiService.auth.refresh();
+            console.log('✅ [Auth Init] /auth/refresh success:', refreshResponse.data);
+
+            const { accessToken } = refreshResponse.data;
+
+            if (accessToken) {
+              console.log('💾 [Auth Init] New access token received, saving...');
+              setAccessToken(accessToken);
+
+              console.log('➡️ [Auth Init] Retrying /users/profile with new token...');
+              const profileRes = await apiService.user.getProfile();
+              console.log('✅ [Auth Init] /users/profile success (after refresh):', profileRes.data);
+
+              dispatch({
+                type: AUTH_ACTIONS.LOGIN_SUCCESS,
+                payload: { user: profileRes.data.user || profileRes.data },
+              });
+
+              console.log('🎉 [Auth Init] User restored successfully after refresh');
+              return;
+            } else {
+              console.error('🚫 [Auth Init] Refresh succeeded but no accessToken returned');
+            }
+          } catch (refreshError) {
+            console.error('❌ [Auth Init] Silent refresh failed:', refreshError.response?.status, refreshError.response?.data);
+            clearTokens();
+            dispatch({ type: AUTH_ACTIONS.LOGOUT });
+          }
         }
       } else {
+        console.log('🚫 [Auth Init] No token found — user is not logged in');
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       }
+
+      console.log('🔚 [Auth Init] Initialization complete');
     };
 
     initializeAuth();
@@ -112,7 +149,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     window.addEventListener('auth:logout', handleLogout);
-    
+
     return () => {
       window.removeEventListener('auth:logout', handleLogout);
     };
@@ -125,10 +162,16 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await apiService.auth.login(credentials);
-      const { user, accessToken } = response.data;
+      const { user, tokens } = response.data;
 
-      // Store access token
-      setAccessToken(accessToken);
+      // ✅ Support both field names
+      const token = tokens?.accessToken;
+
+      if (token) {
+        setAccessToken(token);
+      } else {
+        console.warn('⚠️ No access token found in login response:', response.data);
+      }
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -308,11 +351,11 @@ export const AuthProvider = ({ children }) => {
 // Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  
+
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  
+
   return context;
 };
 

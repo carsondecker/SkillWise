@@ -2,12 +2,12 @@ module.exports = {
   testEnvironment: 'node',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: [
-    '<rootDir>/tests/**/*.test.js'
+    '<rootDir>/tests/**/*.test.js',
   ],
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/database/**',
-    '!src/config/**'
+    '!src/config/**',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
@@ -15,5 +15,5 @@ module.exports = {
   forceExit: true,
   clearMocks: true,
   resetMocks: true,
-  restoreMocks: true
+  restoreMocks: true,
 };

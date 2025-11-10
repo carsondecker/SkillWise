@@ -9,10 +9,10 @@ const NotFoundPage = () => {
           <div className="error-code">404</div>
           <h1>Page Not Found</h1>
           <p>
-            Oops! The page you're looking for doesn't exist. 
+            Oops! The page you're looking for doesn't exist.
             It might have been moved, deleted, or you entered the wrong URL.
           </p>
-          
+
           <div className="not-found-actions">
             <Link to="/" className="btn-primary">
               Go Home
@@ -21,7 +21,7 @@ const NotFoundPage = () => {
               Go to Dashboard
             </Link>
           </div>
-          
+
           <div className="helpful-links">
             <h3>Maybe you're looking for:</h3>
             <ul>
@@ -32,7 +32,7 @@ const NotFoundPage = () => {
             </ul>
           </div>
         </div>
-        
+
         <div className="not-found-illustration">
           <div className="illustration-content">
             <div className="lost-robot">🤖</div>

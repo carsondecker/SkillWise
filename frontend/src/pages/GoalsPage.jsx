@@ -4,7 +4,7 @@ import GoalCard from '../components/goals/GoalCard';
 
 const GoalsPage = () => {
   const [goals, setGoals] = useState([]);
-  
+
   // TODO: Add goal creation, filtering, search, sorting
   return (
     <div className="goals-page">
