@@ -65,7 +65,7 @@ jobs:
       # -------------------------
       # 6️⃣ Wait for Postgres to be ready
       # -------------------------
-      - name: 🕓 Wait for Postgres to be ready
+      - name: 🕓 Wait for Postgres
         run: |
           echo "⏳ Waiting for Postgres..."
           for i in {1..15}; do
@@ -115,22 +115,14 @@ jobs:
         run: cd frontend && npm test -- --watchAll=false || echo "No unit tests"
 
       # -------------------------
-      # 12️⃣ Start backend and frontend for Cypress
-      # -------------------------
-      - name: 🚀 Start backend and frontend servers
-        run: |
-          cd backend && npm start &
-          cd frontend && npm start &
-          sleep 20
-          echo "✅ Both backend and frontend are running"
-
-      # -------------------------
-      # 13️⃣ Run Cypress E2E tests
+      # 12️⃣ Run Cypress E2E tests (Cypress manages servers)
       # -------------------------
       - name: 🌐 Run Cypress E2E Tests
         uses: cypress-io/github-action@v6
         with:
-          start: npm start
+          start: npm run start:ci
           wait-on: 'http://localhost:3000,http://localhost:3001/api'
-          wait-on-timeout: 90
+          wait-on-timeout: 120
           browser: chrome
+        env:
+          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db
