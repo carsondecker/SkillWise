@@ -23,10 +23,10 @@ jobs:
           POSTGRES_PASSWORD: skillwise_pass
         ports: ['5444:5432']
         options: >-
-          --health-cmd="pg_isready -U skillwise_user -d skillwise_test_db"
-          --health-interval=10s
+          --health-cmd="pg_isready -U skillwise_user -d skillwise_test_db -h localhost"
+          --health-interval=5s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
       # -------------------------
