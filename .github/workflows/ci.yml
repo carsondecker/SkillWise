@@ -1,0 +1,82 @@
+name: CI - Lint, Jest & Cypress
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - feature/**
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    name: 🧪 Run Lint, Jest & Cypress Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: skillwise_test_db
+          POSTGRES_USER: skillwise_user
+          POSTGRES_PASSWORD: skillwise_pass
+        ports: ['5444:5432']
+        options: >-
+          --health-cmd="pg_isready -U test_user -d test_db"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      # -------------------------
+      # Checkout code
+      # -------------------------
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      # -------------------------
+      # Setup Node.js
+      # -------------------------
+      - name: 🛠️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # -------------------------
+      # Install dependencies
+      # -------------------------
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      # -------------------------
+      # Run ESLint
+      # -------------------------
+      - name: 🔍 Run Linter
+        run: npm run lint
+
+      # -------------------------
+      # Run Jest unit tests
+      # -------------------------
+      - name: 🧪 Run Jest Unit Tests
+        run: npm test -- --ci --runInBand
+
+      # -------------------------
+      # Build the app for E2E
+      # -------------------------
+      - name: 🏗️ Build App
+        run: npm run build
+
+      # -------------------------
+      # Run Cypress Tests
+      # -------------------------
+      - name: 🌐 Run Cypress E2E
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm start
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 90
+          browser: chrome

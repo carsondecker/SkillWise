@@ -9,15 +9,16 @@ const path = require('path');
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const connectionString =
+  process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://skillwise_user:skillwise_pass@localhost:5433/skillwise_db';
+
 const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgresql://skillwise_user:skillwise_pass@localhost:5433/skillwise_db',
+  connectionString,
 });
 
 const migrationsDir = path.join(__dirname, '../database/migrations');
 
-async function runMigrations() {
+async function runMigrations () {
   console.log('🚀 Starting database migrations...\n');
 
   try {
@@ -38,7 +39,7 @@ async function runMigrations() {
     for (const file of files) {
       const executed = await pool.query(
         'SELECT 1 FROM migrations WHERE filename = $1',
-        [file]
+        [file],
       );
 
       if (executed.rowCount > 0) {

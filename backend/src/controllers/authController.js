@@ -17,7 +17,7 @@ const authController = {
   // -------------------------
   register: asyncHandler(async (req, res, next) => {
     try {
-      const payload = req.validated.body; // ✅ from validation middleware
+      const payload = req.validated?.body || req.body;
       const { user } = await authService.register(payload);
 
       const accessToken = generateAccessToken({ id: user.id, role: user.role });
@@ -49,10 +49,10 @@ const authController = {
   // -------------------------
   login: asyncHandler(async (req, res, next) => {
     try {
-      const { email, password } = req.validated.body;
+      const { email, password } = req.validated?.body || req.body;
       const { user, accessToken, refreshToken } = await authService.login(
         email,
-        password
+        password,
       );
 
       await authService.storeRefreshToken(user.id, refreshToken);

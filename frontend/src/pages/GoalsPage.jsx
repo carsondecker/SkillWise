@@ -112,6 +112,7 @@ const GoalsPage = () => {
       setCreating(false);
     }
   };
+
   const handleRefreshGoals = async () => {
     try {
       setLoading(true);
@@ -129,13 +130,14 @@ const GoalsPage = () => {
   };
 
   return (
-    <div className="goals-page">
-      <div className="page-header">
+    <div className="goals-page" id="goals-page">
+      <div className="page-header" id="goals-header">
         <div className="header-left">
-          <h1>🎯 My Learning Goals</h1>
-          <p>Track your skills, milestones, and progress effortlessly.</p>
+          <h1 id="goals-title">🎯 My Learning Goals</h1>
+          <p id="goals-subtitle">Track your skills, milestones, and progress effortlessly.</p>
         </div>
         <motion.button
+          id="create-goal-btn"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
           className="btn-primary"
@@ -145,15 +147,20 @@ const GoalsPage = () => {
         </motion.button>
       </div>
 
-      <div className="goals-controls">
+      <div className="goals-controls" id="goals-controls">
         <input
+          id="goal-search"
           type="text"
           placeholder="Search goals..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select
+          id="goal-filter-category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
           <option value="">All Categories</option>
           <option value="programming">Programming</option>
           <option value="design">Design</option>
@@ -163,16 +170,16 @@ const GoalsPage = () => {
       </div>
 
       {loading ? (
-        <div className="loading-state">
+        <div className="loading-state" id="loading-state">
           <p>Loading your goals...</p>
         </div>
       ) : filteredGoals.length > 0 ? (
-        <div className="goals-grid">
+        <div className="goals-grid" id="goals-grid">
           {filteredGoals.map((goal) => (
             <GoalCard
               key={goal.id}
               goal={goal}
-              onUpdated={() => handleRefreshGoals()} // 👈 refresh after update
+              onUpdated={() => handleRefreshGoals()}
               onDeleted={(id) =>
                 setGoals((prev) => prev.filter((g) => g.id !== id))
               }
@@ -180,7 +187,7 @@ const GoalsPage = () => {
           ))}
         </div>
       ) : (
-        <div className="empty-state">
+        <div className="empty-state" id="empty-state">
           <p>No goals found. Let’s start your learning journey!</p>
         </div>
       )}
@@ -189,21 +196,24 @@ const GoalsPage = () => {
       {showModal && (
         <div
           className="modal-backdrop"
+          id="goal-modal-backdrop"
           onClick={(e) =>
             e.target.classList.contains('modal-backdrop') && setShowModal(false)
           }
         >
           <motion.div
+            id="goal-modal"
             className="modal"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
-            <h2>Create New Goal</h2>
-            <form onSubmit={handleCreateGoal}>
+            <h2 id="goal-modal-title">Create New Goal</h2>
+            <form id="create-goal-form" onSubmit={handleCreateGoal}>
               <div className="form-group">
-                <label>Title</label>
+                <label htmlFor="goal-title">Title</label>
                 <input
+                  id="goal-title"
                   name="title"
                   value={newGoal.title}
                   onChange={handleInputChange}
@@ -212,8 +222,9 @@ const GoalsPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Description</label>
+                <label htmlFor="goal-description">Description</label>
                 <textarea
+                  id="goal-description"
                   name="description"
                   rows="3"
                   value={newGoal.description}
@@ -224,8 +235,9 @@ const GoalsPage = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Category</label>
+                  <label htmlFor="goal-category">Category</label>
                   <select
+                    id="goal-category"
                     name="category"
                     value={newGoal.category}
                     onChange={handleInputChange}
@@ -240,8 +252,9 @@ const GoalsPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Difficulty</label>
+                  <label htmlFor="goal-difficulty">Difficulty</label>
                   <select
+                    id="goal-difficulty"
                     name="difficulty"
                     value={newGoal.difficulty}
                     onChange={handleInputChange}
@@ -254,8 +267,9 @@ const GoalsPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Target Date</label>
+                <label htmlFor="goal-target-date">Target Date</label>
                 <input
+                  id="goal-target-date"
                   type="date"
                   name="target_date"
                   value={newGoal.target_date}
@@ -266,8 +280,9 @@ const GoalsPage = () => {
               {/* 🧩 Points Reward + Public Toggle */}
               <div className="form-row">
                 <div className="form-group">
-                  <label>Points Reward</label>
+                  <label htmlFor="goal-points">Points Reward</label>
                   <input
+                    id="goal-points"
                     type="number"
                     name="points_reward"
                     min="0"
@@ -278,8 +293,9 @@ const GoalsPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Visibility</label>
+                  <label htmlFor="goal-visibility">Visibility</label>
                   <select
+                    id="goal-visibility"
                     name="is_public"
                     value={newGoal.is_public ? 'true' : 'false'}
                     onChange={handleBoolChange}
@@ -290,8 +306,9 @@ const GoalsPage = () => {
                 </div>
               </div>
 
-              <div className="modal-actions">
+              <div className="modal-actions" id="goal-modal-actions">
                 <button
+                  id="cancel-goal"
                   type="button"
                   className="btn-secondary"
                   onClick={() => setShowModal(false)}
@@ -299,6 +316,7 @@ const GoalsPage = () => {
                   Cancel
                 </button>
                 <button
+                  id="submit-goal"
                   type="submit"
                   className="btn-primary"
                   disabled={creating}

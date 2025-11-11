@@ -131,36 +131,28 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
         </div>
 
         {/* BACK SIDE */}
-        <div className="goal-card-back">
+        {/* BACK SIDE */}
+        <div className="goal-card-back" id={`goal-card-${id}`}>
           <h3>{title}</h3>
           <p className="goal-description">
             {description || 'No description provided.'}
           </p>
 
           <div className="goal-details">
-            <p>
-              <strong>Category:</strong> {category || 'General'}
-            </p>
-            <p>
-              <strong>Difficulty:</strong> {difficulty_level || 'Medium'}
-            </p>
+            <p><strong>Category:</strong> {category || 'General'}</p>
+            <p><strong>Difficulty:</strong> {difficulty_level || 'Medium'}</p>
             {target_date && (
-              <p>
-                <strong>Target Date:</strong>{' '}
-                {new Date(target_date).toLocaleDateString()}
-              </p>
+              <p><strong>Target Date:</strong> {new Date(target_date).toLocaleDateString()}</p>
             )}
             {created_at && (
-              <p>
-                <strong>Created:</strong>{' '}
-                {new Date(created_at).toLocaleDateString()}
-              </p>
+              <p><strong>Created:</strong> {new Date(created_at).toLocaleDateString()}</p>
             )}
           </div>
 
-          <div className="goal-actions">
+          <div className="goal-actions" id={`goal-actions-${id}`}>
             {!is_completed && (
               <motion.button
+                id={`goal-complete-btn-${id}`}
                 className="btn-complete"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -172,6 +164,7 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
             )}
 
             <motion.button
+              id={`goal-delete-btn-${id}`}
               className="btn-delete"
               whileHover={!is_completed ? { scale: 1.05 } : {}}
               whileTap={!is_completed ? { scale: 0.95 } : {}}
@@ -182,6 +175,7 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
             </motion.button>
 
             <motion.button
+              id={`goal-close-btn-${id}`}
               className="btn-secondary"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -190,6 +184,15 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
               Close
             </motion.button>
           </div>
+
+          {is_completed && (
+            <div
+              className="completed-badge"
+              id={`goal-completed-badge-${id}`}
+            >
+              🎯 Completed Goal
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

@@ -7,23 +7,27 @@ const logger = pino({
 });
 
 // Database configuration
+// Database configuration
 const dbConfig = {
-  connectionString: process.env.DATABASE_URL,
-  // Additional configuration for production
+  connectionString:
+    process.env.NODE_ENV === 'test'
+      ? process.env.TEST_DATABASE_URL || process.env.DATABASE_URL
+      : process.env.DATABASE_URL,
   ...(process.env.NODE_ENV === 'production' && {
-    ssl: {
-      rejectUnauthorized: false,
-    },
+    ssl: { rejectUnauthorized: false },
   }),
-  // Connection pool settings
-  max: 20, // Maximum number of clients in pool
-  idleTimeoutMillis: 30000, // How long a client is allowed to remain idle
-  connectionTimeoutMillis: 2000, // How long to wait when connecting
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 };
 
 // Create connection pool
 const pool = new Pool(dbConfig);
-
+logger.info(
+  `📦 Connected to ${
+    process.env.NODE_ENV === 'test' ? 'TEST' : process.env.NODE_ENV
+  } database: ${dbConfig.connectionString}`,
+);
 // Handle pool events
 pool.on('connect', (client) => {
   logger.info('New database client connected');

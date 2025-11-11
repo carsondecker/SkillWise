@@ -13,7 +13,9 @@
     "rebuild": "docker-compose build --no-cache",
     "reset": "docker-compose down -v && docker-compose up -d",
     "test": "echo \"Run tests in individual services\" && exit 0",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test:e2e": "cypress run",
+    "test:e2e:open": "cypress open"
   },
   "keywords": [
     "ai",
@@ -26,7 +28,9 @@
   "description": "SkillWise AI Tutor - An intelligent tutoring system",
   "license": "ISC",
   "devDependencies": {
+    "cypress": "^15.6.0",
     "eslint": "^8.44.0",
+    "eslint-plugin-cypress": "^2.12.1",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.3",
     "prettier": "^2.8.8",
