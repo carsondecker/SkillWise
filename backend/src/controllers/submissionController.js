@@ -123,7 +123,7 @@ const submissionController = {
 
     const submissions = await submissionService.getChallengeSubmissions(
       userId,
-      challengeId
+      challengeId,
     );
 
     res.json({ submissions });

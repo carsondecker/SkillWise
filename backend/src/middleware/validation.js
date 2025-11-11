@@ -23,7 +23,7 @@ const registerSchema = z.object({
         .min(8, 'Password must be at least 8 characters')
         .regex(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-          'Password must contain at least one lowercase letter, one uppercase letter, and one number'
+          'Password must contain at least one lowercase letter, one uppercase letter, and one number',
         ),
       firstName: z
         .string()
@@ -145,8 +145,8 @@ const validate = (schema) => {
           new AppError(
             `Validation failed: ${errors.map((e) => e.message).join(', ')}`,
             400,
-            'VALIDATION_ERROR'
-          )
+            'VALIDATION_ERROR',
+          ),
         );
       }
 
@@ -155,7 +155,7 @@ const validate = (schema) => {
       next();
     } catch (error) {
       next(
-        new AppError('Unexpected validation error', 400, 'VALIDATION_ERROR')
+        new AppError('Unexpected validation error', 400, 'VALIDATION_ERROR'),
       );
     }
   };

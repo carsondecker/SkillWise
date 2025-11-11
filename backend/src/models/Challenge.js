@@ -1,7 +1,7 @@
 const db = require('../database/connection');
 
 class Challenge {
-  static async findAll() {
+  static async findAll () {
     const query = `
       SELECT id, title, description, instructions, category, difficulty_level, points_reward,max_attempts,
              estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at
@@ -13,7 +13,7 @@ class Challenge {
     return result.rows;
   }
 
-  static async findById(id) {
+  static async findById (id) {
     const query = `
       SELECT id, title, description, instructions, category, difficulty_level, points_reward,max_attempts,
              estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at
@@ -24,7 +24,7 @@ class Challenge {
     return result.rows[0];
   }
 
-  static async findByDifficulty(difficulty) {
+  static async findByDifficulty (difficulty) {
     const query = `
       SELECT * FROM challenges
       WHERE difficulty_level = $1 AND is_active = true
@@ -34,7 +34,7 @@ class Challenge {
     return result.rows;
   }
 
-  static async findByCategory(category) {
+  static async findByCategory (category) {
     const query = `
       SELECT * FROM challenges
       WHERE category = $1 AND is_active = true
@@ -44,7 +44,7 @@ class Challenge {
     return result.rows;
   }
 
-  static async create(data) {
+  static async create (data) {
     const {
       title,
       description,
@@ -93,7 +93,7 @@ class Challenge {
     return result.rows[0];
   }
 
-  static async update(id, data) {
+  static async update (id, data) {
     const {
       title,
       description,
@@ -151,10 +151,10 @@ class Challenge {
     return result.rows[0] || null;
   }
 
-  static async delete(id) {
+  static async delete (id) {
     const result = await db.query(
       'DELETE FROM challenges WHERE id = $1 RETURNING *',
-      [id]
+      [id],
     );
     return result.rows[0] || null;
   }

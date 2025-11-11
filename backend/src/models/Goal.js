@@ -1,7 +1,7 @@
 const db = require('../database/connection');
 
 class Goal {
-  static async findByUserId(userId, limit = 20, offset = 0) {
+  static async findByUserId (userId, limit = 20, offset = 0) {
     const query = `
       SELECT * FROM goals
       WHERE user_id = $1
@@ -12,14 +12,14 @@ class Goal {
     return result.rows;
   }
 
-  static async findById(goalId) {
+  static async findById (goalId) {
     const result = await db.query('SELECT * FROM goals WHERE id = $1', [
       goalId,
     ]);
     return result.rows[0];
   }
 
-  static async create(data) {
+  static async create (data) {
     const {
       user_id,
       title,
@@ -65,7 +65,7 @@ class Goal {
     return result.rows[0];
   }
 
-  static async update(goalId, updates) {
+  static async update (goalId, updates) {
     const {
       title,
       description,
@@ -108,10 +108,10 @@ class Goal {
     return result.rows[0];
   }
 
-  static async delete(goalId) {
+  static async delete (goalId) {
     const result = await db.query(
       'DELETE FROM goals WHERE id = $1 RETURNING *',
-      [goalId]
+      [goalId],
     );
     return result.rows[0];
   }

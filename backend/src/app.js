@@ -29,13 +29,13 @@ const logger = pino({
   transport:
     process.env.NODE_ENV === 'development'
       ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'SYS:standard',
-            ignore: 'pid,hostname',
-          },
-        }
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'SYS:standard',
+          ignore: 'pid,hostname',
+        },
+      }
       : undefined,
 });
 
@@ -58,7 +58,7 @@ app.use(
         statusCode: res.statusCode,
       }),
     },
-  })
+  }),
 );
 
 // --------------------------------------------------
@@ -69,13 +69,13 @@ app.use(
     crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
+        defaultSrc: ['\'self\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        scriptSrc: ['\'self\''],
+        imgSrc: ['\'self\'', 'data:', 'https:'],
       },
     },
-  })
+  }),
 );
 
 // Trust proxy (important for rate limiting behind proxies like Heroku)
@@ -90,7 +90,7 @@ app.use(
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  })
+  }),
 );
 
 // --------------------------------------------------
@@ -106,7 +106,7 @@ const limiter = rateLimit({
       status: 'fail',
       error: 'Too many requests, please try again later.',
       retryAfter: Math.ceil(
-        (parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000) / 1000
+        (parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000) / 1000,
       ),
       timestamp: new Date().toISOString(),
     });
@@ -122,14 +122,14 @@ app.use(
   express.json({
     limit: '10mb',
     strict: true,
-  })
+  }),
 );
 
 app.use(
   express.urlencoded({
     extended: true,
     limit: '10mb',
-  })
+  }),
 );
 
 // --------------------------------------------------

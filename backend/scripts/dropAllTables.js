@@ -13,10 +13,10 @@ const pool = new Pool({
     'postgresql://skillwise_user:skillwise_pass@localhost:5433/skillwise_db',
 });
 
-async function dropAllUserObjects() {
+async function dropAllUserObjects () {
   try {
     console.log(
-      '🚨 WARNING: Dropping all user-defined tables, triggers, and functions...'
+      '🚨 WARNING: Dropping all user-defined tables, triggers, and functions...',
     );
 
     // Disable FK checks
@@ -34,7 +34,7 @@ async function dropAllUserObjects() {
       for (const { table_name, trigger_name } of triggersRes.rows) {
         console.log(`   🔻 Dropping trigger: ${trigger_name} ON ${table_name}`);
         await pool.query(
-          `DROP TRIGGER IF EXISTS "${trigger_name}" ON "${table_name}" CASCADE;`
+          `DROP TRIGGER IF EXISTS "${trigger_name}" ON "${table_name}" CASCADE;`,
         );
       }
     } else {
@@ -50,7 +50,7 @@ async function dropAllUserObjects() {
 
     if (functionsRes.rows.length) {
       console.log(
-        `🧠 Found ${functionsRes.rows.length} functions. Dropping...`
+        `🧠 Found ${functionsRes.rows.length} functions. Dropping...`,
       );
       for (const { routine_name } of functionsRes.rows) {
         console.log(`   🧨 Dropping function: ${routine_name}`);
@@ -59,7 +59,7 @@ async function dropAllUserObjects() {
           .catch(async () => {
             // Retry for overloaded functions
             await pool.query(
-              `DROP FUNCTION IF EXISTS "${routine_name}" CASCADE;`
+              `DROP FUNCTION IF EXISTS "${routine_name}" CASCADE;`,
             );
           });
       }

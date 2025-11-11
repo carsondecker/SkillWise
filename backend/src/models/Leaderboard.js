@@ -2,7 +2,7 @@ const db = require('../database/connection');
 
 class Leaderboard {
   // 🏆 Get global leaderboard (from view + join users for names)
-  static async getGlobalLeaderboard(limit = 10) {
+  static async getGlobalLeaderboard (limit = 10) {
     try {
       const query = `
         SELECT
@@ -31,7 +31,7 @@ class Leaderboard {
   }
 
   // 📅 Get weekly leaderboard (computed dynamically)
-  static async getWeeklyLeaderboard(limit = 10) {
+  static async getWeeklyLeaderboard (limit = 10) {
     try {
       const query = `
         SELECT
@@ -57,7 +57,7 @@ class Leaderboard {
   }
 
   // 📆 Get monthly leaderboard (computed dynamically)
-  static async getMonthlyLeaderboard(limit = 10) {
+  static async getMonthlyLeaderboard (limit = 10) {
     try {
       const query = `
         SELECT
@@ -83,7 +83,7 @@ class Leaderboard {
   }
 
   // 👤 Get single user's rank from view (with user info)
-  static async getUserRank(userId) {
+  static async getUserRank (userId) {
     try {
       const query = `
         SELECT
@@ -105,7 +105,7 @@ class Leaderboard {
   }
 
   // 📚 Get subject/category-specific leaderboard
-  static async getSubjectLeaderboard(category, limit = 10) {
+  static async getSubjectLeaderboard (category, limit = 10) {
     try {
       const query = `
         SELECT

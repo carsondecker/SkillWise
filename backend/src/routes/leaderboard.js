@@ -29,7 +29,7 @@ router.get('/category', auth, leaderboardController.getCategoryLeaderboard);
 router.post(
   '/achievement-points',
   auth,
-  leaderboardController.calculateAchievementPoints
+  leaderboardController.calculateAchievementPoints,
 );
 
 module.exports = router;

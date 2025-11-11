@@ -27,7 +27,7 @@ router.post(
   auth,
   restrictTo('admin'),
   challengeValidation,
-  challengeController.createChallenge
+  challengeController.createChallenge,
 );
 
 // 🔵 Update challenge (Admin only)
@@ -36,7 +36,7 @@ router.put(
   auth,
   restrictTo('admin'),
   challengeUpdateValidation,
-  challengeController.updateChallenge
+  challengeController.updateChallenge,
 );
 
 // 🔴 Delete challenge (Admin only)
@@ -44,7 +44,7 @@ router.delete(
   '/:id',
   auth,
   restrictTo('admin'),
-  challengeController.deleteChallenge
+  challengeController.deleteChallenge,
 );
 
 module.exports = router;

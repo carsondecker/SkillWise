@@ -20,7 +20,7 @@ const submissionService = {
       // Step 1️⃣ — Get max_attempts from the challenge
       const { rows: challengeRows } = await db.query(
         'SELECT max_attempts FROM challenges WHERE id = $1',
-        [challengeId]
+        [challengeId],
       );
       if (!challengeRows.length) {
         throw new AppError('Challenge not found', 404, 'NOT_FOUND');
@@ -34,7 +34,7 @@ const submissionService = {
       FROM submissions
       WHERE user_id = $1 AND challenge_id = $2
       `,
-        [userId, challengeId]
+        [userId, challengeId],
       );
 
       const lastAttempt = existing[0]?.last_attempt || 0;
@@ -44,7 +44,7 @@ const submissionService = {
         throw new AppError(
           `You have reached the maximum number of ${maxAttempts} submissions for this challenge.`,
           403,
-          'MAX_ATTEMPTS_REACHED'
+          'MAX_ATTEMPTS_REACHED',
         );
       }
 
@@ -72,7 +72,7 @@ const submissionService = {
           submission_text,
           submission_files || null,
           nextAttempt,
-        ]
+        ],
       );
 
       return result.rows[0];
@@ -89,7 +89,7 @@ const submissionService = {
         throw new AppError(
           'Missing required fields for submission',
           400,
-          'VALIDATION_ERROR'
+          'VALIDATION_ERROR',
         );
       }
 
@@ -105,7 +105,7 @@ const submissionService = {
           content,
           attachments || null,
           language || 'text',
-        ]
+        ],
       );
 
       const submission = result.rows[0];
@@ -115,7 +115,7 @@ const submissionService = {
         user_id,
         'submission_received',
         'Your challenge submission has been received and is under review.',
-        { challenge_id }
+        { challenge_id },
       );
 
       return {
@@ -140,7 +140,7 @@ const submissionService = {
         LEFT JOIN challenges c ON s.challenge_id = c.id
         WHERE s.id = $1
         `,
-        [submissionId]
+        [submissionId],
       );
 
       if (!result.rows[0])
@@ -154,7 +154,7 @@ const submissionService = {
   /**
    * 👤 Get all submissions by a user
    */
-  async getUserSubmissions({ userId, limit = 20, offset = 0 }) {
+  async getUserSubmissions ({ userId, limit = 20, offset = 0 }) {
     try {
       const result = await db.query(
         `
@@ -165,13 +165,13 @@ const submissionService = {
         ORDER BY s.submitted_at DESC
         LIMIT $2 OFFSET $3
         `,
-        [userId, Number(limit), Number(offset)]
+        [userId, Number(limit), Number(offset)],
       );
       return result.rows;
     } catch (error) {
       throw new AppError(
         `Error fetching user submissions: ${error.message}`,
-        500
+        500,
       );
     }
   },
@@ -188,13 +188,13 @@ const submissionService = {
           WHERE user_id = $1 AND challenge_id = $2
           ORDER BY submitted_at DESC
         `,
-        [userId, challengeId]
+        [userId, challengeId],
       );
       return result.rows;
     } catch (error) {
       throw new AppError(
         `Error fetching challenge submissions: ${error.message}`,
-        500
+        500,
       );
     }
   },
@@ -234,7 +234,7 @@ const submissionService = {
         WHERE id = $1
         RETURNING *
         `,
-        [submissionId, score, feedback]
+        [submissionId, score, feedback],
       );
 
       const graded = updated.rows[0];
@@ -244,13 +244,13 @@ const submissionService = {
         await leaderboardService.updateUserPoints(
           submission.user_id,
           Math.round(score / 10),
-          'submission_graded'
+          'submission_graded',
         );
         await notificationService.sendNotification(
           submission.user_id,
           'submission_graded',
           `Your submission has been graded: ${score}% (${feedback})`,
-          { submission_id: submissionId }
+          { submission_id: submissionId },
         );
       }
 
@@ -279,7 +279,7 @@ const submissionService = {
         throw new AppError(
           `Invalid submission status: ${status}`,
           400,
-          'INVALID_STATUS'
+          'INVALID_STATUS',
         );
       }
 
@@ -290,7 +290,7 @@ const submissionService = {
         WHERE id = $1
         RETURNING *
         `,
-        [submissionId, status]
+        [submissionId, status],
       );
 
       if (!result.rows[0])
@@ -300,7 +300,7 @@ const submissionService = {
         result.rows[0].user_id,
         'submission_status',
         `Your submission status was updated to '${status}'.`,
-        { submission_id: submissionId }
+        { submission_id: submissionId },
       );
 
       return {
@@ -310,7 +310,7 @@ const submissionService = {
     } catch (error) {
       throw new AppError(
         `Error updating submission status: ${error.message}`,
-        500
+        500,
       );
     }
   },

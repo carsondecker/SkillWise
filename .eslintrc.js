@@ -1,15 +1,20 @@
 module.exports = {
+  root: true,
   env: {
     node: true,
-    es2021: true,
     browser: true,
+    es2021: true,
   },
-  extends: ['eslint:recommended'],
+  extends: [
+    'eslint:recommended',
+    'plugin:cypress/recommended', // ✅ enable Cypress globals
+  ],
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
   rules: {
+    // ⚙️ General flexibility
     'no-unused-vars': 'warn',
     'no-console': 'off',
     'no-trailing-spaces': 'off',
@@ -18,9 +23,12 @@ module.exports = {
     quotes: 'off',
     semi: 'off',
     indent: 'off',
+
+    // ✅ React compatibility (no need to import React in JSX)
     'react/react-in-jsx-scope': 'off',
   },
   overrides: [
+    // ✅ Frontend (React)
     {
       files: ['frontend/**/*.{js,jsx}'],
       env: {
@@ -33,22 +41,22 @@ module.exports = {
         },
       },
     },
+    // ✅ Cypress E2E tests
     {
-      files: ['backend/**/*.js'],
-      env: {
-        node: true,
-        jest: true,
-      },
-    },
-    {
-      files: ['cypress/**/*.js', 'cypress/**/*.cy.js'],
+      files: ['cypress/**/*.cy.{js,jsx,ts,tsx}'],
       env: {
         'cypress/globals': true,
       },
-      plugins: ['cypress'],
-      extends: ['plugin:cypress/recommended'],
       rules: {
-        'cypress/no-unnecessary-waiting': 'off',
+        'cypress/no-unnecessary-waiting': 'warn', // not hard fail
+      },
+    },
+    // ✅ Backend (Node + Jest)
+    {
+      files: ['backend/**/*.js', 'tests/**/*.js'],
+      env: {
+        node: true,
+        jest: true,
       },
     },
   ],

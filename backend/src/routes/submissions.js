@@ -20,7 +20,7 @@ router.get('/:id', auth, submissionController.getSubmission);
 router.get(
   '/challenge/:challengeId',
   auth,
-  submissionController.getUserChallengeSubmissions
+  submissionController.getUserChallengeSubmissions,
 );
 // 🔵 Submit new work for a challenge
 // Expected body: { challengeId, content, files? }

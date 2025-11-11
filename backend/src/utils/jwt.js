@@ -33,7 +33,7 @@ const verifyRefreshToken = (token) => {
     throw new AppError(
       'Invalid or expired refresh token',
       401,
-      'INVALID_REFRESH'
+      'INVALID_REFRESH',
     );
   }
 };

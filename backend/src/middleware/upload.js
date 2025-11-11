@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const uniqueName = `${Date.now()}-${file.originalname.replace(
       /\s+/g,
-      '_'
+      '_',
     )}`;
     cb(null, uniqueName);
   },

@@ -4,7 +4,7 @@ class Progress {
   /**
    * 🔹 Get all events for a user
    */
-  static async findByUserId(userId) {
+  static async findByUserId (userId) {
     try {
       const query = `
         SELECT *
@@ -16,7 +16,7 @@ class Progress {
       return result.rows;
     } catch (error) {
       throw new Error(
-        `Error finding progress events for user: ${error.message}`
+        `Error finding progress events for user: ${error.message}`,
       );
     }
   }
@@ -24,7 +24,7 @@ class Progress {
   /**
    * 🔹 Find a progress event by user and challenge
    */
-  static async findByUserAndChallenge(userId, challengeId) {
+  static async findByUserAndChallenge (userId, challengeId) {
     try {
       const query = `
         SELECT *
@@ -44,7 +44,7 @@ class Progress {
   /**
    * 🔹 Aggregate stats for a user
    */
-  static async getUserStats(userId) {
+  static async getUserStats (userId) {
     try {
       const query = `
         SELECT
@@ -67,7 +67,7 @@ class Progress {
   /**
    * 🔹 Create a new progress event
    */
-  static async create(progressData) {
+  static async create (progressData) {
     try {
       const {
         user_id,
@@ -100,7 +100,7 @@ class Progress {
   /**
    * 🔹 Generate leaderboard data
    */
-  static async getLeaderboardData(limit = 10) {
+  static async getLeaderboardData (limit = 10) {
     try {
       const query = `
         SELECT 

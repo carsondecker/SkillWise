@@ -21,14 +21,14 @@ const progressService = {
         averageScore: Number(stats.average_score || 0),
         completionRate: stats.total_attempts
           ? Math.round(
-              (stats.completed_challenges / stats.total_attempts) * 100
-            )
+            (stats.completed_challenges / stats.total_attempts) * 100,
+          )
           : 0,
       };
     } catch (error) {
       throw new AppError(
         `Error calculating overall progress: ${error.message}`,
-        500
+        500,
       );
     }
   },
@@ -44,7 +44,7 @@ const progressService = {
         INSERT INTO progress_events (user_id, event_type, event_data, created_at)
         VALUES ($1, $2, $3, NOW())
         `,
-        [userId, eventType, JSON.stringify(eventData)]
+        [userId, eventType, JSON.stringify(eventData)],
       );
 
       // If user completed a challenge, award points
@@ -56,7 +56,7 @@ const progressService = {
           userId,
           'challenge_completed',
           `You earned ${points} points for completing a challenge!`,
-          { challengeId: eventData.challenge_id }
+          { challengeId: eventData.challenge_id },
         );
       }
 
@@ -66,7 +66,7 @@ const progressService = {
           userId,
           'goal_completed',
           '🎉 Congratulations on completing your goal!',
-          { goalId: eventData.goal_id }
+          { goalId: eventData.goal_id },
         );
       }
 
@@ -78,7 +78,7 @@ const progressService = {
     } catch (error) {
       throw new AppError(
         `Error tracking progress event: ${error.message}`,
-        500
+        500,
       );
     }
   },
@@ -130,7 +130,7 @@ const progressService = {
     } catch (error) {
       throw new AppError(
         `Error fetching latest progress: ${error.message}`,
-        500
+        500,
       );
     }
   },
@@ -144,9 +144,9 @@ const progressService = {
     try {
       let dateFilter = '';
       if (timeframe === 'weekly')
-        dateFilter = "AND p.created_at >= NOW() - INTERVAL '7 days'";
+        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\'';
       else if (timeframe === 'monthly')
-        dateFilter = "AND p.created_at >= NOW() - INTERVAL '30 days'";
+        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'30 days\'';
 
       const result = await db.query(
         `
@@ -161,7 +161,7 @@ const progressService = {
         GROUP BY DATE_TRUNC('day', p.created_at)
         ORDER BY date ASC
         `,
-        [userId]
+        [userId],
       );
 
       return {
@@ -223,7 +223,7 @@ const progressService = {
           userId,
           'achievement',
           `🏆 ${achievement.title} — ${achievement.description}`,
-          achievement
+          achievement,
         );
       }
 

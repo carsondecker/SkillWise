@@ -13,17 +13,17 @@ const leaderboardService = {
   getLeaderboard: async ({ timeframe = 'global', limit = 10 }) => {
     try {
       switch (timeframe) {
-        case 'weekly':
-          return await Leaderboard.getWeeklyLeaderboard(limit);
-        case 'monthly':
-          return await Leaderboard.getMonthlyLeaderboard(limit);
-        default:
-          return await Leaderboard.getGlobalLeaderboard(limit);
+      case 'weekly':
+        return await Leaderboard.getWeeklyLeaderboard(limit);
+      case 'monthly':
+        return await Leaderboard.getMonthlyLeaderboard(limit);
+      default:
+        return await Leaderboard.getGlobalLeaderboard(limit);
       }
     } catch (error) {
       throw new AppError(
         `Error fetching ${timeframe} leaderboard: ${error.message}`,
-        500
+        500,
       );
     }
   },
@@ -54,7 +54,7 @@ const leaderboardService = {
     } catch (error) {
       throw new AppError(
         `Error fetching category leaderboard: ${error.message}`,
-        500
+        500,
       );
     }
   },
@@ -78,7 +78,7 @@ const leaderboardService = {
     } catch (error) {
       throw new AppError(
         `Error fetching top performers: ${error.message}`,
-        500
+        500,
       );
     }
   },
@@ -93,7 +93,7 @@ const leaderboardService = {
         throw new AppError(
           'Invalid parameters for updating user points',
           400,
-          'INVALID_INPUT'
+          'INVALID_INPUT',
         );
       }
 
@@ -105,7 +105,7 @@ const leaderboardService = {
               updated_at = NOW()
           WHERE user_id = $1
           `,
-          [userId, points]
+          [userId, points],
         );
 
         await query(
@@ -113,7 +113,7 @@ const leaderboardService = {
           INSERT INTO progress_events (user_id, event_type, points_earned, event_data)
           VALUES ($1, 'points_awarded', $2, jsonb_build_object('reason', $3))
           `,
-          [userId, points, reason]
+          [userId, points, reason],
         );
       });
 
