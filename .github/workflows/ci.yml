@@ -63,7 +63,7 @@ jobs:
         run: npm run lint || echo "⚠️ Lint warnings ignored for CI"
 
       # -------------------------
-      # 6️⃣ Wait for Postgres
+      # 6️⃣ Wait for Postgres to be ready
       # -------------------------
       - name: 🕓 Wait for Postgres to be ready
         run: |
@@ -84,12 +84,17 @@ jobs:
         run: |
           cd backend
           node scripts/migrate.js || (echo "❌ Migrations failed" && exit 1)
+        env:
+          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db
 
       # -------------------------
       # 8️⃣ Run backend tests (Jest)
       # -------------------------
       - name: 🧪 Run Backend Integration Tests
         run: cd backend && npm run test:integration -- --ci --runInBand
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db
 
       # -------------------------
       # 9️⃣ Install frontend dependencies
