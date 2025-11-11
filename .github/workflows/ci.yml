@@ -60,8 +60,7 @@ jobs:
       # Run Jest unit tests
       # -------------------------
       - name: 🧪 Run Jest Unit Tests
-        run: npm test -- --ci --runInBand
-
+        run: cd backend && npm test:integration -- --ci --runInBand
       # -------------------------
       # Build the app for E2E
       # -------------------------
