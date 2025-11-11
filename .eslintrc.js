@@ -10,17 +10,14 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    // 🚦 General leniency
-    'no-unused-vars': 'warn', // Warn instead of error
-    'no-console': 'off', // Allow console logs for debugging
-    'no-trailing-spaces': 'off', // Don't block trailing spaces
-    'eol-last': 'off', // No strict newline at EOF
-    'comma-dangle': 'off', // Allow optional trailing commas
-    quotes: 'off', // Allow both single/double quotes
-    semi: 'off', // Don't enforce semicolons
-    indent: 'off', // Don't enforce indentation
-
-    // ✅ Optional: ignore React 17+ JSX import rule
+    'no-unused-vars': 'warn',
+    'no-console': 'off',
+    'no-trailing-spaces': 'off',
+    'eol-last': 'off',
+    'comma-dangle': 'off',
+    quotes: 'off',
+    semi: 'off',
+    indent: 'off',
     'react/react-in-jsx-scope': 'off',
   },
   overrides: [
@@ -41,6 +38,17 @@ module.exports = {
       env: {
         node: true,
         jest: true,
+      },
+    },
+    {
+      files: ['cypress/**/*.js', 'cypress/**/*.cy.js'],
+      env: {
+        'cypress/globals': true,
+      },
+      plugins: ['cypress'],
+      extends: ['plugin:cypress/recommended'],
+      rules: {
+        'cypress/no-unnecessary-waiting': 'off',
       },
     },
   ],
