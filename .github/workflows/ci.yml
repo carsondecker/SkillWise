@@ -67,17 +67,23 @@ jobs:
       # -------------------------
       - name: 🕓 Wait for Postgres to be ready
         run: |
-          until pg_isready -h localhost -p 5444 -U skillwise_user; do
-            echo "Waiting for Postgres..."
-            sleep 2
+          echo "⏳ Waiting for Postgres..."
+          for i in {1..15}; do
+            if pg_isready -h localhost -p 5444 -U skillwise_user -d skillwise_test_db; then
+              echo "✅ Postgres is ready!"
+              break
+            fi
+            echo "Retrying in 3s..."
+            sleep 3
           done
-          echo "✅ Postgres is ready!"
 
       # -------------------------
       # 7️⃣ Run backend migrations
       # -------------------------
       - name: 🗂️ Run backend migrations
-        run: cd backend && npm run migrate || echo "No migrations script"
+        run: |
+          cd backend
+          node scripts/migrate.js || (echo "❌ Migrations failed" && exit 1)
 
       # -------------------------
       # 8️⃣ Run backend tests (Jest)
