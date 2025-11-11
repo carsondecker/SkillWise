@@ -1,6 +1,8 @@
 {
   "name": "skillwise_aitutor",
   "version": "1.0.0",
+  "description": "SkillWise AI Tutor - An intelligent tutoring system",
+  "license": "ISC",
   "main": "index.js",
   "scripts": {
     "dev:all": "docker-compose up -d && echo '🟡 Installing dependencies inside containers...' && docker-compose exec backend sh -c 'npm install' && docker-compose exec frontend sh -c 'npm install' && echo '✅ All services are ready! Frontend: http://localhost:3000 | Backend: http://localhost:3001/api'",
@@ -12,10 +14,13 @@
     "build": "docker-compose build",
     "rebuild": "docker-compose build --no-cache",
     "reset": "docker-compose down -v && docker-compose up -d",
-    "test": "echo \"Run tests in individual services\" && exit 0",
     "prepare": "husky install",
+    "lint": "eslint . --ext .js,.jsx --max-warnings=0",
+    "test": "cd backend && npm test -- --ci --runInBand",
+    "test:unit": "npm run test",
     "test:e2e": "cypress run",
-    "test:e2e:open": "cypress open"
+    "test:e2e:open": "cypress open",
+    "start": "cd frontend && npm start"
   },
   "keywords": [
     "ai",
@@ -25,11 +30,9 @@
     "node",
     "postgresql"
   ],
-  "description": "SkillWise AI Tutor - An intelligent tutoring system",
-  "license": "ISC",
   "devDependencies": {
     "cypress": "^15.6.0",
-    "eslint": "^8.44.0",
+    "eslint": "^8.57.1",
     "eslint-plugin-cypress": "^2.12.1",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.3",

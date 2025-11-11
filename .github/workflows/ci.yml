@@ -6,7 +6,8 @@ on:
       - '**' # any branch
   pull_request:
     branches:
-      - '**' # any PR
+      - main
+      - develop
 
 jobs:
   build-and-test:
