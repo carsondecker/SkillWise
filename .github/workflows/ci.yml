@@ -18,12 +18,12 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: skillwise_test_db
+          POSTGRES_DB: skillwise_db # ✅ same as dev
           POSTGRES_USER: skillwise_user
           POSTGRES_PASSWORD: skillwise_pass
-        ports: ['5444:5432']
+        ports: ['5432:5432'] # ✅ default dev port
         options: >-
-          --health-cmd="pg_isready -U skillwise_user -d skillwise_test_db -h localhost"
+          --health-cmd="pg_isready -U skillwise_user -d skillwise_db -h localhost"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=10
@@ -45,7 +45,7 @@ jobs:
           cache: npm
 
       # -------------------------
-      # 3️⃣ Install root dependencies (lint configs, Cypress, etc.)
+      # 3️⃣ Install root dependencies
       # -------------------------
       - name: 📥 Install root dependencies
         run: npm ci
@@ -57,7 +57,7 @@ jobs:
         run: cd backend && npm ci
 
       # -------------------------
-      # 5️⃣ Lint codebase (ignore Cypress warnings)
+      # 5️⃣ Run ESLint (non-blocking)
       # -------------------------
       - name: 🔍 Run ESLint
         run: npm run lint || echo "⚠️ Lint warnings ignored for CI"
@@ -68,8 +68,8 @@ jobs:
       - name: 🕓 Wait for Postgres
         run: |
           echo "⏳ Waiting for Postgres..."
-          for i in {1..15}; do
-            if pg_isready -h localhost -p 5444 -U skillwise_user -d skillwise_test_db; then
+          for i in {1..20}; do
+            if pg_isready -h localhost -p 5432 -U skillwise_user -d skillwise_db; then
               echo "✅ Postgres is ready!"
               break
             fi
@@ -85,16 +85,16 @@ jobs:
           cd backend
           node scripts/migrate.js || (echo "❌ Migrations failed" && exit 1)
         env:
-          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db
+          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_db
 
       # -------------------------
-      # 8️⃣ Run backend tests (Jest)
+      # 8️⃣ Run backend integration tests
       # -------------------------
       - name: 🧪 Run Backend Integration Tests
         run: cd backend && npm run test:integration -- --ci --runInBand
         env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db
+          NODE_ENV: development # ✅ same as dev
+          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_db
 
       # -------------------------
       # 9️⃣ Install frontend dependencies
@@ -109,13 +109,13 @@ jobs:
         run: cd frontend && npm run lint || echo "⚠️ Lint warnings ignored for CI"
 
       # -------------------------
-      # 11️⃣ Run frontend unit tests
+      # 11️⃣ Run frontend unit tests (optional)
       # -------------------------
       - name: 🧩 Run Frontend Unit Tests
         run: cd frontend && npm test -- --watchAll=false || echo "No unit tests"
 
       # -------------------------
-      # 12️⃣ Run Cypress E2E tests (Cypress manages servers)
+      # 12️⃣ Run Cypress E2E tests (uses normal dev DB + ports)
       # -------------------------
       - name: 🌐 Run Cypress E2E Tests
         uses: cypress-io/github-action@v6
@@ -125,4 +125,5 @@ jobs:
           wait-on-timeout: 120
           browser: chrome
         env:
-          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db
+          NODE_ENV: development
+          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_db
