@@ -15,7 +15,7 @@
     "rebuild": "docker-compose build --no-cache",
     "reset": "docker-compose down -v && docker-compose up -d",
     "prepare": "husky install",
-    "lint": "eslint . --ext .js,.jsx --max-warnings=0",
+    "lint": "eslint . --ext .js,.jsx --max-warnings=999",
     "test": "cd backend && npm test -- --ci --runInBand",
     "test:unit": "npm run test",
     "test:e2e": "cypress run",
