@@ -1,15 +1,12 @@
 name: CI - Lint, Jest & Cypress
 
 on:
-  pull_request:
-    branches:
-      - main
-      - develop
-      - feature/**
   push:
     branches:
-      - main
-      - develop
+      - '**' # any branch
+  pull_request:
+    branches:
+      - '**' # any PR
 
 jobs:
   build-and-test:
