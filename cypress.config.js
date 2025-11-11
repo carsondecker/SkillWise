@@ -8,8 +8,9 @@ module.exports = defineConfig({
     defaultCommandTimeout: 10000,
     video: false,
     screenshotOnRunFailure: true,
+    supportFile: false,
     env: {
-      NODE_ENV: 'test',  // ✅ Cypress-level environment variable
+      NODE_ENV: 'test', // ✅ Cypress-level environment variable
     },
     setupNodeEvents(on, config) {
       process.env.NODE_ENV = 'test'; // ✅ ensures process.env is also set
