@@ -33,6 +33,7 @@
     "postgresql"
   ],
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "cypress": "^15.6.0",
     "eslint": "^8.57.1",
     "eslint-plugin-cypress": "^2.12.1",
