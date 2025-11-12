@@ -12,7 +12,9 @@ const updateProgressSchema = z.object({
 });
 
 const analyticsQuerySchema = z.object({
-  timeframe: z.enum(['daily', 'weekly', 'monthly', 'alltime']).default('weekly'),
+  timeframe: z
+    .enum(['daily', 'weekly', 'monthly', 'alltime'])
+    .default('weekly'),
 });
 
 const paginationSchema = z.object({
@@ -36,7 +38,9 @@ const progressController = {
   getProgress: asyncHandler(async (req, res) => {
     const userId = req.user?.id;
 
-    const progressOverview = await progressService.getProgressOverview({ userId });
+    const progressOverview = await progressService.getProgressOverview({
+      userId,
+    });
     res.json({ progress: progressOverview });
   }),
 
@@ -87,6 +91,19 @@ const progressController = {
     });
 
     res.json({ milestones });
+  }),
+  getProgressLatest: asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+
+    const latestProgress = await progressService.getProgressLatest({
+      userId,
+    });
+
+    if (!latestProgress) {
+      return res.status(404).json({ message: 'No recent progress found' });
+    }
+
+    res.json({ latest: latestProgress });
   }),
 };
 

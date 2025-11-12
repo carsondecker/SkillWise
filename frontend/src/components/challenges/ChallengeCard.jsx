@@ -1,40 +1,71 @@
-// TODO: Implement challenge card component
+// src/components/challenges/ChallengeCard.jsx
 import React from 'react';
+import { motion } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import '../../styles/components/Challenge/ChallengeCard.scss';
 
-const ChallengeCard = ({ challenge }) => {
-  // TODO: Add difficulty indicators, estimated time, tags, actions
+const ChallengeCard = ({ challenge, onEdit }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const {
+    title,
+    difficulty_level,
+    points_reward,
+    estimated_time_minutes,
+    category,
+  } = challenge;
+
   return (
-    <div className="challenge-card">
+    <motion.div
+      className="challenge-card"
+      whileHover={{ y: -6, scale: 1.02 }}
+      transition={{ duration: 0.25 }}
+    >
+      {/* Header */}
       <div className="challenge-header">
-        <h3>{challenge?.title || 'Challenge Title'}</h3>
-        <div className="challenge-meta">
-          <span className="difficulty">{challenge?.difficulty || 'Medium'}</span>
-          <span className="points">+{challenge?.points || 10} pts</span>
-        </div>
+        <h3>{title}</h3>
+        <span className={`difficulty-badge ${difficulty_level?.toLowerCase()}`}>
+          {difficulty_level}
+        </span>
       </div>
 
-      <div className="challenge-content">
-        <p>{challenge?.description || 'Challenge description goes here...'}</p>
-
-        {challenge?.estimatedTime && (
-          <div className="estimated-time">
-            <span>⏱️ {challenge.estimatedTime} min</span>
-          </div>
+      {/* Meta info */}
+      <div className="challenge-meta">
+        {category && <span className="meta-item category">📘 {category}</span>}
+        {estimated_time_minutes && (
+          <span className="meta-item time">
+            ⏱️ {estimated_time_minutes} min
+          </span>
         )}
-
-        {challenge?.tags && (
-          <div className="challenge-tags">
-            {challenge.tags.map((tag, index) => (
-              <span key={index} className="tag">{tag}</span>
-            ))}
-          </div>
-        )}
+        <span className="meta-item points">🏆 {points_reward} pts</span>
       </div>
 
+      {/* Footer actions */}
       <div className="challenge-footer">
-        <button className="btn-primary">Start Challenge</button>
+        <motion.button
+          className="btn-primary"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate(`/challenges/${challenge.id}/submit`)}
+        >
+          Start Challenge
+        </motion.button>
+
+        {/* Admin-only Edit button */}
+        {user?.role === 'admin' && (
+          <motion.button
+            className="btn-secondary"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onEdit?.(challenge)}
+          >
+            ✏️ Edit
+          </motion.button>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

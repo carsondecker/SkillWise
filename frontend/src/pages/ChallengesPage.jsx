@@ -1,118 +1,129 @@
-// TODO: Implement challenges browsing and participation page
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import ChallengeCard from '../components/challenges/ChallengeCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { apiService } from '../services/api';
+import { useAuth } from '../hooks/useAuth'; // ✅ import auth hook
+import '../styles/ChallengesPage.scss';
+import ChallengeModal from '../components/challenges/ChallengeModal';
 
 const ChallengesPage = () => {
+  const { user } = useAuth(); // ✅ get current logged-in user
   const [challenges, setChallenges] = useState([]);
   const [filteredChallenges, setFilteredChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const modalRef = useRef(); // 👈 ref to talk to the modal
+  const [editingChallenge, setEditingChallenge] = useState(null);
   const [filters, setFilters] = useState({
     category: '',
     difficulty: '',
     search: '',
   });
 
-  // Mock data - TODO: Replace with API call
+  // 🔹 Fetch challenges from API
   useEffect(() => {
-    const mockChallenges = [
-      {
-        id: 1,
-        title: 'Build a React Component',
-        description: 'Create a reusable React component with props and state management.',
-        category: 'Programming',
-        difficulty: 'Medium',
-        points: 50,
-        estimatedTime: 45,
-        tags: ['React', 'JavaScript', 'Frontend'],
-      },
-      {
-        id: 2,
-        title: 'Design a Logo',
-        description: 'Design a professional logo using design principles and color theory.',
-        category: 'Design',
-        difficulty: 'Easy',
-        points: 30,
-        estimatedTime: 60,
-        tags: ['Design', 'Branding', 'Creative'],
-      },
-      {
-        id: 3,
-        title: 'Database Optimization',
-        description: 'Optimize a slow database query and improve performance metrics.',
-        category: 'Backend',
-        difficulty: 'Hard',
-        points: 100,
-        estimatedTime: 120,
-        tags: ['SQL', 'Database', 'Performance'],
-      },
-    ];
+    const fetchChallenges = async () => {
+      try {
+        setLoading(true);
+        const res = await apiService.challenges.getAll();
 
+        const fetchedChallenges = Array.isArray(res.data)
+          ? res.data
+          : res.data?.challenges || [];
+
+        setChallenges(fetchedChallenges);
+        setFilteredChallenges(fetchedChallenges);
+      } catch (error) {
+        console.error('Failed to load challenges:', error);
+        setChallenges([]);
+        setFilteredChallenges([]);
+      } finally {
+        setLoading(false);
+      }
+    };
     setTimeout(() => {
-      setChallenges(mockChallenges);
-      setFilteredChallenges(mockChallenges);
+      void fetchChallenges();
       setLoading(false);
     }, 1000);
   }, []);
 
-  // Filter challenges based on current filters
+  // 🔹 Filtering logic
   useEffect(() => {
-    let filtered = challenges;
+    let filtered = [...challenges];
 
-    if (filters.category) {
-      filtered = filtered.filter(challenge =>
-        challenge.category.toLowerCase() === filters.category.toLowerCase(),
+    if (filters.category)
+      filtered = filtered.filter(
+        (c) => c.category?.toLowerCase() === filters.category.toLowerCase()
       );
-    }
 
-    if (filters.difficulty) {
-      filtered = filtered.filter(challenge =>
-        challenge.difficulty.toLowerCase() === filters.difficulty.toLowerCase(),
+    if (filters.difficulty)
+      filtered = filtered.filter(
+        (c) =>
+          c.difficulty_level?.toLowerCase() === filters.difficulty.toLowerCase()
       );
-    }
 
     if (filters.search) {
-      filtered = filtered.filter(challenge =>
-        challenge.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        challenge.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-        challenge.tags.some(tag => tag.toLowerCase().includes(filters.search.toLowerCase())),
+      const search = filters.search.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.title?.toLowerCase().includes(search) ||
+          c.description?.toLowerCase().includes(search) ||
+          c.tags?.some?.((t) => t.toLowerCase().includes(search))
       );
     }
 
     setFilteredChallenges(filtered);
   }, [challenges, filters]);
 
-  const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: value,
-    }));
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+  const handleEdit = (challenge) => {
+    setEditingChallenge(challenge);
+    setShowModal(true);
+    // Hack: wait a tick then prefill using ref
+    setTimeout(() => {
+      if (modalRef.current) modalRef.current.prefillForm(challenge);
+    }, 0);
   };
 
   return (
     <div className="challenges-page">
       <div className="page-header">
-        <h1>Learning Challenges</h1>
-        <p>Enhance your skills with hands-on learning experiences</p>
+        <div className="header-left">
+          <h1>⚔️ Learning Challenges</h1>
+          <p>Enhance your skills with real, hands-on challenges.</p>
+        </div>
+
+        {/* ✅ Only show to admins */}
+        {user?.role === 'admin' && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn-primary"
+            onClick={() => setShowModal(true)}
+          >
+            + Create Challenge
+          </motion.button>
+        )}
       </div>
 
       <div className="challenges-filters">
         <div className="filters-row">
           <div className="filter-group">
-            <label htmlFor="search">Search Challenges</label>
+            <label>Search</label>
             <input
               type="text"
-              id="search"
-              placeholder="Search by title, description, or tags..."
+              placeholder="Search by title, tags, or description..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
             />
           </div>
 
           <div className="filter-group">
-            <label htmlFor="category">Category</label>
+            <label>Category</label>
             <select
-              id="category"
               value={filters.category}
               onChange={(e) => handleFilterChange('category', e.target.value)}
             >
@@ -126,9 +137,8 @@ const ChallengesPage = () => {
           </div>
 
           <div className="filter-group">
-            <label htmlFor="difficulty">Difficulty</label>
+            <label>Difficulty</label>
             <select
-              id="difficulty"
               value={filters.difficulty}
               onChange={(e) => handleFilterChange('difficulty', e.target.value)}
             >
@@ -141,7 +151,10 @@ const ChallengesPage = () => {
         </div>
 
         <div className="results-summary">
-          <p>Showing {filteredChallenges.length} of {challenges.length} challenges</p>
+          <p>
+            Showing {filteredChallenges.length} of {challenges.length}{' '}
+            challenges
+          </p>
         </div>
       </div>
 
@@ -150,23 +163,45 @@ const ChallengesPage = () => {
           <LoadingSpinner message="Loading challenges..." />
         ) : filteredChallenges.length > 0 ? (
           <div className="challenges-grid">
-            {filteredChallenges.map(challenge => (
-              <ChallengeCard key={challenge.id} challenge={challenge} />
+            {filteredChallenges.map((challenge) => (
+              <ChallengeCard
+                key={challenge.id}
+                challenge={challenge}
+                onEdit={handleEdit}
+              />
             ))}
           </div>
         ) : (
           <div className="empty-state">
             <h3>No challenges found</h3>
-            <p>Try adjusting your filters or search terms.</p>
+            <p>Try adjusting your filters or search.</p>
             <button
               className="btn-secondary"
-              onClick={() => setFilters({ category: '', difficulty: '', search: '' })}
+              onClick={() =>
+                setFilters({ category: '', difficulty: '', search: '' })
+              }
             >
               Clear Filters
             </button>
           </div>
         )}
       </div>
+
+      {/* ✅ Create Challenge Modal (Admin only) */}
+      {user?.role === 'admin' && showModal && (
+        <ChallengeModal
+          ref={modalRef}
+          onClose={() => setShowModal(false)}
+          onCreatedOrUpdated={(challenge) => {
+            setChallenges((prev) => {
+              const exists = prev.some((c) => c.id === challenge.id);
+              return exists
+                ? prev.map((c) => (c.id === challenge.id ? challenge : c))
+                : [challenge, ...prev];
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

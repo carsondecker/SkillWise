@@ -20,11 +20,16 @@ const progressService = {
         totalPoints: Number(stats.total_points || 0),
         averageScore: Number(stats.average_score || 0),
         completionRate: stats.total_attempts
-          ? Math.round((stats.completed_challenges / stats.total_attempts) * 100)
+          ? Math.round(
+            (stats.completed_challenges / stats.total_attempts) * 100,
+          )
           : 0,
       };
     } catch (error) {
-      throw new AppError(`Error calculating overall progress: ${error.message}`, 500);
+      throw new AppError(
+        `Error calculating overall progress: ${error.message}`,
+        500,
+      );
     }
   },
 
@@ -71,7 +76,62 @@ const progressService = {
         eventType,
       };
     } catch (error) {
-      throw new AppError(`Error tracking progress event: ${error.message}`, 500);
+      throw new AppError(
+        `Error tracking progress event: ${error.message}`,
+        500,
+      );
+    }
+  },
+  getProgressLatest: async ({ userId }) => {
+    try {
+      if (!userId) {
+        throw new AppError('User ID is required', 400, 'INVALID_INPUT');
+      }
+
+      const query = `
+        SELECT
+          p.id,
+          p.user_id,
+          p.related_goal_id AS goal_id,
+          p.related_challenge_id AS challenge_id,
+          p.event_type,
+          p.created_at,
+          p.updated_at,
+          g.title AS goal_title,
+          g.category AS goal_category,
+          c.title AS challenge_title,
+          c.difficulty_level AS challenge_difficulty
+        FROM progress_events p
+               LEFT JOIN goals g ON p.related_goal_id = g.id
+               LEFT JOIN challenges c ON p.related_challenge_id = c.id
+        WHERE p.user_id = $1
+        ORDER BY p.updated_at DESC
+          LIMIT 3
+      `;
+
+      const { rows } = await db.query(query, [userId]);
+
+      // Normalize for consistent frontend format
+      return rows.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        eventType: row.event_type,
+        activityType: row.activity_type, // "goal" | "challenge" | "other"
+        title: row.activity_title,
+        category: row.activity_category,
+        goalId: row.goal_id,
+        challengeId: row.challenge_id,
+        goalTitle: row.goal_title,
+        challengeTitle: row.challenge_title,
+        challengeDifficulty: row.challenge_difficulty,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+    } catch (error) {
+      throw new AppError(
+        `Error fetching latest progress: ${error.message}`,
+        500,
+      );
     }
   },
 
@@ -83,8 +143,10 @@ const progressService = {
   generateAnalytics: async (userId, timeframe = 'weekly') => {
     try {
       let dateFilter = '';
-      if (timeframe === 'weekly') dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\'';
-      else if (timeframe === 'monthly') dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'30 days\'';
+      if (timeframe === 'weekly')
+        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\'';
+      else if (timeframe === 'monthly')
+        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'30 days\'';
 
       const result = await db.query(
         `
@@ -154,7 +216,8 @@ const progressService = {
 
       // Award points + notifications for new milestones
       for (const achievement of achievements) {
-        const points = leaderboardService.calculateAchievementPoints(achievement);
+        const points =
+          leaderboardService.calculateAchievementPoints(achievement);
         await leaderboardService.updateUserPoints(userId, points, 'milestone');
         await notificationService.sendNotification(
           userId,
@@ -174,5 +237,28 @@ const progressService = {
     }
   },
 };
+/**
+ * 🧾 Get user progress overview (used in /progress/stats)
+ */
+const getProgressOverview = async ({ userId }) => {
+  const stats = await progressService.calculateOverallProgress(userId);
+
+  return {
+    userId,
+    level: Math.floor(stats.totalPoints / 100) + 1,
+    total_points: stats.totalPoints,
+    completed_challenges: stats.completedChallenges,
+    average_score: stats.averageScore,
+    completion_rate: stats.completionRate,
+    goals_achieved: 0,
+    current_streak: 0,
+    longest_streak: 0,
+    badges: [],
+    skills: [],
+    recent_activity: [],
+  };
+};
+
+progressService.getProgressOverview = getProgressOverview;
 
 module.exports = progressService;

@@ -12,10 +12,7 @@ const toCamelCase = (user) => ({
   profileImage: user.profile_image,
   role: user.role,
   isActive: user.is_active,
-  isVerified: user.is_verified,
   createdAt: user.created_at,
-  updatedAt: user.updated_at,
-  lastLogin: user.last_login,
 });
 
 // ✅ Converts frontend → DB (for updates)
@@ -23,7 +20,7 @@ const toSnakeCase = (data) => ({
   first_name: data.firstName,
   last_name: data.lastName,
   bio: data.bio,
-  profile_image: data.profileImage,  // ✅ correct mapping
+  profile_image: data.profileImage, // ✅ correct mapping
 });
 
 // ✅ Validation schema (camelCase for frontend)

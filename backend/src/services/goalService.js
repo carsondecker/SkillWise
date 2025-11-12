@@ -1,4 +1,3 @@
-
 // src/services/goalService.js
 const Goal = require('../models/Goal');
 const { AppError } = require('../middleware/errorHandler');
@@ -10,7 +9,7 @@ const goalService = {
   getGoals: async ({ userId, limit = 20, offset = 0 }) => {
     try {
       const goals = await Goal.findByUserId(userId, limit, offset);
-      return goals.map(goal => ({
+      return goals.map((goal) => ({
         ...goal,
         completion: goalService.calculateCompletion(goal),
       }));
@@ -34,7 +33,17 @@ const goalService = {
   /**
    * 🧾 Create a new goal
    */
-  createGoal: async ({ userId, title, description, category, target_completion_date }) => {
+  createGoal: async ({
+    userId,
+    title,
+    description,
+    category,
+    difficulty_level,
+    target_date,
+    points_reward,
+    is_public,
+    progress_percentage,
+  }) => {
     try {
       if (!title || title.trim() === '') {
         throw new AppError('Title is required', 400, 'VALIDATION_ERROR');
@@ -45,7 +54,11 @@ const goalService = {
         title: title.trim(),
         description: description?.trim() || '',
         category: category || 'General',
-        target_completion_date: target_completion_date || null,
+        difficulty_level: difficulty_level || 'medium',
+        target_date: target_date || null,
+        points_reward: Number(points_reward) || 0,
+        is_public: !!is_public,
+        progress_percentage: progress_percentage ?? 0,
       });
 
       return newGoal;
@@ -57,7 +70,7 @@ const goalService = {
   /**
    * ✏️ Update existing goal
    */
-  updateGoal: async ({ userId, goalId, data }) => {
+  updateGoal: async ({ goalId, data }) => {
     try {
       const updated = await Goal.update(goalId, data);
       if (!updated) {
@@ -78,7 +91,8 @@ const goalService = {
   deleteGoal: async ({ userId, goalId }) => {
     try {
       const deletedGoal = await Goal.delete(goalId);
-      if (!deletedGoal) throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
+      if (!deletedGoal)
+        throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
       return deletedGoal;
     } catch (error) {
       throw new AppError(`Error deleting goal: ${error.message}`, 500);

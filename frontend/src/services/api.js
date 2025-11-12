@@ -57,7 +57,9 @@ api.interceptors.request.use(
 
     // Log request in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(
+        `🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`
+      );
     }
 
     return config;
@@ -65,7 +67,7 @@ api.interceptors.request.use(
   (error) => {
     console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
-  },
+  }
 );
 
 // Response interceptor for token refresh logic
@@ -73,7 +75,11 @@ api.interceptors.response.use(
   (response) => {
     // Log successful response in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+      console.log(
+        `✅ API Response: ${response.config.method?.toUpperCase()} ${
+          response.config.url
+        } - ${response.status}`
+      );
     }
 
     return response;
@@ -83,7 +89,11 @@ api.interceptors.response.use(
 
     // Log error in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`❌ API Error: ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - ${error.response?.status}`);
+      console.log(
+        `❌ API Error: ${originalRequest?.method?.toUpperCase()} ${
+          originalRequest?.url
+        } - ${error.response?.status}`
+      );
     }
 
     // Handle 401 Unauthorized errors
@@ -92,12 +102,14 @@ api.interceptors.response.use(
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
       originalRequest._retry = true;
@@ -106,12 +118,14 @@ api.interceptors.response.use(
       try {
         // Attempt to refresh the token using httpOnly refresh cookie
         const refreshResponse = await axios.post(
-          `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/auth/refresh`,
+          `${
+            process.env.REACT_APP_API_URL || 'http://localhost:3001/api'
+          }/auth/refresh`,
           {},
           {
             withCredentials: true, // Send httpOnly refresh cookie
             timeout: 5000,
-          },
+          }
         );
 
         const { accessToken } = refreshResponse.data;
@@ -134,7 +148,6 @@ api.interceptors.response.use(
         } else {
           throw new Error('No access token received from refresh');
         }
-
       } catch (refreshError) {
         console.error('❌ Token refresh failed:', refreshError);
 
@@ -143,9 +156,11 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
 
         // Dispatch logout event for AuthContext to handle
-        window.dispatchEvent(new CustomEvent('auth:logout', {
-          detail: { reason: 'token_refresh_failed' },
-        }));
+        window.dispatchEvent(
+          new CustomEvent('auth:logout', {
+            detail: { reason: 'token_refresh_failed' },
+          })
+        );
 
         // Redirect to login page
         if (window.location.pathname !== '/login') {
@@ -162,22 +177,26 @@ api.interceptors.response.use(
     if (error.response?.status >= 500) {
       console.error('🚨 Server Error:', error.response.data);
       // Could dispatch global error event here
-      window.dispatchEvent(new CustomEvent('api:server-error', {
-        detail: { error: error.response.data },
-      }));
+      window.dispatchEvent(
+        new CustomEvent('api:server-error', {
+          detail: { error: error.response.data },
+        })
+      );
     }
 
     // Network errors
     if (error.code === 'ECONNABORTED') {
       console.error('⏰ Request timeout');
-      error.message = 'Request timeout. Please check your connection and try again.';
+      error.message =
+        'Request timeout. Please check your connection and try again.';
     } else if (!error.response) {
       console.error('🔌 Network Error:', error.message);
-      error.message = 'Network error. Please check your connection and try again.';
+      error.message =
+        'Network error. Please check your connection and try again.';
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 // API service methods
@@ -189,12 +208,14 @@ export const apiService = {
     logout: () => api.post('/auth/logout'),
     refresh: () => api.post('/auth/refresh'),
     forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
-    resetPassword: (token, password) => api.post('/auth/reset-password', { token, password }),
+    resetPassword: (token, password) =>
+      api.post('/auth/reset-password', { token, password }),
   },
 
   // User methods
   user: {
     getProfile: () => api.get('/users/profile'),
+    getStatistics: () => api.get('/users/statistics'),
     updateProfile: (data) => api.put('/users/profile', data),
     deleteAccount: () => api.delete('/users/profile'),
     changePassword: (data) => api.put('/users/change-password', data),
@@ -206,6 +227,7 @@ export const apiService = {
     create: (goal) => api.post('/goals', goal),
     update: (id, goal) => api.put(`/goals/${id}`, goal),
     delete: (id) => api.delete(`/goals/${id}`),
+    createChallengeFromGoal: (id, payload) => api.post(`/goals/${id}/challenges`, payload),
     getById: (id) => api.get(`/goals/${id}`),
   },
 
@@ -213,12 +235,39 @@ export const apiService = {
   challenges: {
     getAll: (params) => api.get('/challenges', { params }),
     getById: (id) => api.get(`/challenges/${id}`),
-    submit: (id, submission) => api.post(`/challenges/${id}/submit`, submission),
-    getSubmissions: (id) => api.get(`/challenges/${id}/submissions`),
+    create: (data) => api.post('/challenges', data),
+    update: (id, data) => api.put(`/challenges/${id}`, data), // ✅ added update
+    markAsComplete: (id) => api.patch(`/challenges/${id}/complete`), // ✅ NEW endpoint
+
+  },
+  // --------------------------------
+  // 🧩 Submission Endpoints
+  // --------------------------------
+  submissions: {
+    // 🟢 Get all submissions for a user
+    getUserSubmissions: (userId, params) =>
+      api.get(`/submissions/user/${userId}`, { params }),
+
+    // 🟡 Get a single submission by ID
+    getById: (id) => api.get(`/submissions/${id}`),
+
+    getForChallenge: (challengeId) =>
+      api.get(`/submissions/challenge/${challengeId}`),
+
+    // 🔵 Submit a new solution (with text + optional file)
+    create: (formData) =>
+      api.post('/submissions', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+
+    // 🟣 Update or resubmit an existing submission
+    update: (id, data) => api.put(`/submissions/${id}`, data),
   },
 
   // Progress methods
   progress: {
+    getProgress: () => api.get('/progress'),
+    getLatestProgress: () => api.get('/progress/latest'),
     getOverview: () => api.get('/progress/overview'),
     getSkills: () => api.get('/progress/skills'),
     getActivity: (params) => api.get('/progress/activity', { params }),
@@ -227,16 +276,54 @@ export const apiService = {
 
   // Leaderboard methods
   leaderboard: {
-    getGlobal: (params) => api.get('/leaderboard/global', { params }),
-    getUserRank: () => api.get('/leaderboard/user-rank'),
+    /**
+     * 🏆 Get leaderboard (global / weekly / monthly)
+     * Example usage:
+     *   apiService.leaderboard.get({ timeframe: 'weekly', limit: 20 })
+     */
+    get: (params = {}) => api.get('/leaderboard', { params }),
+
+    /**
+     * 🥇 Get top global performers
+     * Example usage:
+     *   apiService.leaderboard.getTop({ limit: 10 })
+     */
+    getTop: (params = {}) => api.get('/leaderboard/top', { params }),
+
+    /**
+     * 👤 Get a specific user’s rank
+     * Example usage:
+     *   apiService.leaderboard.getUserRank(3)
+     */
+    getUserRank: (userId) => api.get(`/leaderboard/user/${userId}`),
+
+    /**
+     * 📚 Get leaderboard for a specific challenge category
+     * Example usage:
+     *   apiService.leaderboard.getByCategory('programming')
+     */
+    getByCategory: (category, params = {}) =>
+      api.get('/leaderboard/category', { params: { category, ...params } }),
+
+    /**
+     * 💎 Preview calculated achievement points
+     * Example usage:
+     *   apiService.leaderboard.previewAchievementPoints({
+     *     difficulty: 'hard', category: 'goal_completion'
+     *   })
+     */
+    previewAchievementPoints: (data) =>
+      api.post('/leaderboard/achievement-points', data),
   },
 
   // Peer Review methods
   peerReview: {
     getReviewQueue: (params) => api.get('/peer-review/queue', { params }),
     getMySubmissions: () => api.get('/peer-review/my-submissions'),
-    submitReview: (submissionId, review) => api.post(`/peer-review/submissions/${submissionId}/review`, review),
-    getReviewDetails: (submissionId) => api.get(`/peer-review/submissions/${submissionId}`),
+    submitReview: (submissionId, review) =>
+      api.post(`/peer-review/submissions/${submissionId}/review`, review),
+    getReviewDetails: (submissionId) =>
+      api.get(`/peer-review/submissions/${submissionId}`),
   },
 
   // Notifications methods

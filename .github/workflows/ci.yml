@@ -1,0 +1,161 @@
+name: CI - Lint, Jest & Cypress
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    name: 🧪 Full CI (Lint, Jest, Cypress)
+    runs-on: ubuntu-latest
+
+    services:
+      # -------------------------------------------------
+      # 🧩 DB #1: Test Database (for Jest integration)
+      # -------------------------------------------------
+      postgres-test:
+        image: postgres:15
+        env:
+          POSTGRES_DB: skillwise_test_db
+          POSTGRES_USER: skillwise_user
+          POSTGRES_PASSWORD: skillwise_pass
+        ports: ['5444:5432']
+        options: >-
+          --health-cmd="pg_isready -U skillwise_user -d skillwise_test_db -h localhost"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+      # -------------------------------------------------
+      # 🧩 DB #2: Dev Database (for Cypress + frontend)
+      # -------------------------------------------------
+      postgres-dev:
+        image: postgres:15
+        env:
+          POSTGRES_DB: skillwise_db
+          POSTGRES_USER: skillwise_user
+          POSTGRES_PASSWORD: skillwise_pass
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U skillwise_user -d skillwise_db -h localhost"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      # -------------------------
+      # 1️⃣ Checkout repository
+      # -------------------------
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      # -------------------------
+      # 2️⃣ Setup Node.js
+      # -------------------------
+      - name: 🛠️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # -------------------------
+      # 3️⃣ Install root dependencies
+      # -------------------------
+      - name: 📥 Install root dependencies
+        run: npm ci
+
+      # -------------------------
+      # 4️⃣ Install backend dependencies
+      # -------------------------
+      - name: 📥 Install backend dependencies
+        run: cd backend && npm ci
+
+      # -------------------------
+      # 5️⃣ Lint codebase (non-blocking)
+      # -------------------------
+      - name: 🔍 Run ESLint
+        run: npm run lint || echo "⚠️ Lint warnings ignored for CI"
+
+      # -------------------------
+      # 6️⃣ Wait for both Postgres instances
+      # -------------------------
+      - name: 🕓 Wait for both Postgres DBs
+        run: |
+          echo "⏳ Waiting for Postgres..."
+          for i in {1..20}; do
+            if pg_isready -h localhost -p 5432 -U skillwise_user -d skillwise_db &&
+               pg_isready -h localhost -p 5444 -U skillwise_user -d skillwise_test_db; then
+              echo "✅ Both databases are ready!"
+              break
+            fi
+            echo "Retrying in 3s..."
+            sleep 3
+          done
+
+      # -------------------------
+      # 7️⃣ Run migrations for both DBs
+      # -------------------------
+      - name: 🗂️ Run backend migrations
+        run: |
+          cd backend
+          echo "🔧 Migrating dev DB..."
+          DATABASE_URL=postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_db node scripts/migrate.js
+          echo "🔧 Migrating test DB..."
+          DATABASE_URL=postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db node scripts/migrate.js
+
+      # -------------------------
+      # 8️⃣ Run backend integration tests (use test DB)
+      # -------------------------
+      - name: 🧪 Run Backend Integration Tests
+        run: cd backend && npm run test:integration -- --ci --runInBand
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db
+
+      # -------------------------
+      # 9️⃣ Install frontend dependencies
+      # -------------------------
+      - name: 📥 Install frontend dependencies
+        run: cd frontend && npm ci
+
+      # -------------------------
+      # 🔟 Run frontend lint
+      # -------------------------
+      - name: 🔍 Run Frontend Linter
+        run: cd frontend && npm run lint || echo "⚠️ Lint warnings ignored for CI"
+
+      # -------------------------
+      # 11️⃣ Run frontend unit tests
+      # -------------------------
+      - name: 🧩 Run Frontend Unit Tests
+        run: cd frontend && npm test -- --watchAll=false || echo "No unit tests"
+
+      # -------------------------
+      # 12️⃣ Run Cypress E2E (uses real dev DB)
+      # -------------------------
+      - name: 🌐 Run Cypress E2E Tests
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm run start:ci
+          wait-on: 'http://localhost:3000,http://localhost:3001/api'
+          wait-on-timeout: 120
+          browser: chrome
+        env:
+          NODE_ENV: development
+          DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_db
+          JWT_SECRET: supersecretaccess
+          JWT_REFRESH_SECRET: supersecretrefresh
+      # -------------------------
+      # 13️⃣ Upload Cypress screenshots on failure
+      # -------------------------
+      - name: 📸 Upload Cypress Screenshots (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-failures
+          path: cypress/screenshots

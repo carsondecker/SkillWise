@@ -1,13 +1,14 @@
-// TODO: Implement progress tracking and analytics page
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { motion } from 'framer-motion';
+import '../styles/ProgressPage.scss';
 
 const ProgressPage = () => {
   const [progressData, setProgressData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('week');
 
-  // Mock data - TODO: Replace with API call
+  // Mock Data
   useEffect(() => {
     const mockProgressData = {
       overall: {
@@ -67,74 +68,93 @@ const ProgressPage = () => {
     }, 1000);
   }, [timeframe]);
 
-  if (loading) {
-    return <LoadingSpinner message="Loading your progress..." />;
-  }
+  if (loading) return <LoadingSpinner message="Loading your progress..." />;
+
+  const fadeIn = (delay = 0) => ({
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.6, delay },
+  });
 
   return (
     <div className="progress-page">
-      <div className="page-header">
+      <motion.div className="page-header" {...fadeIn(0.1)}>
         <h1>Your Learning Progress</h1>
         <p>Track your journey and celebrate your achievements</p>
-      </div>
+      </motion.div>
 
+      {/* 🌟 Overview Cards */}
       <div className="progress-overview">
         <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon">🎯</div>
-            <div className="stat-content">
-              <h3>{progressData.overall.totalPoints}</h3>
-              <p>Total Points</p>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">⭐</div>
-            <div className="stat-content">
-              <h3>Level {progressData.overall.level}</h3>
-              <p>Current Level</p>
-              <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{
-                    width: `${(progressData.overall.experiencePoints / progressData.overall.nextLevelXP) * 100}%`,
-                  }}
-                ></div>
+          {[
+            {
+              icon: '🎯',
+              label: 'Total Points',
+              value: progressData.overall.totalPoints,
+            },
+            {
+              icon: '⭐',
+              label: 'Current Level',
+              value: `Level ${progressData.overall.level}`,
+            },
+            {
+              icon: '✅',
+              label: 'Goals Completed',
+              value: progressData.overall.completedGoals,
+            },
+            {
+              icon: '🚀',
+              label: 'Challenges Done',
+              value: progressData.overall.completedChallenges,
+            },
+            {
+              icon: '🔥',
+              label: 'Day Streak',
+              value: progressData.overall.currentStreak,
+            },
+          ].map((stat, i) => (
+            <motion.div key={i} className="stat-card" {...fadeIn(i * 0.1)}>
+              <div className="stat-icon">{stat.icon}</div>
+              <div className="stat-content">
+                <h3>{stat.value}</h3>
+                <p>{stat.label}</p>
+                {stat.label === 'Current Level' && (
+                  <>
+                    <div className="progress-bar">
+                      <motion.div
+                        className="progress-fill"
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${
+                            (progressData.overall.experiencePoints /
+                              progressData.overall.nextLevelXP) *
+                            100
+                          }%`,
+                        }}
+                        transition={{ duration: 1, ease: 'easeOut' }}
+                      />
+                    </div>
+                    <small>
+                      {progressData.overall.experiencePoints}/
+                      {progressData.overall.nextLevelXP} XP
+                    </small>
+                  </>
+                )}
+                {stat.label === 'Day Streak' && (
+                  <small>
+                    Longest: {progressData.overall.longestStreak} days
+                  </small>
+                )}
               </div>
-              <small>{progressData.overall.experiencePoints}/{progressData.overall.nextLevelXP} XP</small>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">✅</div>
-            <div className="stat-content">
-              <h3>{progressData.overall.completedGoals}</h3>
-              <p>Goals Completed</p>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">🚀</div>
-            <div className="stat-content">
-              <h3>{progressData.overall.completedChallenges}</h3>
-              <p>Challenges Done</p>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">🔥</div>
-            <div className="stat-content">
-              <h3>{progressData.overall.currentStreak}</h3>
-              <p>Day Streak</p>
-              <small>Longest: {progressData.overall.longestStreak} days</small>
-            </div>
-          </div>
+            </motion.div>
+          ))}
         </div>
       </div>
 
+      {/* 📊 Weekly Progress + Activity */}
       <div className="progress-sections">
         <div className="section-row">
-          <div className="progress-chart-section">
+          <motion.div className="progress-chart-section" {...fadeIn(0.2)}>
             <div className="section-header">
               <h2>Weekly Activity</h2>
               <select
@@ -149,24 +169,38 @@ const ProgressPage = () => {
 
             <div className="weekly-chart">
               {progressData.weeklyProgress.map((day, index) => (
-                <div key={index} className="day-column">
+                <motion.div
+                  key={index}
+                  className="day-column"
+                  initial={{ opacity: 0, y: 60 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.1, duration: 0.6 }}
+                >
                   <div className="day-label">{day.day}</div>
-                  <div
+                  <motion.div
                     className="day-bar"
-                    style={{ height: `${Math.max(day.points / 2, 5)}px` }}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${Math.max(day.points / 2, 5)}px` }}
+                    transition={{ delay: 0.3 + index * 0.1, duration: 0.6 }}
                     title={`${day.points} points, ${day.timeSpent} minutes`}
-                  ></div>
+                  />
                   <div className="day-points">{day.points}</div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="recent-activity-section">
+          <motion.div className="recent-activity-section" {...fadeIn(0.3)}>
             <h2>Recent Activity</h2>
             <div className="activity-list">
-              {progressData.recentActivity.map((activity) => (
-                <div key={activity.id} className="activity-item">
+              {progressData.recentActivity.map((activity, i) => (
+                <motion.div
+                  key={activity.id}
+                  className="activity-item"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 + i * 0.1, duration: 0.4 }}
+                >
                   <div className="activity-icon">
                     {activity.type === 'challenge_completed' && '🚀'}
                     {activity.type === 'goal_progress' && '🎯'}
@@ -178,36 +212,47 @@ const ProgressPage = () => {
                       {activity.points && `+${activity.points} points`}
                       {activity.progress && `${activity.progress}% complete`}
                     </p>
-                    <small>{new Date(activity.timestamp).toLocaleDateString()}</small>
+                    <small>
+                      {new Date(activity.timestamp).toLocaleDateString()}
+                    </small>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="skills-section">
+        {/* 🧠 Skill Breakdown */}
+        <motion.div className="skills-section" {...fadeIn(0.4)}>
           <h2>Skill Breakdown</h2>
           <div className="skills-grid">
             {progressData.skillBreakdown.map((skill, index) => (
-              <div key={index} className="skill-item">
+              <motion.div
+                key={index}
+                className="skill-item"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + index * 0.1, duration: 0.6 }}
+              >
                 <div className="skill-header">
                   <h4>{skill.skill}</h4>
                   <span className="skill-level">Level {skill.level}</span>
                 </div>
                 <div className="skill-progress">
                   <div className="progress-bar">
-                    <div
+                    <motion.div
                       className="progress-fill"
-                      style={{ width: `${skill.progress}%` }}
-                    ></div>
+                      initial={{ width: 0 }}
+                      animate={{ width: `${skill.progress}%` }}
+                      transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
+                    />
                   </div>
                   <span className="progress-text">{skill.progress}%</span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -1,0 +1,104 @@
+.challenges-page {
+  padding: 2rem 3rem;
+  min-height: 100vh;
+  background: #f9fafb;
+  font-family: 'Inter', sans-serif;
+
+  .page-header {
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-bottom: 0.3rem;
+    }
+
+    p {
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+  }
+
+  .challenges-filters {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+
+    .filters-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 200px;
+
+      label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+      }
+
+      input,
+      select {
+        border: 1.8px solid #d1d5db;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.2s ease;
+
+        &:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+      }
+    }
+
+    .results-summary {
+      margin-top: 1rem;
+      text-align: right;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+  }
+
+  .challenges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: #6b7280;
+    margin-top: 4rem;
+
+    h3 {
+      color: #1f2937;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      border: none;
+      border-radius: 10px;
+      padding: 0.7rem 1.2rem;
+      font-weight: 600;
+      color: #1f2937;
+      cursor: pointer;
+
+      &:hover {
+        background: #d1d5db;
+      }
+    }
+  }
+}

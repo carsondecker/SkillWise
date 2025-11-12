@@ -1,6 +1,7 @@
 // src/app.js
 // ✅ Main Express Application Setup
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -17,6 +18,7 @@ const routes = require('./routes/index');
 
 // Create Express app
 const app = express();
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use(cookieParser());
 // --------------------------------------------------
 // 🧩 Logger Setup

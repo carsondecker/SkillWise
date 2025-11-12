@@ -1,7 +1,22 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { apiService, getAccessToken, setAccessToken, clearTokens } from '../services/api';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useState,
+  useCallback, // Added useCallback for stability
+} from 'react';
+// Assuming the import path for apiService, getAccessToken, etc. is correct
+import {
+  apiService,
+  getAccessToken,
+  setAccessToken,
+  clearTokens,
+} from '../services/api';
 
-// Initial state
+// ==========================
+// 🔹 Initial State & Actions
+// ==========================
 const initialState = {
   user: null,
   isAuthenticated: false,
@@ -9,7 +24,6 @@ const initialState = {
   error: null,
 };
 
-// Action types
 const AUTH_ACTIONS = {
   SET_LOADING: 'SET_LOADING',
   LOGIN_SUCCESS: 'LOGIN_SUCCESS',
@@ -19,119 +33,103 @@ const AUTH_ACTIONS = {
   CLEAR_ERROR: 'CLEAR_ERROR',
 };
 
-// Reducer function
+// ==========================
+// 🔹 Reducer
+// ==========================
 const authReducer = (state, action) => {
   switch (action.type) {
-  case AUTH_ACTIONS.SET_LOADING:
-    return {
-      ...state,
-      isLoading: action.payload,
-    };
+    case AUTH_ACTIONS.SET_LOADING:
+      return { ...state, isLoading: action.payload };
 
-  case AUTH_ACTIONS.LOGIN_SUCCESS:
-    return {
-      ...state,
-      user: action.payload.user,
-      isAuthenticated: true,
-      isLoading: false,
-      error: null,
-    };
+    case AUTH_ACTIONS.LOGIN_SUCCESS:
+      return {
+        ...state,
+        user: action.payload.user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      };
 
-  case AUTH_ACTIONS.LOGOUT:
-    return {
-      ...state,
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-    };
+    case AUTH_ACTIONS.LOGOUT:
+      return {
+        ...state,
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      };
 
-  case AUTH_ACTIONS.UPDATE_USER:
-    return {
-      ...state,
-      user: { ...state.user, ...action.payload },
-    };
+    case AUTH_ACTIONS.UPDATE_USER:
+      return { ...state, user: { ...state.user, ...action.payload } };
 
-  case AUTH_ACTIONS.SET_ERROR:
-    return {
-      ...state,
-      error: action.payload,
-      isLoading: false,
-    };
+    case AUTH_ACTIONS.SET_ERROR:
+      return { ...state, error: action.payload, isLoading: false };
 
-  case AUTH_ACTIONS.CLEAR_ERROR:
-    return {
-      ...state,
-      error: null,
-    };
+    case AUTH_ACTIONS.CLEAR_ERROR:
+      return { ...state, error: null };
 
-  default:
-    return state;
+    default:
+      return state;
   }
 };
 
-// Create context
+// ==========================
+// 🔹 Context & Provider
+// ==========================
 const AuthContext = createContext(null);
 
-// AuthProvider component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const [authVersion, setAuthVersion] = useState(0);
 
-  // Check if user is authenticated on app load
+  // Memoize the access token check for stable dependency
+  const currentToken = getAccessToken();
+  const tokenIsPresent = !!currentToken;
+
+  // ===========================================
+  // 1️⃣ Initialize auth on app load
+  // ===========================================
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = getAccessToken();
+      const token = currentToken;
       console.log('🟢 [Auth Init] Starting initialization...');
-      console.log('📦 Stored Access Token:', token ? 'Found ✅' : 'Not Found ❌');
+      console.log(
+        '📦 Stored Access Token:',
+        token ? 'Found ✅' : 'Not Found ❌'
+      );
+
+      // Immediately set loading to true (it's true by default, but good practice)
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
 
       if (token) {
         try {
-          console.log('➡️ [Auth Init] Trying /users/profile with access token...');
           const response = await apiService.user.getProfile();
-          console.log('✅ [Auth Init] /users/profile success:', response.data);
-
           dispatch({
             type: AUTH_ACTIONS.LOGIN_SUCCESS,
             payload: { user: response.data.user || response.data },
           });
-
         } catch (error) {
-          console.warn('⚠️ [Auth Init] Access token invalid, trying silent refresh...');
-          console.error('❌ [Auth Init] Profile fetch failed:', error.response?.status, error.response?.data);
-
+          console.warn('⚠️ Invalid access token, trying refresh...');
           try {
-            console.log('➡️ [Auth Init] Trying /auth/refresh...');
             const refreshResponse = await apiService.auth.refresh();
-            console.log('✅ [Auth Init] /auth/refresh success:', refreshResponse.data);
-
             const { accessToken } = refreshResponse.data;
-
             if (accessToken) {
-              console.log('💾 [Auth Init] New access token received, saving...');
               setAccessToken(accessToken);
-
-              console.log('➡️ [Auth Init] Retrying /users/profile with new token...');
               const profileRes = await apiService.user.getProfile();
-              console.log('✅ [Auth Init] /users/profile success (after refresh):', profileRes.data);
-
               dispatch({
                 type: AUTH_ACTIONS.LOGIN_SUCCESS,
                 payload: { user: profileRes.data.user || profileRes.data },
               });
-
-              console.log('🎉 [Auth Init] User restored successfully after refresh');
-              return;
             } else {
-              console.error('🚫 [Auth Init] Refresh succeeded but no accessToken returned');
+              clearTokens();
+              dispatch({ type: AUTH_ACTIONS.LOGOUT });
             }
-          } catch (refreshError) {
-            console.error('❌ [Auth Init] Silent refresh failed:', refreshError.response?.status, refreshError.response?.data);
+          } catch {
             clearTokens();
             dispatch({ type: AUTH_ACTIONS.LOGOUT });
           }
         }
       } else {
-        console.log('🚫 [Auth Init] No token found — user is not logged in');
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       }
 
@@ -139,23 +137,49 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []);
+  }, []); // Empty dependency array: runs only on initial mount
 
-  // Listen for logout events from API interceptors
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token) {
+      console.log('🔁 Token detected after login — reinitializing profile...');
+      apiService.user
+        .getProfile()
+        .then((res) => {
+          dispatch({
+            type: AUTH_ACTIONS.LOGIN_SUCCESS,
+            payload: { user: res.data.user || res.data },
+          });
+          console.log(
+            '✅ User refreshed after login:',
+            res.data.user || res.data
+          );
+        })
+        .catch((err) => {
+          console.warn('⚠️ Token exists but profile fetch failed:', err);
+          clearTokens();
+          dispatch({ type: AUTH_ACTIONS.LOGOUT });
+        });
+    }
+  }, [getAccessToken()]);
+
+  // ===========================================
+  // 2️⃣ Global logout listener
+  // ===========================================
   useEffect(() => {
     const handleLogout = (event) => {
-      console.log('Logout event received:', event.detail?.reason);
+      console.log('🚪 Global logout event:', event.detail?.reason);
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      setAuthVersion((v) => v + 1);
     };
 
     window.addEventListener('auth:logout', handleLogout);
-
-    return () => {
-      window.removeEventListener('auth:logout', handleLogout);
-    };
+    return () => window.removeEventListener('auth:logout', handleLogout);
   }, []);
 
-  // Login function
+  // ===========================================
+  // 🔹 Auth Actions
+  // ===========================================
   const login = async (credentials) => {
     dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
@@ -163,33 +187,22 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await apiService.auth.login(credentials);
       const { user, tokens } = response.data;
-
-      // ✅ Support both field names
       const token = tokens?.accessToken;
-
-      if (token) {
-        setAccessToken(token);
-      } else {
-        console.warn('⚠️ No access token found in login response:', response.data);
-      }
+      if (token) setAccessToken(token);
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: { user },
       });
-
+      setAuthVersion((v) => v + 1); // Force re-run of token-watcher effect
       return { success: true, user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
+      const message = error.response?.data?.message || 'Login failed';
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
+      return { success: false, error: message };
     }
   };
 
-  // Register function
   const register = async (userData) => {
     dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
@@ -197,165 +210,87 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await apiService.auth.register(userData);
       const { user, accessToken } = response.data;
-
-      // Store access token
-      setAccessToken(accessToken);
+      if (accessToken) setAccessToken(accessToken);
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: { user },
       });
-
+      setAuthVersion((v) => v + 1); // Force re-run of token-watcher effect
       return { success: true, user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
+      const message = error.response?.data?.message || 'Registration failed';
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
+      return { success: false, error: message };
     }
   };
 
-  // Logout function
   const logout = async () => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-
     try {
-      // Call logout endpoint to clear httpOnly refresh cookie
+      // Call API to clear cookies + revoke tokens
       await apiService.auth.logout();
     } catch (error) {
-      // Continue with logout even if API call fails
-      console.error('Logout API call failed:', error);
+      console.error('Logout API failed:', error);
     } finally {
-      // Clear tokens and update state
+      // Full cleanup: localStorage, state, and force reload
       clearTokens();
+      localStorage.clear(); // ensure all cached data is gone
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      console.log('🧹 User logged out completely.');
+
+      // Force app reload to guarantee fresh auth context
+      window.location.href = '/login';
     }
   };
 
-  // Update profile function
   const updateProfile = async (profileData) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
     try {
       const response = await apiService.user.updateProfile(profileData);
-      const updatedUser = response.data;
-
       dispatch({
         type: AUTH_ACTIONS.UPDATE_USER,
-        payload: updatedUser,
+        payload: response.data,
       });
-
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return { success: true, user: updatedUser };
+      return { success: true, user: response.data };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Profile update failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
+      const message = error.response?.data?.message || 'Profile update failed';
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
+      return { success: false, error: message };
     }
   };
 
-  // Change password function
-  const changePassword = async (passwordData) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+  const clearError = () => dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
-    try {
-      await apiService.user.changePassword(passwordData);
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password change failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Forgot password function
-  const forgotPassword = async (email) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
-    try {
-      await apiService.auth.forgotPassword(email);
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset request failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Reset password function
-  const resetPassword = async (token, password) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
-    try {
-      await apiService.auth.resetPassword(token, password);
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Clear error function
-  const clearError = () => {
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  };
-
-  // Context value
+  // ===========================================
+  // 🔹 Context Value
+  // ===========================================
   const value = {
-    // State
     user: state.user,
     isAuthenticated: state.isAuthenticated,
     isLoading: state.isLoading,
     error: state.error,
 
-    // Actions
     login,
     register,
     logout,
     updateProfile,
-    changePassword,
-    forgotPassword,
-    resetPassword,
     clearError,
   };
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
+    <AuthContext.Provider key={authVersion} value={value}>
+      <React.Fragment key={state.user?.id || 'guest'}>
+        {children}
+      </React.Fragment>
     </AuthContext.Provider>
   );
 };
 
-// Custom hook to use auth context
+// ==========================
+// 🔹 Custom Hook
+// ==========================
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
 

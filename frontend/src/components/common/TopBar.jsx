@@ -1,15 +1,12 @@
-// src/components/common/TopBar.jsx
 import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { Bell, LogOut, User } from 'lucide-react';
-import '../../styles/components/dashboard/TopBar.scss';
+import '../../styles/TopBar.scss';
 
-const TopBar = () => {
-  const { user, logout } = useAuth();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [notifications] = useState(3); // later fetch from API
+const Topbar = () => {
+  const { user, isAuthenticated, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -18,57 +15,115 @@ const TopBar = () => {
   };
 
   return (
-    <motion.header
-      className="topbar"
-      initial={{ y: -40, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <h2 className="topbar-logo">⚡ SkillWise</h2>
-
-      <div className="topbar-actions">
-        {/* 🔔 Notifications */}
-        <motion.div
-          className="notification-icon"
-          whileHover={{ scale: 1.2 }}
+    <header className="topbar">
+      <div className="topbar-inner">
+        {/* Hamburger */}
+        <motion.button
           whileTap={{ scale: 0.9 }}
+          className={`hamburger ${menuOpen ? 'is-open' : ''}`}
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Toggle menu"
         >
-          <Bell size={22} />
-          {notifications > 0 && <span className="notification-badge">{notifications}</span>}
+          <span />
+          <span />
+          <span />
+        </motion.button>
+
+        {/* Center logo */}
+        <motion.div className="logo" onClick={() => navigate('/dashboard')}>
+          Skillwise
         </motion.div>
 
-        {/* 👤 Avatar + Dropdown */}
-        <div className="avatar-wrapper" onClick={() => setDropdownOpen(!dropdownOpen)}>
-          <motion.img
-            src={`https://ui-avatars.com/api/?name=${user?.firstName || 'U'}+${
-              user?.lastName || ''
-            }&background=6C63FF&color=fff`}
-            alt="User Avatar"
-            className="user-avatar"
+        {/* User avatar */}
+        {isAuthenticated && (
+          <motion.div
+            className="user"
             whileHover={{ scale: 1.05 }}
-          />
-          <AnimatePresence>
-            {dropdownOpen && (
-              <motion.div
-                className="dropdown-menu"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="dropdown-item" onClick={() => navigate('/profile')}>
-                  <User size={16} /> Profile
-                </div>
-                <div className="dropdown-item logout" onClick={handleLogout}>
-                  <LogOut size={16} /> Logout
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            onClick={() => navigate('/profile')}
+          >
+            <div className="avatar">
+              {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+            </div>
+            {user?.role === 'admin' && <span className="admin-tag">Admin</span>}
+          </motion.div>
+        )}
       </div>
-    </motion.header>
+
+      {/* ===== SIDE DRAWER MENU ===== */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            {/* Background overlay */}
+            <motion.div
+              className="overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => setMenuOpen(false)}
+            />
+            {/* Drawer panel */}
+            <motion.nav
+              className="side-menu"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 80, damping: 15 }}
+            >
+              <div className="menu-header">
+                <button
+                  className="close-btn"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="menu-links">
+                <NavLink to="/dashboard" onClick={() => setMenuOpen(false)}>
+                  Dashboard
+                </NavLink>
+                <NavLink to="/goals" onClick={() => setMenuOpen(false)}>
+                  Goals
+                </NavLink>
+                <NavLink to="/challenges" onClick={() => setMenuOpen(false)}>
+                  Challenges
+                </NavLink>
+                <NavLink to="/progress" onClick={() => setMenuOpen(false)}>
+                  Progress
+                </NavLink>
+                <NavLink to="/leaderboard" onClick={() => setMenuOpen(false)}>
+                  Leaderboard
+                </NavLink>
+                <NavLink to="/peer-review" onClick={() => setMenuOpen(false)}>
+                  Peer Review
+                </NavLink>
+                <NavLink to="/profile" onClick={() => setMenuOpen(false)}>
+                  Profile
+                </NavLink>
+              </div>
+
+              <div className="menu-footer">
+                {isAuthenticated ? (
+                  <button className="logout-btn" onClick={handleLogout}>
+                    Logout
+                  </button>
+                ) : (
+                  <>
+                    <NavLink to="/login" onClick={() => setMenuOpen(false)}>
+                      Login
+                    </NavLink>
+                    <NavLink to="/signup" onClick={() => setMenuOpen(false)}>
+                      Sign Up
+                    </NavLink>
+                  </>
+                )}
+              </div>
+            </motion.nav>
+          </>
+        )}
+      </AnimatePresence>
+    </header>
   );
 };
 
-export default TopBar;
+export default Topbar;

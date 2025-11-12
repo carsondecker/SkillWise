@@ -12,6 +12,7 @@ const auth = require('../middleware/auth');
 // 🟢 Get overall progress for the logged-in user
 // Returns overview stats across all goals/challenges
 router.get('/', auth, progressController.getProgress);
+router.get('/latest', auth, progressController.getProgressLatest);
 
 // 🟡 Record or update a progress event (e.g., completing a challenge)
 // Expected body: { goalId, challengeId?, percent, note? }

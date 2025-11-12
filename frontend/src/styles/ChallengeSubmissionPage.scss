@@ -1,0 +1,306 @@
+.challenge-submission-page {
+  max-width: 950px;
+  margin: 2rem auto 3rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+
+  .back-btn {
+    color: #2563eb;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .gradient-card {
+    background: linear-gradient(135deg, #f9fafb, #eff6ff);
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    padding: 1.8rem;
+    transition: 0.3s;
+
+    &:hover {
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.15);
+      transform: translateY(-2px);
+    }
+  }
+
+  h1 {
+    font-size: 2rem;
+    color: #111827;
+    margin-bottom: 0.4rem;
+  }
+
+  .description {
+    color: #4b5563;
+    font-size: 1.05rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    color: #111827;
+    .attempts-left {
+      font-weight: 600;
+      color: #2563eb;
+      background: #dbeafe;
+      padding: 0.25rem 0.6rem;
+      border-radius: 8px;
+      margin-left: 0.5rem;
+      transition: all 0.2s ease;
+
+      &.no-attempts {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+    }
+  }
+
+  .badge {
+    font-weight: 700;
+    padding: 0.25rem 0.7rem;
+    border-radius: 8px;
+    text-transform: capitalize;
+    &.easy {
+      background: #dcfce7;
+      color: #166534;
+    }
+    &.medium {
+      background: #fef9c3;
+      color: #92400e;
+    }
+    &.hard {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  }
+
+  .instructions-card,
+  .submission-section,
+  .submissions-history {
+    border-radius: 14px;
+    padding: 1.5rem 1.8rem;
+    background: white;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    transition: 0.3s;
+
+    &:hover {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  textarea {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    padding: 1rem;
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 150px;
+    outline: none;
+    transition: all 0.2s ease;
+
+    &:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    color: white;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem 1.3rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .submissions-table {
+    width: 100%;
+    border-collapse: collapse;
+    th,
+    td {
+      padding: 0.7rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+      background: #f9fafb;
+      color: #1f2937;
+      font-weight: 700;
+    }
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    .status {
+      font-weight: 600;
+      border-radius: 0.5rem;
+      padding: 0.25rem 0.6rem;
+      text-transform: capitalize;
+      &.graded {
+        background: #dcfce7;
+        color: #166534;
+      }
+      &.submitted {
+        background: #fef9c3;
+        color: #92400e;
+      }
+      &.pending {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+    }
+  }
+  .submission-section {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 1.8rem;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+
+    .submission-textarea {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      padding: 1.2rem;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 200px;
+      box-sizing: border-box; // ✅ fixes overflow issue
+      outline: none;
+      transition: all 0.25s ease;
+
+      &:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+      }
+    }
+
+    .file-upload-area {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: stretch;
+
+      @media (min-width: 600px) {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .upload-box {
+        flex: 1;
+        border: 2px dashed #93c5fd;
+        border-radius: 10px;
+        cursor: pointer;
+        background: #f8fafc;
+        transition: all 0.25s ease;
+        text-align: center;
+
+        &:hover {
+          background: #eef2ff;
+          border-color: #2563eb;
+        }
+
+        .upload-content {
+          padding: 1rem;
+          color: #1e3a8a;
+          font-weight: 600;
+          font-size: 0.95rem;
+        }
+      }
+
+      .upload-btn {
+        background: #2563eb;
+        color: white;
+        font-weight: 600;
+        padding: 0.7rem 1.3rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.25s ease;
+        text-align: center;
+
+        &:hover {
+          background: #1e3a8a;
+          transform: translateY(-1px);
+        }
+
+        &:active {
+          transform: translateY(1px);
+        }
+      }
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+  }
+
+  .no-submissions {
+    text-align: center;
+    color: #6b7280;
+    margin-top: 1.2rem;
+    font-style: italic;
+  }
+}
+.file-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #1e40af;
+    text-decoration: underline;
+  }
+}
+
+.no-file {
+  color: #6b7280;
+  font-style: italic;
+}
+.mark-complete-container {
+  text-align: right;
+  margin-bottom: 1rem;
+
+  .btn-success {
+    background-color: #16a34a;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+      background-color: #15803d;
+    }
+  }
+}
