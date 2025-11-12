@@ -47,4 +47,8 @@ router.delete(
   challengeController.deleteChallenge,
 );
 
+
+// 🟢 Mark a challenge as complete (User)
+router.patch('/:id/complete', auth, challengeController.markChallengeComplete);
+
 module.exports = router;

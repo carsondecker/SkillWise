@@ -144,6 +144,25 @@ const ChallengeSubmissionPage = () => {
       setSubmitting(false);
     }
   };
+  const handleMarkAsComplete = async () => {
+    if (!window.confirm('Mark this challenge as complete?')) return;
+
+    try {
+      const res = await apiService.challenges.markAsComplete(id);
+      alert('✅ Challenge marked as complete!');
+      // Update the challenge in state
+      setChallenge((prev) => ({
+        ...prev,
+        status: res.data.challenge.status || 'completed',
+      }));
+    } catch (err) {
+      console.error('❌ Failed to mark challenge as complete:', err);
+      const msg =
+        err.response?.data?.message ||
+        'Something went wrong while marking complete.';
+      alert(`⚠️ ${msg}`);
+    }
+  };
 
   if (loading) return <LoadingSpinner message="Loading challenge..." />;
 
@@ -181,6 +200,9 @@ const ChallengeSubmissionPage = () => {
 
         <div className="header-content gradient-card">
           <h1>{challenge.title}</h1>
+          {challenge.status === 'completed' && (
+            <span className="badge completed">🎯 Completed</span>
+          )}
           <p className="description">{challenge.description}</p>
 
           <div className="meta">
@@ -293,6 +315,22 @@ const ChallengeSubmissionPage = () => {
       {/* Submissions History */}
       <motion.section className="submissions-history" variants={fadeIn}>
         <h2>📜 Past Submissions</h2>
+        {submissions.length > 0 && (
+          <motion.div
+            className="mark-complete-container"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <motion.button
+              className="btn-success"
+              onClick={handleMarkAsComplete}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              ✅ Mark Challenge as Complete
+            </motion.button>
+          </motion.div>
+        )}
 
         {submissions.length > 0 ? (
           <motion.table

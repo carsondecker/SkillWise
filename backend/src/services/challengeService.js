@@ -2,14 +2,17 @@ const Challenge = require('../models/Challenge');
 const { AppError } = require('../middleware/errorHandler');
 
 const challengeService = {
-  getChallenges: async (filters = {}) => {
+  getChallenges: async (filters = {}, userId) => {
     try {
       const { difficulty, category, limit = 20, offset = 0 } = filters;
       let challenges;
 
-      if (difficulty) challenges = await Challenge.findByDifficulty(difficulty);
-      else if (category) challenges = await Challenge.findByCategory(category);
-      else challenges = await Challenge.findAll();
+      if (difficulty)
+        challenges = await Challenge.findByDifficulty(difficulty);
+      else if (category)
+        challenges = await Challenge.findByCategory(category);
+      else
+        challenges = await Challenge.findAll(userId); // ✅ filter by creator
 
       return challenges.slice(offset, offset + limit);
     } catch (error) {
@@ -30,8 +33,12 @@ const challengeService = {
 
   createChallenge: async (data) => {
     try {
-      const challenge = await Challenge.create(data);
-      return challenge;
+      return await Challenge.create({
+        ...data,
+        goal_id: data.goal_id || null,
+        ai_generated: data.ai_generated || false,
+        status: data.status || 'pending',
+      });
     } catch (error) {
       throw new AppError(`Error creating challenge: ${error.message}`, 500);
     }

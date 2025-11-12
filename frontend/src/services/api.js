@@ -227,6 +227,7 @@ export const apiService = {
     create: (goal) => api.post('/goals', goal),
     update: (id, goal) => api.put(`/goals/${id}`, goal),
     delete: (id) => api.delete(`/goals/${id}`),
+    createChallengeFromGoal: (id, payload) => api.post(`/goals/${id}/challenges`, payload),
     getById: (id) => api.get(`/goals/${id}`),
   },
 
@@ -236,6 +237,8 @@ export const apiService = {
     getById: (id) => api.get(`/challenges/${id}`),
     create: (data) => api.post('/challenges', data),
     update: (id, data) => api.put(`/challenges/${id}`, data), // ✅ added update
+    markAsComplete: (id) => api.patch(`/challenges/${id}/complete`), // ✅ NEW endpoint
+
   },
   // --------------------------------
   // 🧩 Submission Endpoints

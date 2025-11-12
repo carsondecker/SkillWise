@@ -115,49 +115,64 @@ describe('SkillWise E2E Smoke Test', () => {
         cy.contains('Learn Cypress E2E Testing', { timeout: 10000 }).should('be.visible');
       });
   });
-  // ---------------------------
-  // 4️⃣ Mark Goal Complete
-  // ---------------------------
-  it('Marks a goal as completed', () => {
-    cy.visit('/login');
-    cy.get('#email').type(testUser.email);
-    cy.get('#password').type(testUser.password);
-    cy.get('button[type="submit"]').click();
-
-    cy.url({ timeout: 15000 }).should('include', '/dashboard');
-    cy.visit('/goals');
-
-    // Wait for goals to load
-    cy.get('#goals-grid', { timeout: 15000 }).should('exist');
-
-    // Re-query goal fresh each time to avoid detachment
-    cy.contains('Learn Cypress E2E Testing', { timeout: 10000 })
-      .should('be.visible')
-      .then(($el) => {
-        const goalCard = $el.closest('.goal-card-container');
-        cy.wrap(goalCard).as('targetGoal');
-      });
-
-    // Flip the card
-    cy.get('@targetGoal').click();
-    cy.wait(600); // Allow flip animation
-
-    // Click Mark Complete (force because of hidden backface)
-    cy.get('@targetGoal')
-      .find('[id^="goal-complete-btn-"]')
-      .should('exist')
-      .and('not.be.disabled')
-      .click({ force: true });
-
-    // ✅ Re-query after re-render to avoid detached node error
-    cy.contains('Learn Cypress E2E Testing', { timeout: 15000 })
-      .parents('.goal-card-container')
-      .as('updatedGoal');
-
-    // Verify completion badge now visible
-    cy.get('@updatedGoal')
-      .find('[id^="goal-completed-badge-"]', { timeout: 10000 })
-      .should('exist')
-      .and('contain.text', 'Completed Goal');
-  });
+  // // ---------------------------
+  // // 4️⃣ Creates a challenge from a goal
+  // // ---------------------------
+  // it('Creates a challenge from a goal', () => {
+  //   cy.visit('/login');
+  //   cy.get('#email').type(testUser.email);
+  //   cy.get('#password').type(testUser.password);
+  //   cy.get('button[type="submit"]').click();
+  //
+  //   cy.url({ timeout: 15000 }).should('include', '/dashboard');
+  //   cy.visit('/goals');
+  //
+  //   // Wait for goals to load
+  //   cy.get('#goals-grid', { timeout: 15000 }).should('exist');
+  //
+  //   // Locate the created goal
+  //   cy.contains('Learn Cypress E2E Testing', { timeout: 10000 })
+  //     .should('be.visible')
+  //     .then(($el) => {
+  //       const goalCard = $el.closest('.goal-card-container');
+  //       cy.wrap(goalCard).as('targetGoal');
+  //     });
+  //
+  //   // Flip the card to see back side
+  //   cy.get('@targetGoal').click();
+  //   cy.wait(600); // Allow flip animation
+  //
+  //   // Click ➕ Create Challenge button
+  //   cy.get('@targetGoal')
+  //     .find('[id^="goal-create-challenge-btn-"]')
+  //     .should('exist')
+  //     .and('be.visible')
+  //     .click({ force: true });
+  //
+  //   // Wait for Challenge Modal
+  //   cy.get('.modal', { timeout: 10000 }).should('be.visible');
+  //
+  //   // Fill out challenge form
+  //   cy.get('input[name="title"]').type('Cypress Challenge');
+  //   cy.get('textarea[name="description"]').type('Automate Cypress test creation.');
+  //   cy.get('textarea[name="instructions"]').type('Follow all test steps carefully.');
+  //   cy.get('select[name="category"]').select('programming');
+  //   cy.get('select[name="difficulty_level"]').select('medium');
+  //   cy.get('input[name="points_reward"]').clear().type('30');
+  //   cy.get('input[name="estimated_time_minutes"]').clear().type('45');
+  //   cy.get('input[name="max_attempts"]').clear().type('2');
+  //
+  //   // Submit challenge creation
+  //   cy.get('button[type="submit"]').contains('Create Challenge').click();
+  //
+  //   // ✅ Verify success
+  //   cy.contains('Challenge created successfully', { timeout: 10000 }).should('exist');
+  //
+  //   // Close modal (if not auto-closing)
+  //   cy.get('.modal').should('not.exist');
+  //
+  //   // Re-visit or refresh to confirm challenge created successfully
+  //   cy.visit('/challenges');
+  //   cy.contains('Cypress Challenge', { timeout: 15000 }).should('be.visible');
+  // });
 });

@@ -1,22 +1,43 @@
 const db = require('../database/connection');
 
 class Challenge {
-  static async findAll () {
-    const query = `
-      SELECT id, title, description, instructions, category, difficulty_level, points_reward,max_attempts,
-             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at
+  static async findAll (userId) {
+    let query;
+    let params;
+
+    if (userId) {
+      query = `
+      SELECT id, title, description, instructions, category, difficulty_level,
+             points_reward, max_attempts, estimated_time_minutes,
+             requires_peer_review, is_active, tags, learning_objectives,
+             prerequisites, created_at, status, goal_id
+      FROM challenges
+      WHERE is_active = true AND created_by = $1
+      ORDER BY created_at DESC
+    `;
+      params = [userId];
+    } else {
+      // fallback for admin or system calls
+      query = `
+      SELECT id, title, description, instructions, category, difficulty_level,
+             points_reward, max_attempts, estimated_time_minutes,
+             requires_peer_review, is_active, tags, learning_objectives,
+             prerequisites, created_at, status, goal_id
       FROM challenges
       WHERE is_active = true
-      ORDER BY difficulty_level, created_at DESC
+      ORDER BY created_at DESC
     `;
-    const result = await db.query(query);
+      params = [];
+    }
+
+    const result = await db.query(query, params);
     return result.rows;
   }
 
   static async findById (id) {
     const query = `
       SELECT id, title, description, instructions, category, difficulty_level, points_reward,max_attempts,
-             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at
+             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at, status
       FROM challenges
       WHERE id = $1
     `;
@@ -60,6 +81,9 @@ class Challenge {
       created_by,
       tags = [],
       learning_objectives = [],
+      goal_id = null,
+      ai_generated = false,
+      status = 'pending',
     } = data;
 
     const query = `
@@ -67,9 +91,9 @@ class Challenge {
         title, description, instructions, category, difficulty_level,
         points_reward, estimated_time_minutes, requires_peer_review, max_attempts,
         is_active, created_by, tags, learning_objectives, prerequisites,
-        created_at, updated_at
+        goal_id, ai_generated, status, created_at, updated_at
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW(),NOW())
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW(),NOW())
         RETURNING *
     `;
 
@@ -88,6 +112,9 @@ class Challenge {
       tags,
       learning_objectives,
       prerequisites,
+      goal_id,
+      ai_generated,
+      status,
     ]);
 
     return result.rows[0];
@@ -108,6 +135,7 @@ class Challenge {
       is_active = true,
       tags = [],
       learning_objectives = [],
+      status,
     } = data;
 
     const query = `
@@ -126,6 +154,7 @@ class Challenge {
         learning_objectives = COALESCE($12, learning_objectives),
         prerequisites = COALESCE($13, prerequisites),
         max_attempts = COALESCE($14, max_attempts),
+        status = COALESCE($15, status),
         updated_at = NOW()
       WHERE id = $1
         RETURNING *
@@ -146,6 +175,7 @@ class Challenge {
       learning_objectives,
       prerequisites,
       max_attempts,
+      status,
     ]);
 
     return result.rows[0] || null;

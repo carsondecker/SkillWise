@@ -1,12 +1,11 @@
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { motion } from 'framer-motion';
-import { validateChallengeUpdate } from '../../validation/challengeValidation';
-import { validateChallenge } from '../../validation/challengeValidation';
+import { validateChallenge, validateChallengeUpdate } from '../../validation/challengeValidation';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import '../../styles/components/Challenge/ChallengeModal.scss';
 
-const ChallengeModal = forwardRef(({ onClose, onCreatedOrUpdated }, ref) => {
+const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref) => {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,7 +25,6 @@ const ChallengeModal = forwardRef(({ onClose, onCreatedOrUpdated }, ref) => {
     learning_objectives: '',
   });
 
-  // 👇 Expose prefill function to parent (for edit mode)
   useImperativeHandle(ref, () => ({
     prefillForm(challenge) {
       setForm({
@@ -45,7 +43,6 @@ const ChallengeModal = forwardRef(({ onClose, onCreatedOrUpdated }, ref) => {
     },
   }));
 
-  // 🧠 Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -55,7 +52,6 @@ const ChallengeModal = forwardRef(({ onClose, onCreatedOrUpdated }, ref) => {
     setForm((prev) => ({ ...prev, [name]: value === 'true' }));
   };
 
-  // 🧩 Submit handler (create or update)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -70,7 +66,6 @@ const ChallengeModal = forwardRef(({ onClose, onCreatedOrUpdated }, ref) => {
         return;
       }
 
-      // ✅ Convert string inputs safely to numbers
       const payload = {
         ...validation.data,
         created_by: user?.id,
@@ -80,29 +75,26 @@ const ChallengeModal = forwardRef(({ onClose, onCreatedOrUpdated }, ref) => {
         requires_peer_review: !!form.requires_peer_review,
         is_active: !!form.is_active,
         tags: form.tags
-          ? form.tags
-              .split(',')
-              .map((t) => t.trim())
-              .filter(Boolean)
+          ? form.tags.split(',').map((t) => t.trim()).filter(Boolean)
           : [],
         learning_objectives: form.learning_objectives
-          ? form.learning_objectives
-              .split(',')
-              .map((t) => t.trim())
-              .filter(Boolean)
+          ? form.learning_objectives.split(',').map((t) => t.trim()).filter(Boolean)
           : [],
         prerequisites: form.prerequisites
-          ? form.prerequisites
-              .split(',')
-              .map((t) => t.trim())
-              .filter(Boolean)
+          ? form.prerequisites.split(',').map((t) => t.trim()).filter(Boolean)
           : [],
       };
 
       let response;
       if (form.id) {
+        // existing challenge edit
         response = await apiService.challenges.update(form.id, payload);
+      } else if (goalId) {
+        // 🆕 goal-specific challenge creation
+        console.log("trying to create challenge under goal:", goalId, payload);
+        response = await apiService.goals.createChallengeFromGoal(goalId, payload);
       } else {
+        // default standalone challenge creation
         response = await apiService.challenges.create(payload);
       }
 
@@ -130,8 +122,9 @@ const ChallengeModal = forwardRef(({ onClose, onCreatedOrUpdated }, ref) => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.25 }}
       >
-        <h2>{form.id ? '✏️ Edit Challenge' : '🆕 Create Challenge'}</h2>
+        <h2>{form.id ? '✏️ Edit Challenge' : goalId ? '🧩 New Challenge for Goal' : '🆕 Create Challenge'}</h2>
 
+        {/* ✅ existing form kept exactly the same */}
         <form onSubmit={handleSubmit}>
           {/* Title */}
           <div className="form-group">
@@ -300,8 +293,10 @@ const ChallengeModal = forwardRef(({ onClose, onCreatedOrUpdated }, ref) => {
               {submitting
                 ? 'Saving...'
                 : form.id
-                ? 'Save Changes'
-                : 'Create Challenge'}
+                  ? 'Save Changes'
+                  : goalId
+                    ? 'Create Under Goal'
+                    : 'Create Challenge'}
             </button>
           </div>
         </form>

@@ -285,3 +285,22 @@
   color: #6b7280;
   font-style: italic;
 }
+.mark-complete-container {
+  text-align: right;
+  margin-bottom: 1rem;
+
+  .btn-success {
+    background-color: #16a34a;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+      background-color: #15803d;
+    }
+  }
+}
