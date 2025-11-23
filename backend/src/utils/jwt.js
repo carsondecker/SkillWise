@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { AppError } = require('../middleware/errorHandler');
 
-const ACCESS_EXP = process.env.JWT_EXPIRES_IN || '15m';
+const ACCESS_EXP = process.env.JWT_EXPIRES_IN || '7d';
 const REFRESH_EXP = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 const RESET_EXP = process.env.JWT_RESET_EXPIRES_IN || '1h';
 
@@ -51,11 +51,11 @@ const verifyResetToken = (token) => {
 // ===============================
 const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie('accessToken', accessToken, {
-    httpOnly: false, // used by frontend JS if needed
+    httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: 15 * 60 * 1000, // 15 min
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches default access token exp)
   });
 
   res.cookie('refreshToken', refreshToken, {
@@ -63,7 +63,7 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/', // ✅ FIX: must match clearAuthCookies
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days to match refresh token exp
   });
 };
 

@@ -27,7 +27,6 @@ class Goal {
       category,
       difficulty_level = 'medium',
       target_date = null,
-      points_reward = 0,
       is_public = false,
       progress_percentage = 0,
     } = data;
@@ -40,13 +39,12 @@ class Goal {
         category,
         difficulty_level,
         target_date,
-        points_reward,
         is_public,
         progress_percentage,
         created_at,
         updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
         RETURNING *;
     `;
 
@@ -57,7 +55,6 @@ class Goal {
       category,
       difficulty_level,
       target_date,
-      points_reward,
       is_public,
       progress_percentage,
     ]);

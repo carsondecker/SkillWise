@@ -22,7 +22,6 @@ const GoalsPage = () => {
     difficulty: 'medium',
     target_date: '',
     progress: 0,
-    points_reward: 0,
     is_public: false,
   });
 
@@ -36,6 +35,7 @@ const GoalsPage = () => {
           ? res.data
           : res.data?.goals || [];
         setGoals(fetchedGoals);
+        console.log(fetchedGoals);
         setFilteredGoals(fetchedGoals);
       } catch (err) {
         console.error('Failed to fetch goals:', err);
@@ -84,7 +84,6 @@ const GoalsPage = () => {
         target_date: newGoal.target_date
           ? new Date(newGoal.target_date).toISOString()
           : null,
-        points_reward: Number(newGoal.points_reward) || 0,
         is_public: !!newGoal.is_public,
       };
 
@@ -103,7 +102,6 @@ const GoalsPage = () => {
         difficulty: 'medium',
         target_date: '',
         progress: 0,
-        points_reward: 0,
         is_public: false,
       });
     } catch (error) {
@@ -279,19 +277,6 @@ const GoalsPage = () => {
 
               {/* 🧩 Points Reward + Public Toggle */}
               <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="goal-points">Points Reward</label>
-                  <input
-                    id="goal-points"
-                    type="number"
-                    name="points_reward"
-                    min="0"
-                    value={newGoal.points_reward}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 50"
-                  />
-                </div>
-
                 <div className="form-group">
                   <label htmlFor="goal-visibility">Visibility</label>
                   <select

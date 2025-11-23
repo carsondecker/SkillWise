@@ -28,7 +28,7 @@ END IF;
 ALTER TABLE challenges
     ADD COLUMN status VARCHAR(20)
         DEFAULT 'pending'
-        CHECK (status IN ('pending','in_progress','completed','failed'));
+        CHECK (status IN ('pending','in_progress','in_peer_review','completed','failed'));
 END IF;
 END $$;
 
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS user_progress (
     total_challenges INTEGER DEFAULT 0,
     completed_challenges INTEGER DEFAULT 0,
     progress_percent INTEGER DEFAULT 0 CHECK (progress_percent BETWEEN 0 AND 100),
-    last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, goal_id)
     );
 
@@ -61,8 +61,42 @@ CREATE TRIGGER update_user_progress_timestamp
     EXECUTE FUNCTION update_updated_at_column();
 END IF;
 END $$;
+-- Wrapper for delete events
+CREATE OR REPLACE FUNCTION trigger_sync_goal_progress_delete_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM sync_goal_progress(OLD.goal_id, OLD.created_by);
+RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
 
+-- Update progress when a challenge is deleted
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trigger_sync_goal_progress_delete'
+  ) THEN
+CREATE TRIGGER trigger_sync_goal_progress_delete
+    AFTER DELETE ON challenges
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_sync_goal_progress_delete_fn();
+END IF;
+END $$;
 
+-- Trigger to update progress when a new challenge is created
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_trigger
+    WHERE tgname = 'trigger_sync_goal_progress_insert'
+  ) THEN
+CREATE TRIGGER trigger_sync_goal_progress_insert
+    AFTER INSERT ON challenges
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_sync_goal_progress_fn();
+END IF;
+END $$;
 -- ===========================================
 -- ⚙️ Progress Sync Logic
 -- ===========================================
@@ -84,24 +118,24 @@ FROM challenges
 WHERE goal_id = p_goal_id AND created_by = p_user_id AND status = 'completed';
 
 IF total_ch > 0 THEN
-    percent := ROUND((completed_ch::DECIMAL / total_ch::DECIMAL) * 100);
+      percent := ROUND((completed_ch::DECIMAL / total_ch::DECIMAL) * 100);
 ELSE
-    percent := 0;
+      percent := 0;
 END IF;
 
 INSERT INTO user_progress (user_id, goal_id, total_challenges, completed_challenges, progress_percent)
 VALUES (p_user_id, p_goal_id, total_ch, completed_ch, percent)
     ON CONFLICT (user_id, goal_id)
-  DO UPDATE SET
+    DO UPDATE SET
     total_challenges = EXCLUDED.total_challenges,
-             completed_challenges = EXCLUDED.completed_challenges,
-             progress_percent = EXCLUDED.progress_percent,
-             last_updated = CURRENT_TIMESTAMP;
+               completed_challenges = EXCLUDED.completed_challenges,
+               progress_percent = EXCLUDED.progress_percent,
+               updated_at = CURRENT_TIMESTAMP;
 
+-- 🔥 ONLY update progress, DO NOT touch is_completed or completion_date
 UPDATE goals
 SET progress_percentage = percent,
-    is_completed = (percent = 100),
-    completion_date = CASE WHEN percent = 100 THEN NOW() ELSE NULL END
+    updated_at = NOW()
 WHERE id = p_goal_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -128,6 +162,91 @@ CREATE TRIGGER trigger_sync_goal_progress
     FOR EACH ROW
     WHEN (OLD.status IS DISTINCT FROM NEW.status)
       EXECUTE FUNCTION trigger_sync_goal_progress_fn();
+END IF;
+END $$;
+
+-- ===========================================
+-- 🔥 Function: sync_goal_points
+-- Recalculates total challenge points for a goal
+-- ===========================================
+CREATE OR REPLACE FUNCTION sync_goal_points(p_goal_id INT)
+RETURNS VOID AS $$
+DECLARE
+total_points INT;
+BEGIN
+SELECT COALESCE(SUM(points_reward), 0)
+INTO total_points
+FROM challenges
+WHERE goal_id = p_goal_id;
+
+UPDATE goals
+SET points_reward = total_points,
+    updated_at = NOW()
+WHERE id = p_goal_id;
+END;
+$$ LANGUAGE plpgsql;
+-- Trigger wrapper for INSERT
+CREATE OR REPLACE FUNCTION trigger_sync_goal_points_insert_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM sync_goal_points(NEW.goal_id);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trigger_sync_goal_points_insert'
+  ) THEN
+CREATE TRIGGER trigger_sync_goal_points_insert
+    AFTER INSERT ON challenges
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_sync_goal_points_insert_fn();
+END IF;
+END $$;
+-- Trigger wrapper for UPDATE
+CREATE OR REPLACE FUNCTION trigger_sync_goal_points_update_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only recalc if points or goal_id changed
+  IF NEW.points_reward IS DISTINCT FROM OLD.points_reward
+     OR NEW.goal_id IS DISTINCT FROM OLD.goal_id THEN
+       PERFORM sync_goal_points(NEW.goal_id);
+END IF;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trigger_sync_goal_points_update'
+  ) THEN
+CREATE TRIGGER trigger_sync_goal_points_update
+    AFTER UPDATE ON challenges
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_sync_goal_points_update_fn();
+END IF;
+END $$;
+-- Trigger wrapper for DELETE
+CREATE OR REPLACE FUNCTION trigger_sync_goal_points_delete_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM sync_goal_points(OLD.goal_id);
+RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trigger_sync_goal_points_delete'
+  ) THEN
+CREATE TRIGGER trigger_sync_goal_points_delete
+    AFTER DELETE ON challenges
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_sync_goal_points_delete_fn();
 END IF;
 END $$;
 

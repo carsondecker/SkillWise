@@ -1,9 +1,11 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const db = require('../database/connection');
 const jwt = require('../utils/jwt');
 const { AppError } = require('../middleware/errorHandler');
 
 const TOKEN_EXPIRY_DAYS = 30; // refresh tokens last 30 days
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 const authService = {
   /**
@@ -24,13 +26,14 @@ const authService = {
 
     const decoded = jwt.verifyRefreshToken(refreshToken);
     const userId = decoded.id || decoded.user?.id; // 🛠 this ensures it's always defined
+    const hashedRefreshToken = hashToken(refreshToken);
 
     await db.query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at, created_at)
      VALUES ($1, $2, NOW() + INTERVAL '30 days', NOW())
      ON CONFLICT (user_id)
      DO UPDATE SET token = EXCLUDED.token, expires_at = NOW() + INTERVAL '30 days', updated_at = NOW()`,
-      [userId, refreshToken],
+      [userId, hashedRefreshToken],
     );
 
     return {
@@ -50,12 +53,13 @@ const authService = {
    * 💾 Store Refresh Token in DB
    */
   storeRefreshToken: async (userId, token) => {
+    const hashedToken = hashToken(token);
     await db.query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at, created_at)
        VALUES ($1, $2, NOW() + INTERVAL '${TOKEN_EXPIRY_DAYS} days', NOW())
        ON CONFLICT (user_id)
        DO UPDATE SET token = EXCLUDED.token, expires_at = NOW() + INTERVAL '${TOKEN_EXPIRY_DAYS} days', updated_at = NOW()`,
-      [userId, token],
+      [userId, hashedToken],
     );
   },
 
@@ -73,13 +77,26 @@ const authService = {
     try {
       const decoded = jwt.verifyRefreshToken(refreshToken);
       const id = decoded.id || decoded.user?.id; // 🛡 fallback for nested payloads
+      const hashed = hashToken(refreshToken);
 
       const result = await db.query('SELECT * FROM refresh_tokens WHERE user_id = $1', [id]);
       const storedToken = result.rows[0];
+      const tokenMatches =
+        storedToken &&
+        (storedToken.token === hashed || storedToken.token === refreshToken);
 
       // Check token validity and expiry
-      if (!storedToken || storedToken.token !== refreshToken) {
+      if (!storedToken || !tokenMatches) {
         throw new AppError('Invalid or expired refresh token', 401, 'INVALID_REFRESH_TOKEN');
+      }
+      // If we found a legacy plaintext token, re-hash it for future checks
+      if (storedToken.token === refreshToken) {
+        await db.query(
+          `UPDATE refresh_tokens
+           SET token = $1, updated_at = NOW()
+           WHERE user_id = $2`,
+          [hashed, id],
+        );
       }
       if (new Date(storedToken.expires_at) < new Date()) {
         throw new AppError('Refresh token has expired', 401, 'TOKEN_EXPIRED');
@@ -100,11 +117,12 @@ const authService = {
    */
   rotateRefreshToken: async (oldToken, newToken) => {
     const decoded = jwt.verifyRefreshToken(oldToken);
+    const hashed = hashToken(newToken);
     await db.query(
       `UPDATE refresh_tokens 
        SET token = $1, expires_at = NOW() + INTERVAL '${TOKEN_EXPIRY_DAYS} days', updated_at = NOW()
        WHERE user_id = $2`,
-      [newToken, decoded.id],
+      [hashed, decoded.id],
     );
   },
 
@@ -139,7 +157,7 @@ const authService = {
     await db.query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at, created_at)
        VALUES ($1, $2, NOW() + INTERVAL '${TOKEN_EXPIRY_DAYS} days', NOW())`,
-      [newUser.id, refreshToken],
+      [newUser.id, hashToken(refreshToken)],
     );
 
     return { user: newUser, accessToken, refreshToken };
@@ -152,10 +170,14 @@ const authService = {
     if (!refreshToken) throw new AppError('No refresh token provided', 401, 'NO_TOKEN');
 
     const decoded = jwt.verifyRefreshToken(refreshToken);
+    const hashed = hashToken(refreshToken);
     const result = await db.query('SELECT token, expires_at FROM refresh_tokens WHERE user_id = $1', [decoded.id]);
     const storedToken = result.rows[0];
+    const tokenMatches =
+      storedToken &&
+      (storedToken.token === hashed || storedToken.token === refreshToken);
 
-    if (!storedToken || storedToken.token !== refreshToken)
+    if (!storedToken || !tokenMatches)
       throw new AppError('Invalid or revoked refresh token', 401, 'INVALID_REFRESH_TOKEN');
 
     if (new Date(storedToken.expires_at) < new Date())
@@ -163,12 +185,13 @@ const authService = {
 
     const accessToken = jwt.signAccessToken({ id: decoded.id, role: decoded.role });
     const newRefreshToken = jwt.signRefreshToken({ id: decoded.id });
+    const newHashed = hashToken(newRefreshToken);
 
     await db.query(
       `UPDATE refresh_tokens
        SET token = $1, expires_at = NOW() + INTERVAL '${TOKEN_EXPIRY_DAYS} days', updated_at = NOW()
        WHERE user_id = $2`,
-      [newRefreshToken, decoded.id],
+      [newHashed, decoded.id],
     );
 
     return { accessToken, refreshToken: newRefreshToken };

@@ -86,15 +86,26 @@ BEGIN
   ) THEN
     EXECUTE $body$
       CREATE OR REPLACE FUNCTION update_user_stats_on_goal_completion()
-      RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $$
 BEGIN
-        -- 🧠 Fire only when goal transitions from incomplete → complete
-        IF NEW.is_completed = TRUE AND (OLD.is_completed IS DISTINCT FROM TRUE) THEN
+  -- Only fire when transitioning to completed
+  IF NEW.is_completed = TRUE AND (OLD.is_completed IS DISTINCT FROM TRUE) THEN
 
 UPDATE user_statistics
 SET
-    total_goals_completed = total_goals_completed + 1,
-    total_points = total_points + COALESCE(NEW.points_reward, 0),
+    total_goals_completed = (
+        SELECT COUNT(*)
+        FROM goals
+        WHERE user_id = NEW.user_id AND is_completed = TRUE
+    ),
+
+    total_points = (
+        SELECT
+            COALESCE(SUM(points_reward), 0)
+        FROM challenges
+        WHERE created_by = NEW.user_id AND status = 'completed'
+    ),
+
     last_activity_date = NOW(),
     updated_at = NOW()
 WHERE user_id = NEW.user_id;
@@ -103,7 +114,7 @@ END IF;
 
 RETURN NEW;
 END;
-      $$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
     $body$;
 END IF;
 END $outer$;
@@ -119,5 +130,58 @@ CREATE TRIGGER tr_update_user_stats_on_goal_completion
     FOR EACH ROW
     WHEN (NEW.is_completed = TRUE)
     EXECUTE FUNCTION update_user_stats_on_goal_completion();
+END IF;
+END $outer$;
+------------------------------------------
+DO $outer$
+BEGIN
+  -- Create function only if it doesn't already exist
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc WHERE proname = 'update_user_stats_on_challenge_completion'
+  ) THEN
+    EXECUTE $body$
+      CREATE OR REPLACE FUNCTION update_user_stats_on_challenge_completion()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only fire when transitioning into completed
+  IF NEW.status = 'completed' AND (OLD.status IS DISTINCT FROM 'completed') THEN
+
+UPDATE user_statistics
+SET
+    total_challenges_completed = (
+        SELECT COUNT(*)
+        FROM challenges
+        WHERE created_by = NEW.created_by AND status = 'completed'
+    ),
+
+    total_points = (
+        SELECT COALESCE(SUM(points_reward), 0)
+        FROM challenges
+        WHERE created_by = NEW.created_by AND status = 'completed'
+    ),
+
+    last_activity_date = NOW(),
+    updated_at = NOW()
+WHERE user_id = NEW.created_by;
+
+END IF;
+
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+    $body$;
+END IF;
+END $outer$;
+-- ✅ Create trigger only if it doesn’t already exist
+DO $outer$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'tr_update_user_stats_on_challenge_completion'
+  ) THEN
+CREATE TRIGGER tr_update_user_stats_on_challenge_completion
+    AFTER UPDATE OF status ON challenges
+    FOR EACH ROW
+    WHEN (NEW.status = 'completed')
+    EXECUTE FUNCTION update_user_stats_on_challenge_completion();
 END IF;
 END $outer$;

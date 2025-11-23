@@ -3,236 +3,179 @@ const db = require('../database/connection');
 const { AppError } = require('../middleware/errorHandler');
 
 const peerReviewService = {
-  /**
-   * 📝 Create a new peer review
-   * @param {Object} reviewData
-   * reviewer_id, reviewee_id, submission_id, review_text, rating?, criteria_scores?, time_spent_minutes?
-   */
-  createReview: async (reviewData) => {
-    try {
-      const {
-        reviewer_id,
-        reviewee_id,
-        submission_id,
-        review_text,
-        rating,
-        criteria_scores,
-        time_spent_minutes,
-        is_anonymous = true,
-      } = reviewData;
+  // ---------------------------------------------------------
+  // 🟢 1. Get submissions owned by current user (their own work)
+  // ---------------------------------------------------------
+  getMySubmissions: async ({ userId, limit, offset }) => {
+    const query = `
+      SELECT
+        s.*,
+        c.title AS challenge_title,
+        c.difficulty_level AS challenge_difficulty,
+        c.status AS challenge_status
+      FROM submissions s
+             JOIN challenges c ON s.challenge_id = c.id
+      WHERE s.user_id = $1
+        AND c.requires_peer_review = TRUE
+        AND c.status = 'in_peer_review'
+      ORDER BY s.created_at DESC
+        LIMIT $2 OFFSET $3
+    `;
 
-      if (!reviewer_id || !reviewee_id || !submission_id || !review_text) {
-        throw new AppError('Missing required fields for review creation', 400, 'VALIDATION_ERROR');
-      }
+    const result = await db.query(query, [userId, limit, offset]);
+    return result.rows;
+  },
 
-      const result = await db.query(
-        `
+  // ---------------------------------------------------------
+  // 🟡 2. Submit a peer review for a submission
+  // ---------------------------------------------------------
+  submitReview: async ({ reviewerId, submissionId, rating, feedback }) => {
+    // 1️⃣ Fetch submission details
+    const submissionRes = await db.query(
+      `
+        SELECT s.*, c.requires_peer_review, c.status
+        FROM submissions s
+        JOIN challenges c ON s.challenge_id = c.id
+        WHERE s.id = $1
+      `,
+      [submissionId],
+    );
+
+    const submission = submissionRes.rows[0];
+    if (!submission) throw new AppError('Submission not found', 404);
+
+    // 2️⃣ Prevent reviewing own work
+    if (submission.user_id === reviewerId) {
+      throw new AppError('You cannot review your own submission', 400);
+    }
+
+    // 3️⃣ Ensure this challenge requires peer review
+    if (!submission.requires_peer_review) {
+      throw new AppError('This challenge does not require peer review', 400);
+    }
+
+    // 4️⃣ Only submissions in peer review stage can be reviewed
+    if (submission.status !== 'in_peer_review') {
+      throw new AppError('Submission is not currently open for peer review', 400);
+    }
+
+    // 5️⃣ Prevent duplicate review (unique index ensures this)
+    const duplicateCheck = await db.query(
+      `
+        SELECT 1 FROM peer_reviews
+        WHERE reviewer_id = $1 AND submission_id = $2
+      `,
+      [reviewerId, submissionId],
+    );
+
+    if (duplicateCheck.rowCount > 0) {
+      throw new AppError('You already reviewed this submission', 400);
+    }
+
+    // 6️⃣ Insert review
+    const insertRes = await db.query(
+      `
         INSERT INTO peer_reviews (
           reviewer_id,
           reviewee_id,
           submission_id,
           review_text,
           rating,
-          criteria_scores,
-          time_spent_minutes,
-          is_anonymous,
           created_at,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
         RETURNING *
-        `,
-        [
-          reviewer_id,
-          reviewee_id,
-          submission_id,
-          review_text,
-          rating || null,
-          criteria_scores ? JSON.stringify(criteria_scores) : null,
-          time_spent_minutes || null,
-          is_anonymous,
-        ],
-      );
-
-      return {
-        message: 'Peer review created successfully',
-        review: result.rows[0],
-      };
-    } catch (error) {
-      throw new AppError(`Error creating peer review: ${error.message}`, 500);
-    }
-  },
-
-  /**
-   * 📄 Get all reviews for a given submission
-   * @param {number} submissionId
-   */
-  getReviewsForSubmission: async (submissionId) => {
-    try {
-      const result = await db.query(
-        `
-        SELECT pr.*, u.first_name, u.last_name
-        FROM peer_reviews pr
-        LEFT JOIN users u ON pr.reviewer_id = u.id
-        WHERE pr.submission_id = $1
-        ORDER BY pr.created_at DESC
-        `,
-        [submissionId],
-      );
-
-      return result.rows;
-    } catch (error) {
-      throw new AppError(`Error fetching reviews for submission: ${error.message}`, 500);
-    }
-  },
-
-  /**
-   * 🧑‍⚖️ Get all reviews written by a reviewer
-   * @param {number} reviewerId
-   */
-  getReviewsByReviewer: async (reviewerId) => {
-    try {
-      const result = await db.query(
-        `
-        SELECT pr.*, s.title as submission_title, u.first_name as reviewee_name
-        FROM peer_reviews pr
-        LEFT JOIN submissions s ON pr.submission_id = s.id
-        LEFT JOIN users u ON pr.reviewee_id = u.id
-        WHERE pr.reviewer_id = $1
-        ORDER BY pr.created_at DESC
-        `,
-        [reviewerId],
-      );
-
-      return result.rows;
-    } catch (error) {
-      throw new AppError(`Error fetching reviewer history: ${error.message}`, 500);
-    }
-  },
-
-  /**
-   * 🔄 Update a review (review_text, rating, etc.)
-   * @param {number} reviewId
-   * @param {Object} updateData
-   */
-  updateReview: async (reviewId, updateData) => {
-    try {
-      const {
-        review_text,
+      `,
+      [
+        reviewerId,
+        submission.user_id,
+        submissionId,
+        feedback || '',
         rating,
-        criteria_scores,
-        time_spent_minutes,
-        is_completed,
-      } = updateData;
+      ],
+    );
 
-      const result = await db.query(
-        `
-        UPDATE peer_reviews
-        SET
-          review_text = COALESCE($2, review_text),
-          rating = COALESCE($3, rating),
-          criteria_scores = COALESCE($4, criteria_scores),
-          time_spent_minutes = COALESCE($5, time_spent_minutes),
-          is_completed = COALESCE($6, is_completed),
-          completed_at = CASE WHEN $6 = TRUE THEN NOW() ELSE completed_at END,
-          updated_at = NOW()
-        WHERE id = $1
-        RETURNING *
-        `,
-        [
-          reviewId,
-          review_text || null,
-          rating || null,
-          criteria_scores ? JSON.stringify(criteria_scores) : null,
-          time_spent_minutes || null,
-          is_completed || null,
-        ],
-      );
-
-      if (!result.rows[0]) throw new AppError('Review not found', 404, 'NOT_FOUND');
-
-      return {
-        message: 'Peer review updated successfully',
-        review: result.rows[0],
-      };
-    } catch (error) {
-      throw new AppError(`Error updating peer review: ${error.message}`, 500);
-    }
+    return insertRes.rows[0];
   },
 
-  /**
-   * ❌ Delete a peer review
-   * @param {number} reviewId
-   */
-  deleteReview: async (reviewId) => {
-    try {
-      const result = await db.query(
-        'DELETE FROM peer_reviews WHERE id = $1 RETURNING *',
-        [reviewId],
-      );
+  // ---------------------------------------------------------
+  // 🔵 3. Get submissions awaiting review (review queue)
+  // ---------------------------------------------------------
+  getReviewQueue: async ({ reviewerId, limit, offset }) => {
+    const query = `
+      SELECT
+        s.id AS submission_id,
+        s.user_id AS reviewee_id,
+        u.first_name,
+        u.last_name,
+        u.profile_image,
+        s.created_at AS submission_created_at,
+        c.id AS challenge_id,
+        c.title AS challenge_title,
+        c.category,
+        c.difficulty_level AS challenge_difficulty
+      FROM submissions s
+             JOIN challenges c ON s.challenge_id = c.id
+             JOIN users u ON s.user_id = u.id
+      WHERE c.status = 'in_peer_review'
+        AND c.requires_peer_review = TRUE
 
-      if (!result.rows[0]) throw new AppError('Review not found', 404, 'NOT_FOUND');
+    -- Only return the newest submission per challenge
+        AND s.id = (
+        SELECT s2.id
+        FROM submissions s2
+        WHERE s2.challenge_id = s.challenge_id
+        ORDER BY s2.created_at DESC
+        LIMIT 1
+        )
 
-      return { message: 'Peer review deleted successfully' };
-    } catch (error) {
-      throw new AppError(`Error deleting peer review: ${error.message}`, 500);
-    }
+    -- Cannot review your own work
+        AND s.user_id != $1
+
+    -- Exclude submissions already reviewed by this reviewer
+        AND NOT EXISTS (
+      SELECT 1
+      FROM peer_reviews pr
+      WHERE pr.reviewer_id = $1
+        AND pr.submission_id = s.id
+        )
+
+      ORDER BY s.created_at DESC
+        LIMIT $2 OFFSET $3;
+    `;
+
+    const result = await db.query(query, [reviewerId, limit, offset]);
+    return result.rows;
   },
 
-  /**
-   * 🕐 Get pending (incomplete) reviews for a user
-   * @param {number} userId
-   */
-  getPendingReviews: async (userId) => {
-    try {
-      const result = await db.query(
-        `
-        SELECT pr.*, s.title AS submission_title, u.first_name AS reviewee_name
-        FROM peer_reviews pr
-        LEFT JOIN submissions s ON pr.submission_id = s.id
-        LEFT JOIN users u ON pr.reviewee_id = u.id
-        WHERE pr.reviewer_id = $1 AND pr.is_completed = FALSE
-        ORDER BY pr.created_at ASC
-        `,
-        [userId],
-      );
+  // ---------------------------------------------------------
+  // 🟣 4. Get details for a single submission for review
+  // ---------------------------------------------------------
+  getReviewDetails: async ({ reviewerId, submissionId }) => {
+    const result = await db.query(
+      `
+        SELECT s.*, u.first_name, u.last_name, c.title AS challenge_title
+        FROM submissions s
+        JOIN users u ON s.user_id = u.id
+        JOIN challenges c ON s.challenge_id = c.id
+        WHERE s.id = $1
+      `,
+      [submissionId],
+    );
 
-      return result.rows;
-    } catch (error) {
-      throw new AppError(`Error fetching pending reviews: ${error.message}`, 500);
+    if (!result.rows.length) {
+      throw new AppError('Submission not found', 404);
     }
-  },
 
-  /**
-   * ⭐ Submit rating for a review (e.g., after evaluation)
-   * @param {number} reviewId
-   * @param {number} rating - 1–5 stars
-   */
-  submitRating: async (reviewId, rating) => {
-    try {
-      if (rating < 1 || rating > 5) {
-        throw new AppError('Rating must be between 1 and 5', 400, 'INVALID_RATING');
-      }
+    const submission = result.rows[0];
 
-      const result = await db.query(
-        `
-        UPDATE peer_reviews
-        SET rating = $2, is_completed = TRUE, completed_at = NOW(), updated_at = NOW()
-        WHERE id = $1
-        RETURNING *
-        `,
-        [reviewId, rating],
-      );
-
-      if (!result.rows[0]) throw new AppError('Review not found', 404, 'NOT_FOUND');
-
-      return {
-        message: 'Rating submitted successfully',
-        review: result.rows[0],
-      };
-    } catch (error) {
-      throw new AppError(`Error submitting rating: ${error.message}`, 500);
+    // Prevent reviewing own submission
+    if (submission.user_id === reviewerId) {
+      throw new AppError('You cannot review your own submission', 400);
     }
+
+    return submission;
   },
 };
 

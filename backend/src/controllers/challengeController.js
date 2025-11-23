@@ -171,6 +171,42 @@ const challengeController = {
       challenge: updated,
     });
   }),
+  submitForPeerReview: asyncHandler(async (req, res, next) => {
+    const challengeId = parseInt(req.params.id, 10);
+    const userId = req.user?.id;
+
+    if (Number.isNaN(challengeId)) {
+      throw new AppError('Invalid challenge ID', 400);
+    }
+
+    // 1️⃣ Fetch challenge and its goal
+    const challenge = await challengeService.getChallengeById(challengeId);
+    if (!challenge) {
+      throw new AppError('Challenge not found', 404);
+    }
+
+    // 2️⃣ Ensure user owns the goal tied to this challenge
+    if (challenge.goal_id) {
+      const goal = await goalService.getGoalById({
+        userId,
+        goalId: challenge.goal_id,
+      });
+      if (!goal || goal.user_id !== userId) {
+        throw new AppError('Unauthorized: this challenge is not part of your goal', 403);
+      }
+    }
+
+    // 3️⃣ Mark as completed
+    const updated = await challengeService.updateChallenge({
+      id: challengeId,
+      data: { status: 'in_peer_review' },
+    });
+
+    res.status(200).json({
+      message: 'Challenge marked as complete',
+      challenge: updated,
+    });
+  }),
 
   // 🔴 Delete challenge (Admin only)
   deleteChallenge: asyncHandler(async (req, res, next) => {

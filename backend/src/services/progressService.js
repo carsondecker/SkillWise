@@ -95,6 +95,7 @@ const progressService = {
           p.related_goal_id AS goal_id,
           p.related_challenge_id AS challenge_id,
           p.event_type,
+          p.points_earned,
           p.created_at,
           p.updated_at,
           g.title AS goal_title,
@@ -118,6 +119,7 @@ const progressService = {
         eventType: row.event_type,
         activityType: row.activity_type, // "goal" | "challenge" | "other"
         title: row.activity_title,
+        pointsEarned: row.points_earned,
         category: row.activity_category,
         goalId: row.goal_id,
         challengeId: row.challenge_id,

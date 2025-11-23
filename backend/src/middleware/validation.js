@@ -98,6 +98,7 @@ const challengeSchema = z.object({
     tags: z.array(z.string().min(1)).default([]),
 
     learning_objectives: z.array(z.string().min(1)).default([]),
+    ai_generated: z.boolean().default(false),
 
     // created_by comes from backend (req.user)
     created_by: z.number().int().optional(),
@@ -120,6 +121,24 @@ const challengeUpdateSchema = z.object({
     tags: z.array(z.string().min(1)).optional(),
     learning_objectives: z.array(z.string().min(1)).optional(),
   }),
+});
+// =======================================================
+// 🤖 AI-generated Challenge Schema (strict validation)
+// =======================================================
+const aiGeneratedChallengeSchema = z.object({
+  title: z.string().min(1).max(255),
+  description: z.string().min(1).max(5000),
+  instructions: z.string().min(1).max(5000),
+  category: z.string().min(1).max(100),
+  difficulty_level: z.enum(['easy', 'medium', 'hard']),
+  points_reward: z.number().int().min(0).max(100),
+  estimated_time_minutes: z.number().int().min(30).max(180),
+  max_attempts: z.number().int().min(1).max(5),
+  requires_peer_review: z.boolean(),
+  is_active: z.boolean(),
+  tags: z.array(z.string()).default([]),
+  prerequisites: z.array(z.string()).default([]),
+  learning_objectives: z.array(z.string()).default([]),
 });
 /**
  * 🔹 Generic validation middleware factory
@@ -183,5 +202,6 @@ module.exports = {
     goalSchema,
     challengeSchema,
     challengeUpdateSchema,
+    aiGeneratedChallengeSchema,
   },
 };

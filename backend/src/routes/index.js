@@ -47,7 +47,7 @@ router.get('/', (req, res) => {
       progress: '/api/progress',
       submissions: '/api/submissions',
       ai: '/api/ai',
-      reviews: '/api/reviews',
+      reviews: '/api/peer-review',
       leaderboard: '/api/leaderboard',
       health: '/api/health',
     },
@@ -65,7 +65,7 @@ router.use('/challenges', challengeRoutes);
 router.use('/progress', progressRoutes);
 router.use('/submissions', submissionRoutes);
 router.use('/ai', aiRoutes);
-router.use('/reviews', reviewRoutes);
+router.use('/peer-review', reviewRoutes);
 router.use('/leaderboard', leaderboardRoutes);
 
 // --------------------------------------------------

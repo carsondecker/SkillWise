@@ -10,36 +10,32 @@ const api = axios.create({
   },
 });
 
-// Token management utilities
-const TOKEN_KEY = 'access_token';
-
-const getAccessToken = () => {
-  return localStorage.getItem(TOKEN_KEY);
-};
-
-const setAccessToken = (token) => {
-  if (token) {
-    localStorage.setItem(TOKEN_KEY, token);
-  } else {
-    localStorage.removeItem(TOKEN_KEY);
-  }
-};
-
-const clearTokens = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  // Note: httpOnly refresh token will be cleared by server
-};
-
 // Flag to prevent multiple refresh attempts
 let isRefreshing = false;
 let failedQueue = [];
+let inMemoryAccessToken = null;
+let inMemoryRefreshToken = null;
 
-const processQueue = (error, token = null) => {
+export const setInMemoryAccessToken = (token) => {
+  inMemoryAccessToken = token || null;
+  if (token) {
+    api.defaults.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.Authorization;
+  }
+};
+export const clearInMemoryAccessToken = () => setInMemoryAccessToken(null);
+export const setInMemoryRefreshToken = (token) => {
+  inMemoryRefreshToken = token || null;
+};
+export const clearInMemoryRefreshToken = () => setInMemoryRefreshToken(null);
+
+const processQueue = (error) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error);
     } else {
-      resolve(token);
+      resolve();
     }
   });
 
@@ -49,10 +45,8 @@ const processQueue = (error, token = null) => {
 // Request interceptor to add Bearer token
 api.interceptors.request.use(
   (config) => {
-    const token = getAccessToken();
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (inMemoryAccessToken) {
+      config.headers.Authorization = `Bearer ${inMemoryAccessToken}`;
     }
 
     // Log request in development
@@ -103,10 +97,7 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return api(originalRequest);
-          })
+          .then(() => api(originalRequest))
           .catch((err) => {
             return Promise.reject(err);
           });
@@ -131,17 +122,13 @@ api.interceptors.response.use(
         const { accessToken } = refreshResponse.data;
 
         if (accessToken) {
-          // Update stored access token
-          setAccessToken(accessToken);
+          setInMemoryAccessToken(accessToken);
+          if (refreshResponse.data?.refreshToken) {
+            setInMemoryRefreshToken(refreshResponse.data.refreshToken);
+          }
 
-          // Update default authorization header
-          api.defaults.headers.Authorization = `Bearer ${accessToken}`;
-
-          // Process queued requests with new token
-          processQueue(null, accessToken);
-
-          // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          // Process queued requests now that cookies are updated
+          processQueue(null);
 
           console.log('✅ Token refreshed successfully');
           return api(originalRequest);
@@ -151,9 +138,8 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error('❌ Token refresh failed:', refreshError);
 
-        // Clear tokens and redirect to login
-        clearTokens();
-        processQueue(refreshError, null);
+        // Redirect to login
+        processQueue(refreshError);
 
         // Dispatch logout event for AuthContext to handle
         window.dispatchEvent(
@@ -163,10 +149,13 @@ api.interceptors.response.use(
         );
 
         // Redirect to login page
-        if (window.location.pathname !== '/login') {
+        const publicPaths = ['/login', '/signup', '/forgot-password'];
+        if (!publicPaths.includes(window.location.pathname)) {
           window.location.href = '/login';
         }
 
+        clearInMemoryAccessToken();
+        clearInMemoryRefreshToken();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -206,7 +195,8 @@ export const apiService = {
     login: (credentials) => api.post('/auth/login', credentials),
     register: (userData) => api.post('/auth/register', userData),
     logout: () => api.post('/auth/logout'),
-    refresh: () => api.post('/auth/refresh'),
+    refresh: () =>
+      api.post('/auth/refresh', inMemoryRefreshToken ? { refreshToken: inMemoryRefreshToken } : {}),
     forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
     resetPassword: (token, password) =>
       api.post('/auth/reset-password', { token, password }),
@@ -236,8 +226,9 @@ export const apiService = {
     getAll: (params) => api.get('/challenges', { params }),
     getById: (id) => api.get(`/challenges/${id}`),
     create: (data) => api.post('/challenges', data),
-    update: (id, data) => api.put(`/challenges/${id}`, data), // ✅ added update
-    markAsComplete: (id) => api.patch(`/challenges/${id}/complete`), // ✅ NEW endpoint
+    update: (id, data) => api.put(`/challenges/${id}`, data),
+    markAsComplete: (id) => api.patch(`/challenges/${id}/complete`),
+    submitForPeerReview: (id) => api.patch(`/challenges/${id}/submitForPeerReview`),
 
   },
   // --------------------------------
@@ -262,6 +253,22 @@ export const apiService = {
 
     // 🟣 Update or resubmit an existing submission
     update: (id, data) => api.put(`/submissions/${id}`, data),
+  },
+  // --------------------------------
+  // 🤖 AI Service
+  // --------------------------------
+  ai: {
+    generateChallengeForGoal: (goalId, options = {}) =>
+      api.post(`/ai/generate-challenge/${goalId}`, options),
+
+    generateChallengesBulk: (payload) =>
+      api.post('/ai/generate-challenges', payload),
+
+    explainConcept: (payload) =>
+      api.post('/ai/explain', payload),
+
+    getAIFeedback: (submission) =>
+      api.post('/ai/feedback', submission),
   },
 
   // Progress methods
@@ -333,9 +340,6 @@ export const apiService = {
     markAllAsRead: () => api.put('/notifications/read-all'),
   },
 };
-
-// Export utilities for external use
-export { getAccessToken, setAccessToken, clearTokens };
 
 // Export configured axios instance
 export default api;

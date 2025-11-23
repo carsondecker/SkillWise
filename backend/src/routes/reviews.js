@@ -11,19 +11,18 @@ const auth = require('../middleware/auth');
 
 // 🟢 Get review assignments for the logged-in user
 // Optional query params: ?limit=10&offset=0
-router.get('/assignments', auth, peerReviewController.getReviewAssignments);
+router.get('/my-submissions', auth, peerReviewController.getMySubmissions);
 
 // 🟡 Submit a new peer review
 // Expected body: { submissionId, rating, feedback }
-router.post('/', auth, peerReviewController.submitReview);
+router.post('/submissions/:id/review', auth, peerReviewController.submitReview);
 
-// 🔵 Get reviews received on user's own submissions
+// 🔵 Get reviews queues. Fetched all the submissions needing reviews
 // Optional query params: ?limit=10&offset=0
-router.get('/received', auth, peerReviewController.getReceivedReviews);
+router.get('/queue', auth, peerReviewController.getReviewQueue);
 
-// 🟣 Get review history (reviews written by the user)
-// Optional query params: ?limit=10&offset=0
-router.get('/history', auth, peerReviewController.getReviewHistory);
+// 🟣 Get review details by id
+router.get('/submissions/:id', auth, peerReviewController.getReviewDetails);
 
 module.exports = router;
 

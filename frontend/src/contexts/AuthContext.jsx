@@ -4,14 +4,14 @@ import React, {
   useReducer,
   useEffect,
   useState,
-  useCallback, // Added useCallback for stability
 } from 'react';
-// Assuming the import path for apiService, getAccessToken, etc. is correct
+
 import {
   apiService,
-  getAccessToken,
-  setAccessToken,
-  clearTokens,
+  setInMemoryAccessToken,
+  clearInMemoryAccessToken,
+  setInMemoryRefreshToken,
+  clearInMemoryRefreshToken,
 } from '../services/api';
 
 // ==========================
@@ -51,19 +51,13 @@ const authReducer = (state, action) => {
       };
 
     case AUTH_ACTIONS.LOGOUT:
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      };
+      return { ...initialState, isLoading: false };
 
     case AUTH_ACTIONS.UPDATE_USER:
       return { ...state, user: { ...state.user, ...action.payload } };
 
     case AUTH_ACTIONS.SET_ERROR:
-      return { ...state, error: action.payload, isLoading: false };
+      return { ...state, error: action.payload };
 
     case AUTH_ACTIONS.CLEAR_ERROR:
       return { ...state, error: null };
@@ -73,225 +67,209 @@ const authReducer = (state, action) => {
   }
 };
 
-// ==========================
-// 🔹 Context & Provider
-// ==========================
 const AuthContext = createContext(null);
 
+// ======================================================
+// 🔥 CONFIG
+// ======================================================
+const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const REFRESH_THRESHOLD = 4 * 60 * 1000; // Refresh if token is >4 minutes old
+
+// ==========================
+// 🔹 Provider
+// ==========================
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-  const [authVersion, setAuthVersion] = useState(0);
+  const [lastActivity, setLastActivity] = useState(Date.now());
 
-  // Memoize the access token check for stable dependency
-  const currentToken = getAccessToken();
-  const tokenIsPresent = !!currentToken;
-
-  // ===========================================
-  // 1️⃣ Initialize auth on app load
-  // ===========================================
+  // ======================================================
+  // 1️⃣ Track user activity (mouse, keyboard, clicks)
+  // ======================================================
   useEffect(() => {
-    const initializeAuth = async () => {
-      const token = currentToken;
-      console.log('🟢 [Auth Init] Starting initialization...');
-      console.log(
-        '📦 Stored Access Token:',
-        token ? 'Found ✅' : 'Not Found ❌'
-      );
+    const updateActivity = () => setLastActivity(Date.now());
 
-      // Immediately set loading to true (it's true by default, but good practice)
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('click', updateActivity);
+    window.addEventListener('scroll', updateActivity);
 
-      if (token) {
-        try {
-          const response = await apiService.user.getProfile();
-          dispatch({
-            type: AUTH_ACTIONS.LOGIN_SUCCESS,
-            payload: { user: response.data.user || response.data },
-          });
-        } catch (error) {
-          console.warn('⚠️ Invalid access token, trying refresh...');
-          try {
-            const refreshResponse = await apiService.auth.refresh();
-            const { accessToken } = refreshResponse.data;
-            if (accessToken) {
-              setAccessToken(accessToken);
-              const profileRes = await apiService.user.getProfile();
-              dispatch({
-                type: AUTH_ACTIONS.LOGIN_SUCCESS,
-                payload: { user: profileRes.data.user || profileRes.data },
-              });
-            } else {
-              clearTokens();
-              dispatch({ type: AUTH_ACTIONS.LOGOUT });
-            }
-          } catch {
-            clearTokens();
-            dispatch({ type: AUTH_ACTIONS.LOGOUT });
-          }
-        }
-      } else {
-        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      }
-
-      console.log('🔚 [Auth Init] Initialization complete');
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('click', updateActivity);
+      window.removeEventListener('scroll', updateActivity);
     };
-
-    initializeAuth();
-  }, []); // Empty dependency array: runs only on initial mount
-
-  useEffect(() => {
-    const token = getAccessToken();
-    if (token) {
-      console.log('🔁 Token detected after login — reinitializing profile...');
-      apiService.user
-        .getProfile()
-        .then((res) => {
-          dispatch({
-            type: AUTH_ACTIONS.LOGIN_SUCCESS,
-            payload: { user: res.data.user || res.data },
-          });
-          console.log(
-            '✅ User refreshed after login:',
-            res.data.user || res.data
-          );
-        })
-        .catch((err) => {
-          console.warn('⚠️ Token exists but profile fetch failed:', err);
-          clearTokens();
-          dispatch({ type: AUTH_ACTIONS.LOGOUT });
-        });
-    }
-  }, [getAccessToken()]);
-
-  // ===========================================
-  // 2️⃣ Global logout listener
-  // ===========================================
-  useEffect(() => {
-    const handleLogout = (event) => {
-      console.log('🚪 Global logout event:', event.detail?.reason);
-      dispatch({ type: AUTH_ACTIONS.LOGOUT });
-      setAuthVersion((v) => v + 1);
-    };
-
-    window.addEventListener('auth:logout', handleLogout);
-    return () => window.removeEventListener('auth:logout', handleLogout);
   }, []);
 
-  // ===========================================
+  // ======================================================
+  // 2️⃣ INITIAL LOAD — validate or refresh token
+  // ======================================================
+  useEffect(() => {
+    const initialize = async () => {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+
+      const publicPaths = ['/login', '/signup', '/forgot-password'];
+      const currentPath = window.location.pathname;
+
+      // Skip auth bootstrap on public pages to avoid redirect loops for new users
+      if (publicPaths.includes(currentPath)) {
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+        return;
+      }
+
+      try {
+        const profile = await apiService.user.getProfile();
+        setInMemoryAccessToken(null); // trust cookies for now
+        dispatch({
+          type: AUTH_ACTIONS.LOGIN_SUCCESS,
+          payload: { user: profile.data.user || profile.data },
+        });
+      } catch {
+        // Try refresh
+        try {
+          const refreshRes = await apiService.auth.refresh();
+          if (refreshRes?.data?.accessToken) {
+            setInMemoryAccessToken(refreshRes.data.accessToken);
+          }
+          if (refreshRes?.data?.refreshToken) {
+            setInMemoryRefreshToken(refreshRes.data.refreshToken);
+          }
+
+          // no token body expected; rely on cookies
+          const profile = await apiService.user.getProfile();
+          dispatch({
+            type: AUTH_ACTIONS.LOGIN_SUCCESS,
+            payload: { user: profile.data.user || profile.data },
+          });
+        } catch {
+          dispatch({ type: AUTH_ACTIONS.LOGOUT });
+        }
+      } finally {
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      }
+    };
+
+    initialize();
+  }, []);
+
+  // ======================================================
+  // 3️⃣ ACTIVITY-BASED AUTO REFRESH
+  // ======================================================
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!state.isAuthenticated) return;
+
+      const now = Date.now();
+      const sinceLastActivity = now - lastActivity;
+
+      // 🚪 Auto-logout after 10 min inactivity
+      if (sinceLastActivity > IDLE_TIMEOUT) {
+        console.log("⏳ User idle for too long → logging out.");
+        logout();
+        return;
+      }
+
+      // 🔄 Only refresh if user is active
+      if (sinceLastActivity < 2000) {
+        try {
+          const refreshRes = await apiService.auth.refresh();
+          if (refreshRes?.data?.accessToken) {
+            setInMemoryAccessToken(refreshRes.data.accessToken);
+          }
+          if (refreshRes?.data?.refreshToken) {
+            setInMemoryRefreshToken(refreshRes.data.refreshToken);
+          }
+          console.log("🔄 Token refreshed (active user)");
+        } catch (err) {
+          console.warn("⚠️ Refresh failed:", err);
+        }
+      }
+    }, REFRESH_THRESHOLD);
+
+    return () => clearInterval(interval);
+  }, [state.isAuthenticated, lastActivity]);
+
+  // ======================================================
   // 🔹 Auth Actions
-  // ===========================================
+  // ======================================================
   const login = async (credentials) => {
     dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
     try {
       const response = await apiService.auth.login(credentials);
-      const { user, tokens } = response.data;
-      const token = tokens?.accessToken;
-      if (token) setAccessToken(token);
-
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_SUCCESS,
-        payload: { user },
-      });
-      setAuthVersion((v) => v + 1); // Force re-run of token-watcher effect
-      return { success: true, user };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
-      return { success: false, error: message };
-    }
-  };
-
-  const register = async (userData) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
-    try {
-      const response = await apiService.auth.register(userData);
       const { user, accessToken } = response.data;
-      if (accessToken) setAccessToken(accessToken);
+
+      if (accessToken) setInMemoryAccessToken(accessToken);
+      if (response.data?.refreshToken) setInMemoryRefreshToken(response.data.refreshToken);
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: { user },
       });
-      setAuthVersion((v) => v + 1); // Force re-run of token-watcher effect
+
       return { success: true, user };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Registration failed';
+    } catch (err) {
+      const message = err.response?.data?.message || 'Login failed';
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
       return { success: false, error: message };
+    } finally {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
     }
   };
 
   const logout = async () => {
     try {
-      // Call API to clear cookies + revoke tokens
       await apiService.auth.logout();
-    } catch (error) {
-      console.error('Logout API failed:', error);
-    } finally {
-      // Full cleanup: localStorage, state, and force reload
-      clearTokens();
-      localStorage.clear(); // ensure all cached data is gone
-      dispatch({ type: AUTH_ACTIONS.LOGOUT });
-      console.log('🧹 User logged out completely.');
-
-      // Force app reload to guarantee fresh auth context
-      window.location.href = '/login';
+    } catch (err){
+      console.warn("⚠️ Logout request failed:", err);
     }
+    clearInMemoryAccessToken();
+    clearInMemoryRefreshToken();
+    dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    window.location.href = '/login';
   };
 
-  const updateProfile = async (profileData) => {
+  const register = async (data) => {
+    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
     try {
-      const response = await apiService.user.updateProfile(profileData);
+      const response = await apiService.auth.register(data);
+      const { accessToken } = response.data;
+
+      if (accessToken) setInMemoryAccessToken(accessToken);
+      if (response.data?.refreshToken) setInMemoryRefreshToken(response.data.refreshToken);
+
       dispatch({
-        type: AUTH_ACTIONS.UPDATE_USER,
-        payload: response.data,
+        type: AUTH_ACTIONS.LOGIN_SUCCESS,
+        payload: { user: response.data.user },
       });
-      return { success: true, user: response.data };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Profile update failed';
+      return { success: true };
+    } catch (err) {
+      const message = err.response?.data?.message || 'Registration failed';
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
       return { success: false, error: message };
+    } finally {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
     }
-  };
-
-  const clearError = () => dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
-  // ===========================================
-  // 🔹 Context Value
-  // ===========================================
-  const value = {
-    user: state.user,
-    isAuthenticated: state.isAuthenticated,
-    isLoading: state.isLoading,
-    error: state.error,
-
-    login,
-    register,
-    logout,
-    updateProfile,
-    clearError,
   };
 
   return (
-    <AuthContext.Provider key={authVersion} value={value}>
-      <React.Fragment key={state.user?.id || 'guest'}>
-        {children}
-      </React.Fragment>
+    <AuthContext.Provider
+      value={{
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+        isLoading: state.isLoading,
+        error: state.error,
+        login,
+        logout,
+        register,
+      }}
+    >
+      {children}
     </AuthContext.Provider>
   );
 };
 
 // ==========================
-// 🔹 Custom Hook
+// 🔹 Hook
 // ==========================
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
-};
-
-export default AuthContext;
+export const useAuth = () => useContext(AuthContext);

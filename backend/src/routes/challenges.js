@@ -50,5 +50,6 @@ router.delete(
 
 // 🟢 Mark a challenge as complete (User)
 router.patch('/:id/complete', auth, challengeController.markChallengeComplete);
+router.patch('/:id/submitForPeerReview', auth, challengeController.submitForPeerReview);
 
 module.exports = router;

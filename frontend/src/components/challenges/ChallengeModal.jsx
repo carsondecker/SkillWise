@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { validateChallenge, validateChallengeUpdate } from '../../validation/challengeValidation';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -8,6 +8,8 @@ import '../../styles/components/Challenge/ChallengeModal.scss';
 const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref) => {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [mode, setMode] = useState(goalId ? "select" : "manual");
+  const [aiCount, setAiCount] = useState(1); // default = 1
 
   const [form, setForm] = useState({
     title: '',
@@ -108,6 +110,31 @@ const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref)
       setSubmitting(false);
     }
   };
+  const handleAIGenerate = async (count = 1) => {
+    setMode("ai");
+    setSubmitting(true);
+
+    try {
+      const response = await apiService.ai.generateChallengeForGoal(goalId, { count });
+      const challenges = response.data.challenges;
+
+      // If backend returns array of challenges
+      challenges.forEach(ch => onCreatedOrUpdated(ch));
+
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("AI could not generate challenges.");
+      setMode("select");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const stepVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -15 }
+  };
 
   return (
     <div
@@ -122,184 +149,289 @@ const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref)
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.25 }}
       >
-        <h2>{form.id ? '✏️ Edit Challenge' : goalId ? '🧩 New Challenge for Goal' : '🆕 Create Challenge'}</h2>
+        {/* STEP 1: Mode Selection */}
+        <AnimatePresence mode="wait">
+          {mode === "ai-count" && (
+            <motion.div
+              key="ai-count"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="challenge-modal__count-step"
+            >
+              <h2>How many challenges do you want?</h2>
+              <p>You can generate up to <strong>3</strong> challenges at once.</p>
 
-        {/* ✅ existing form kept exactly the same */}
-        <form onSubmit={handleSubmit}>
-          {/* Title */}
-          <div className="form-group">
-            <label>Title</label>
-            <input
-              name="title"
-              value={form.title}
-              onChange={handleChange}
-              required
-            />
-          </div>
+              {/* 🔵 Beautiful number selection */}
+              <div className="ai-count-options">
+                {[1, 2, 3].map((num) => (
+                  <motion.button
+                    key={num}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setAiCount(num)}
+                    className={`ai-count-pill ${aiCount === num ? "selected" : ""}`}
+                  >
+                    {num}
+                  </motion.button>
+                ))}
+              </div>
 
-          {/* Description */}
-          <div className="form-group">
-            <label>Description</label>
-            <textarea
-              name="description"
-              rows="3"
-              value={form.description}
-              onChange={handleChange}
-              required
-            />
-          </div>
+              {/* Buttons — same layout but cleaner spacing */}
+              <div className="modal-actions ai-count-actions">
+                <button className="btn-secondary" onClick={() => setMode("select")}>
+                  Back
+                </button>
 
-          {/* Instructions */}
-          <div className="form-group">
-            <label>Instructions</label>
-            <textarea
-              name="instructions"
-              rows="2"
-              value={form.instructions}
-              onChange={handleChange}
-            />
-          </div>
+                <button className="btn-primary" onClick={() => handleAIGenerate(aiCount)}>
+                  Generate {aiCount > 1 ? `${aiCount} Challenges` : "Challenge"}
+                </button>
+              </div>
 
-          {/* Category + Difficulty */}
-          <div className="form-row">
+            </motion.div>
+          )}
+          {mode === "select" && (
+            <motion.div
+              key="select-step"
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ duration: 0.25, ease: "linear" }}
+              className="challenge-modal__select-container"
+            >
+              <h2>How do you want to create your challenge?</h2>
+
+              <div className="challenge-modal__select-buttons">
+                <button
+                  className="challenge-modal__btn-manual"
+                  onClick={() => setMode("manual")}
+                >
+                  ✍️ Create Manually
+                </button>
+
+                <button
+                  className="challenge-modal__btn-ai"
+                  onClick={() => setMode("ai-count")}
+                  disabled={submitting}
+                >
+                  🤖 Generate with AI
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {mode === "manual" && (
+            <motion.div
+              key="manual-step"
+              variants={stepVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ duration: 0.25, ease: 'linear' }}
+            >
+
+          <h2>{form.id ? '✏️ Edit Challenge' : goalId ? '🧩 New Challenge for Goal' : '🆕 Create Challenge'}</h2>
+
+          {/* ✅ existing form kept exactly the same */}
+          <form onSubmit={handleSubmit}>
+            {/* Title */}
             <div className="form-group">
-              <label>Category</label>
-              <select
-                name="category"
-                value={form.category}
+              <label>Title</label>
+              <input
+                name="title"
+                value={form.title}
                 onChange={handleChange}
                 required
-              >
-                <option value="">Select Category</option>
-                <option value="programming">Programming</option>
-                <option value="design">Design</option>
-                <option value="backend">Backend</option>
-                <option value="data-science">Data Science</option>
-                <option value="business">Business</option>
-              </select>
+              />
             </div>
 
+            {/* Description */}
             <div className="form-group">
-              <label>Difficulty</label>
-              <select
-                name="difficulty_level"
-                value={form.difficulty_level}
+              <label>Description</label>
+              <textarea
+                name="description"
+                rows="3"
+                value={form.description}
                 onChange={handleChange}
-              >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
+                required
+              />
             </div>
-          </div>
 
-          {/* Points + Time */}
-          <div className="form-row">
+            {/* Instructions */}
             <div className="form-group">
-              <label>Points Reward</label>
-              <input
-                type="number"
-                name="points_reward"
-                value={form.points_reward}
+              <label>Instructions</label>
+              <textarea
+                name="instructions"
+                rows="2"
+                value={form.instructions}
                 onChange={handleChange}
               />
             </div>
 
+            {/* Category + Difficulty */}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Category</label>
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Category</option>
+                  <option value="programming">Programming</option>
+                  <option value="design">Design</option>
+                  <option value="backend">Backend</option>
+                  <option value="data-science">Data Science</option>
+                  <option value="business">Business</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Difficulty</label>
+                <select
+                  name="difficulty_level"
+                  value={form.difficulty_level}
+                  onChange={handleChange}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Points + Time */}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Points Reward</label>
+                <input
+                  type="number"
+                  name="points_reward"
+                  value={form.points_reward}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Estimated Time (min)</label>
+                <input
+                  type="number"
+                  name="estimated_time_minutes"
+                  value={form.estimated_time_minutes}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            {/* Attempts + Peer Review */}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Max Attempts</label>
+                <input
+                  type="number"
+                  name="max_attempts"
+                  value={form.max_attempts}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Requires Peer Review?</label>
+                <select
+                  name="requires_peer_review"
+                  value={form.requires_peer_review ? 'true' : 'false'}
+                  onChange={(e) =>
+                    handleBoolChange('requires_peer_review', e.target.value)
+                  }
+                >
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Active + Prerequisites */}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Active Status</label>
+                <select
+                  name="is_active"
+                  value={form.is_active ? 'true' : 'false'}
+                  onChange={(e) => handleBoolChange('is_active', e.target.value)}
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Prerequisites (comma-separated)</label>
+                <input
+                  name="prerequisites"
+                  value={form.prerequisites}
+                  onChange={handleChange}
+                  placeholder="e.g., HTML Basics, JS Arrays"
+                />
+              </div>
+            </div>
+
+            {/* Tags */}
             <div className="form-group">
-              <label>Estimated Time (min)</label>
+              <label>Tags (comma-separated)</label>
+              <input name="tags" value={form.tags} onChange={handleChange} />
+            </div>
+
+            {/* Learning Objectives */}
+            <div className="form-group">
+              <label>Learning Objectives (comma-separated)</label>
               <input
-                type="number"
-                name="estimated_time_minutes"
-                value={form.estimated_time_minutes}
+                name="learning_objectives"
+                value={form.learning_objectives}
                 onChange={handleChange}
               />
             </div>
-          </div>
 
-          {/* Attempts + Peer Review */}
-          <div className="form-row">
-            <div className="form-group">
-              <label>Max Attempts</label>
-              <input
-                type="number"
-                name="max_attempts"
-                value={form.max_attempts}
-                onChange={handleChange}
-              />
+            {/* Buttons */}
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
+              <button id="challengeModalSubmission" type="submit" className="btn-primary" disabled={submitting}>
+                {submitting
+                  ? 'Saving...'
+                  : form.id
+                    ? 'Save Changes'
+                    : goalId
+                      ? 'Create Under Goal'
+                      : 'Create Challenge'}
+              </button>
             </div>
+          </form>
+            </motion.div>
+        )}
+        </AnimatePresence>
 
-            <div className="form-group">
-              <label>Requires Peer Review?</label>
-              <select
-                name="requires_peer_review"
-                value={form.requires_peer_review ? 'true' : 'false'}
-                onChange={(e) =>
-                  handleBoolChange('requires_peer_review', e.target.value)
-                }
-              >
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Active + Prerequisites */}
-          <div className="form-row">
-            <div className="form-group">
-              <label>Active Status</label>
-              <select
-                name="is_active"
-                value={form.is_active ? 'true' : 'false'}
-                onChange={(e) => handleBoolChange('is_active', e.target.value)}
-              >
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Prerequisites (comma-separated)</label>
-              <input
-                name="prerequisites"
-                value={form.prerequisites}
-                onChange={handleChange}
-                placeholder="e.g., HTML Basics, JS Arrays"
-              />
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="form-group">
-            <label>Tags (comma-separated)</label>
-            <input name="tags" value={form.tags} onChange={handleChange} />
-          </div>
-
-          {/* Learning Objectives */}
-          <div className="form-group">
-            <label>Learning Objectives (comma-separated)</label>
-            <input
-              name="learning_objectives"
-              value={form.learning_objectives}
-              onChange={handleChange}
-            />
-          </div>
-
-          {/* Buttons */}
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary" disabled={submitting}>
-              {submitting
-                ? 'Saving...'
-                : form.id
-                  ? 'Save Changes'
-                  : goalId
-                    ? 'Create Under Goal'
-                    : 'Create Challenge'}
-            </button>
-          </div>
-        </form>
+        {/* STEP 2B: AI Mode (simple loading state) */}
+        <AnimatePresence mode="wait">
+          {mode === "ai" && (
+            <motion.div
+              key="ai-step"
+              variants={stepVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="challenge-modal__ai-loading"
+            >
+              <h2>Generating Challenge with AI...</h2>
+              <p>Please wait a moment.</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

@@ -29,22 +29,6 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
     setFlipped((prev) => !prev);
   };
 
-  // 🧮 Compute dynamic progress
-  const computedProgress = useMemo(() => {
-    if (!target_date || !created_at) return progress_percentage || 0;
-    const start = new Date(created_at);
-    const end = new Date(target_date);
-    const now = new Date();
-
-    if (now <= start) return 0;
-    if (now >= end) return 100;
-
-    const totalDuration = end - start;
-    const elapsed = now - start;
-    const percent = Math.min((elapsed / totalDuration) * 100, 100);
-    return Math.round(percent);
-  }, [target_date, created_at, progress_percentage]);
-
   // 🗑️ Handle delete goal
   const handleDelete = async () => {
     if (is_completed) {
@@ -90,7 +74,8 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
           {/* FRONT SIDE */}
           <div className="goal-card-front">
             <div className="goal-header">
-              <h3>{title || 'Goal Title'}</h3>
+              <h3>{title || 'Goal Title'}<hr/></h3>
+
               <span
                 className={`goal-difficulty ${
                   difficulty_level?.toLowerCase() || 'medium'

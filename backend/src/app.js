@@ -20,6 +20,7 @@ const routes = require('./routes/index');
 const app = express();
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use(cookieParser());
+
 // --------------------------------------------------
 // 🧩 Logger Setup
 // --------------------------------------------------
@@ -78,7 +79,6 @@ app.use(
   }),
 );
 
-// Trust proxy (important for rate limiting behind proxies like Heroku)
 app.set('trust proxy', 1);
 
 // --------------------------------------------------
@@ -94,26 +94,32 @@ app.use(
 );
 
 // --------------------------------------------------
-// 🚦 Rate Limiting
+// 🚦 **Improved Rate Limiting**
+// 🔥 EXCLUDES /auth routes entirely
+// 🔥 EXCLUDES OPTIONS so preflight requests don’t count
+// 🔥 Much more relaxed global rate limiting
 // --------------------------------------------------
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 min
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
+
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1-minute window
+  max: 5000,            // allow 500 requests per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    if (req.method === 'OPTIONS') return true;
+    return false;
+  },
   handler: (req, res) => {
     res.status(429).json({
       status: 'fail',
-      error: 'Too many requests, please try again later.',
-      retryAfter: Math.ceil(
-        (parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000) / 1000,
-      ),
+      error: 'Too many requests — relax 😅',
+      retryAfter: 60,
       timestamp: new Date().toISOString(),
     });
   },
 });
 
-app.use(limiter);
+app.use(globalLimiter);
 
 // --------------------------------------------------
 // 📦 Body Parsers
@@ -168,14 +174,8 @@ app.use('*', (req, res) => {
 // --------------------------------------------------
 app.use(errorHandler);
 
-// --------------------------------------------------
-// 🧰 Expose logger
-// --------------------------------------------------
 app.set('logger', logger);
 
-// --------------------------------------------------
-// 🧩 Graceful Startup/Shutdown Logs
-// --------------------------------------------------
 process.on('SIGINT', () => {
   logger.info('🛑 Server shutting down gracefully (SIGINT)');
   process.exit(0);

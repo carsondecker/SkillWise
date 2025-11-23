@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { apiService } from '../services/api';
+import Lottie from 'lottie-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import ballon_pop_confettie from '../assets/animations/ballon_pop_confettie.json'; // 👈 You’ll add this file
 import { useAuth } from '../hooks/useAuth';
 import { validateSubmission } from '../validation/submissionValidation';
 import '../styles/ChallengeSubmissionPage.scss';
@@ -27,6 +29,7 @@ const ChallengeSubmissionPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submissionText, setSubmissionText] = useState('');
   const [file, setFile] = useState(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // 🔹 Fetch challenge details + past submissions
   useEffect(() => {
@@ -144,6 +147,24 @@ const ChallengeSubmissionPage = () => {
       setSubmitting(false);
     }
   };
+  const handleSubmitForPeerReview = async () => {
+    if (!window.confirm("Submit this challenge for peer review?")) return;
+
+    try {
+      const res = await apiService.challenges.submitForPeerReview(id);
+
+      alert("🔍 Challenge submitted for peer review!");
+
+      setChallenge((prev) => ({
+        ...prev,
+        status: res.data.challenge.status || "in_peer_review",
+      }));
+    } catch (err) {
+      console.error("❌ Failed to submit for peer review", err);
+      const msg = err.response?.data?.message || "Something went wrong.";
+      alert(`⚠️ ${msg}`);
+    }
+  };
   const handleMarkAsComplete = async () => {
     if (!window.confirm('Mark this challenge as complete?')) return;
 
@@ -155,6 +176,13 @@ const ChallengeSubmissionPage = () => {
         ...prev,
         status: res.data.challenge.status || 'completed',
       }));
+      // 🎉 Trigger celebration animation
+      setShowCelebration(true);
+
+      // Auto-hide animation after 3.5s (or how long lottie runs)
+      setTimeout(() => {
+        setShowCelebration(false);
+      }, 3000);
     } catch (err) {
       console.error('❌ Failed to mark challenge as complete:', err);
       const msg =
@@ -163,6 +191,8 @@ const ChallengeSubmissionPage = () => {
       alert(`⚠️ ${msg}`);
     }
   };
+  const isCompleted = challenge?.status === "completed";
+  const isInPeerReview = challenge?.status === "in_peer_review";
 
   if (loading) return <LoadingSpinner message="Loading challenge..." />;
 
@@ -188,6 +218,18 @@ const ChallengeSubmissionPage = () => {
       animate="visible"
       variants={fadeIn}
     >
+      {showCelebration && (
+        <div className="celebration-overlay">
+          <Lottie
+            animationData={ballon_pop_confettie}
+            loop={false}
+            autoplay={true}
+            background="transparent"
+            speed={2}
+            style={{ width: '100%', height: '100%' }}
+          />
+        </div>
+      )}
       {/* Header */}
       <motion.div className="challenge-header" variants={fadeIn}>
         <motion.div
@@ -212,6 +254,11 @@ const ChallengeSubmissionPage = () => {
             <span>🏆 {challenge.points_reward} pts</span>
             {challenge.estimated_time_minutes && (
               <span>⏱️ {challenge.estimated_time_minutes} min</span>
+            )}
+            {challenge.requires_peer_review && (
+              <span className="badge peer-review">
+                🔍 Requires Peer Review
+              </span>
             )}
 
             {/* 🧮 Attempts Left */}
@@ -255,9 +302,14 @@ const ChallengeSubmissionPage = () => {
       </motion.section>
 
       {/* Submission Form */}
-      <motion.section className="submission-section" variants={fadeIn}>
+      <motion.section className={`submission-section ${isCompleted ? 'locked' : ''}`} variants={fadeIn}>
         <h2>✏️ Submit Your Solution</h2>
-        <form onSubmit={handleSubmit} encType="multipart/form-data">
+        {isCompleted ? (
+          <p className="completed-text">🎉 This challenge is completed! No more submissions can be made.</p>
+        ) : isInPeerReview ? (
+          <p className="peer-review-text">🔍 This challenge is currently under peer review. You cannot submit new work at this time.</p>
+        ) : (
+          <form onSubmit={handleSubmit} encType="multipart/form-data">
           {/* Textarea */}
           <motion.textarea
             rows="10"
@@ -310,26 +362,42 @@ const ChallengeSubmissionPage = () => {
             </motion.button>
           </div>
         </form>
+        )}
       </motion.section>
 
       {/* Submissions History */}
       <motion.section className="submissions-history" variants={fadeIn}>
         <h2>📜 Past Submissions</h2>
-        {submissions.length > 0 && (
-          <motion.div
-            className="mark-complete-container"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <motion.button
-              className="btn-success"
-              onClick={handleMarkAsComplete}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              ✅ Mark Challenge as Complete
-            </motion.button>
-          </motion.div>
+        {/* If challenge requires peer review */}
+        {challenge.requires_peer_review ? (
+          submissions.length > 0 &&
+          challenge.status !== "submitted_for_peer_review" && (
+            <motion.div className="mark-complete-container">
+              <motion.button
+                className="btn-primary"
+                onClick={handleSubmitForPeerReview}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                🔍 Submit for Peer Review
+              </motion.button>
+            </motion.div>
+          )
+        ) : (
+          /* Normal completion flow */
+          !isCompleted && !isInPeerReview &&
+          submissions.length > 0 && (
+            <motion.div className="mark-complete-container">
+              <motion.button
+                className="btn-success"
+                onClick={handleMarkAsComplete}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                ✅ Mark Challenge as Complete
+              </motion.button>
+            </motion.div>
+          )
         )}
 
         {submissions.length > 0 ? (

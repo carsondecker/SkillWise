@@ -15,12 +15,15 @@ const ChallengeCard = ({ challenge, onEdit }) => {
     points_reward,
     estimated_time_minutes,
     category,
+    status,
   } = challenge;
+  const isCompleted = status === "completed";
+  const isInPeerReview = status === "in_peer_review";
 
   return (
     <motion.div
-      className="challenge-card"
-      whileHover={{ y: -6, scale: 1.02 }}
+      className={`challenge-card ${isCompleted ? "completed" : ""}`}
+      whileHover={!isCompleted ? { y: -6, scale: 1.02 } : {}}
       transition={{ duration: 0.25 }}
     >
       {/* Header */}
@@ -29,6 +32,13 @@ const ChallengeCard = ({ challenge, onEdit }) => {
         <span className={`difficulty-badge ${difficulty_level?.toLowerCase()}`}>
           {difficulty_level}
         </span>
+
+        {isCompleted && (
+          <span className="completed-tag">✓ Completed</span>
+        )}
+        {isInPeerReview && (
+          <span className="in-peer-review-tag">⏳ In Peer Review</span>
+        )}
       </div>
 
       {/* Meta info */}
@@ -45,16 +55,18 @@ const ChallengeCard = ({ challenge, onEdit }) => {
       {/* Footer actions */}
       <div className="challenge-footer">
         <motion.button
-          className="btn-primary"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate(`/challenges/${challenge.id}/submit`)}
+          className={`btn-primary ${isCompleted ? "disabled" : isInPeerReview ? "in-peer-review" : ""}`}
+          disabled={isCompleted}
+          whileHover={!isCompleted ? { scale: 1.05 } : {}}
+          whileTap={!isCompleted ? { scale: 0.95 } : {}}
+          onClick={() =>
+            !isCompleted && navigate(`/challenges/${challenge.id}/submit`)
+          }
         >
-          Start Challenge
+          {isCompleted ? "🔒 Completed" : isInPeerReview ? " Challenge in Peer Review" : "Start Challenge"}
         </motion.button>
 
-        {/* Admin-only Edit button */}
-        {user?.role === 'admin' && (
+        {user?.role === "admin" && (
           <motion.button
             className="btn-secondary"
             whileHover={{ scale: 1.05 }}
