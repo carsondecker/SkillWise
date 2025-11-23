@@ -1,9 +1,18 @@
 // services/aiService.js
 
 const OpenAI = require('openai');
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+
+const client = () => {
+  if (!process.env.OPENAI_API_KEY) {
+    // When running tests or if AI disabled
+    return null;
+  }
+
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+};
+
 const { aiGeneratedChallengeSchema } = require('../middleware/validation').schemas;
 
 // Utility to parse OpenAI responses safely
