@@ -2,35 +2,6 @@
 -- Migration 012: Establish Goal → Challenge → Progress Hierarchy (Fixed)
 -- ===========================================
 
--- ✅ Add goal_id and ai_generated to challenges (if missing)
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'challenges' AND column_name = 'goal_id'
-  ) THEN
-ALTER TABLE challenges
-    ADD COLUMN goal_id INTEGER REFERENCES goals(id) ON DELETE CASCADE;
-END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'challenges' AND column_name = 'ai_generated'
-  ) THEN
-ALTER TABLE challenges
-    ADD COLUMN ai_generated BOOLEAN DEFAULT false;
-END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'challenges' AND column_name = 'status'
-  ) THEN
-ALTER TABLE challenges
-    ADD COLUMN status VARCHAR(20)
-        DEFAULT 'pending'
-        CHECK (status IN ('pending','in_progress','in_peer_review','completed','failed'));
-END IF;
-END $$;
 
 
 -- ✅ Create user_progress table (idempotent)
