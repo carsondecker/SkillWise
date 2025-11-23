@@ -72,7 +72,7 @@ END $$;
 -- ⚙️ Progress Sync Logic
 -- ===========================================
 
--- ✅ Function: Recalculate goal progress
+-- 1️⃣ Define main progress calculation function
 CREATE OR REPLACE FUNCTION sync_goal_progress(p_goal_id INT, p_user_id INT)
 RETURNS VOID AS $$
 DECLARE
@@ -89,21 +89,20 @@ FROM challenges
 WHERE goal_id = p_goal_id AND created_by = p_user_id AND status = 'completed';
 
 IF total_ch > 0 THEN
-      percent := ROUND((completed_ch::DECIMAL / total_ch::DECIMAL) * 100);
+    percent := ROUND((completed_ch::DECIMAL / total_ch::DECIMAL) * 100);
 ELSE
-      percent := 0;
+    percent := 0;
 END IF;
 
 INSERT INTO user_progress (user_id, goal_id, total_challenges, completed_challenges, progress_percent)
 VALUES (p_user_id, p_goal_id, total_ch, completed_ch, percent)
     ON CONFLICT (user_id, goal_id)
-    DO UPDATE SET
+  DO UPDATE SET
     total_challenges = EXCLUDED.total_challenges,
-               completed_challenges = EXCLUDED.completed_challenges,
-               progress_percent = EXCLUDED.progress_percent,
-               updated_at = CURRENT_TIMESTAMP;
+             completed_challenges = EXCLUDED.completed_challenges,
+             progress_percent = EXCLUDED.progress_percent,
+             updated_at = CURRENT_TIMESTAMP;
 
--- 🔥 ONLY update progress, DO NOT touch is_completed or completion_date
 UPDATE goals
 SET progress_percentage = percent,
     updated_at = NOW()
@@ -112,7 +111,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- ✅ Create trigger wrapper function (this is what the trigger calls)
+-- 2️⃣ Create trigger wrapper BEFORE creating triggers
 CREATE OR REPLACE FUNCTION trigger_sync_goal_progress_fn()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -122,7 +121,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- ✅ Create trigger safely
+-- 3️⃣ Now create triggers safely
 DO $$
 BEGIN
   IF NOT EXISTS (
