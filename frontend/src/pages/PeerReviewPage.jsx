@@ -887,7 +887,8 @@ const PeerReviewPage = () => {
                       </div>
                     )}
 
-                    {!peerReviewCache[submission.id] && (
+                    {/* Show the load button only if there are peer reviews to load */}
+                    {!peerReviewCache[submission.id] && (submission.peerReviewsReceived || submission.peer_reviews_count) > 0 && (
                       <button
                         className="btn-secondary"
                         onClick={async () => {
