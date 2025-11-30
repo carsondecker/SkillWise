@@ -376,6 +376,8 @@ export const apiService = {
       }),
     // Detailed review endpoints are not implemented server-side; keep a simple getter if needed
     getReviewDetails: (reviewId) => api.get(`/reviews/${reviewId}`),
+    // Get reviews for a specific submission (most recent first)
+    getForSubmission: (submissionId) => api.get(`/reviews/submission/${submissionId}`),
   },
 
   // Notifications methods

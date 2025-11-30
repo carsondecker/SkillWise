@@ -219,7 +219,7 @@ const peerReviewService = {
   getPendingReviews: async (userId) => {
     try {
       const query = `
-        SELECT pr.*, substring(s.submission_text from 1 for 200) AS submission_preview, u.first_name AS reviewee_name
+        SELECT pr.*, substring(s.submission_text from 1 for 200) AS submission_preview, u.first_name AS reviewee_name, s.challenge_id AS challenge_id
         FROM peer_reviews pr
         LEFT JOIN submissions s ON pr.submission_id = s.id
         LEFT JOIN users u ON pr.reviewee_id = u.id
@@ -291,6 +291,9 @@ const peerReviewService = {
           s.id AS submission_id,
           s.user_id AS reviewee_id,
           substring(s.submission_text from 1 for 200) AS submission_preview,
+          c.id AS challenge_id,
+          c.title AS challenge_title,
+          c.goal_id AS goal_id,
           u.first_name AS reviewee_name,
           s.created_at AS submitted_at,
           (SELECT COUNT(*) FROM peer_reviews pr WHERE pr.submission_id = s.id)::int AS peer_reviews_count,
@@ -298,6 +301,7 @@ const peerReviewService = {
           s.status
         FROM submissions s
         LEFT JOIN users u ON s.user_id = u.id
+        LEFT JOIN challenges c ON s.challenge_id = c.id
         WHERE s.user_id != $1
           AND NOT EXISTS (
             SELECT 1 FROM peer_reviews pr WHERE pr.submission_id = s.id AND pr.reviewer_id = $1

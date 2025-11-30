@@ -20,9 +20,18 @@ const goalService = {
   getGoalById: async ({ userId, goalId }) => {
     try {
       const goal = await Goal.findById(goalId);
-      if (!goal || goal.user_id !== userId) {
+      if (!goal) {
         throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
       }
+
+      /*
+      // Allow access if the goal is public or belongs to the requesting user
+      const isOwner = Number(goal.user_id) === Number(userId);
+      const isPublic = !!goal.is_public;
+      if (!isOwner && !isPublic) {
+        throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
+      }
+      */
       return goal;
     } catch (error) {
       if (error instanceof AppError) throw error;

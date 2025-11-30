@@ -134,7 +134,7 @@ const submissionService = {
     try {
       const result = await db.query(
         `
-         SELECT s.*, u.first_name, u.last_name, c.title AS challenge_title,
+         SELECT s.*, u.first_name, u.last_name, c.id AS challenge_id, c.title AS challenge_title, c.goal_id AS goal_id,
            (SELECT COUNT(*) FROM peer_reviews pr WHERE pr.submission_id = s.id) AS peer_reviews_count,
            (SELECT COUNT(*) FROM ai_feedback af WHERE af.submission_id = s.id) AS ai_feedback_count,
            (SELECT af.feedback_text FROM ai_feedback af WHERE af.submission_id = s.id ORDER BY af.created_at DESC LIMIT 1) AS latest_ai_feedback
@@ -161,7 +161,7 @@ const submissionService = {
     try {
       const result = await db.query(
         `
-         SELECT s.*, c.title AS challenge_title,
+         SELECT s.*, c.id AS challenge_id, c.title AS challenge_title, c.goal_id AS goal_id,
            (SELECT COUNT(*) FROM peer_reviews pr WHERE pr.submission_id = s.id) AS peer_reviews_count,
            (SELECT COUNT(*) FROM ai_feedback af WHERE af.submission_id = s.id) AS ai_feedback_count,
            (SELECT af.feedback_text FROM ai_feedback af WHERE af.submission_id = s.id ORDER BY af.created_at DESC LIMIT 1) AS latest_ai_feedback

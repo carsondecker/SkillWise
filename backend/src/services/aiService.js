@@ -173,6 +173,7 @@ Return ONLY a single JSON object matching the schema exactly. Use realistic, con
   Return a single JSON object with these fields (types and constraints):
   - feedback: string (a rich, multi-paragraph summary of the submission's overall quality, strengths, and key issues; prefer 200-1200 characters)
   - score: integer between 0 and 100
+  - rating_1_to_5: integer between 1 and 5 representing the AI's assessment on the same 1-5 scale used by peer reviewers
   - suggestions: array of short actionable suggestions (strings). Provide 3-7 items where appropriate.
   - strengths: array of concise strengths (strings). Provide 1-6 items.
   - improvements: array of concise improvement items (strings). Provide 1-6 items.
@@ -187,7 +188,7 @@ Return ONLY a single JSON object matching the schema exactly. Use realistic, con
   - Do NOT include any fields outside the schema above.
   `;
 
-    const userMsg = `Evaluate the following submission thoroughly. Provide clear, actionable, and balanced feedback. Use the schema exactly as described in the system prompt.\n\nSubmission:\n${submissionText || ''}\n\nProvide the JSON object only.`;
+    const userMsg = `Evaluate the following submission thoroughly. Provide clear, actionable, and balanced feedback. Use the schema exactly as described in the system prompt. IMPORTANT: peer review scores use a 1-5 integer scale; include a field named 'rating_1_to_5' (integer 1-5) in your JSON output in addition to any 0-100 score.\n\nSubmission:\n${submissionText || ''}\n\nProvide the JSON object only.`;
 
     let aiText;
     try {
@@ -218,6 +219,7 @@ Return ONLY a single JSON object matching the schema exactly. Use realistic, con
     const evalSchema = z.object({
       feedback: z.string().min(1).optional(),
       score: z.number().int().min(0).max(100).optional(),
+      rating_1_to_5: z.number().int().min(1).max(5).optional(),
       suggestions: z.array(z.string()).optional(),
       strengths: z.array(z.string()).optional(),
       improvements: z.array(z.string()).optional(),
@@ -246,6 +248,7 @@ Return ONLY a single JSON object matching the schema exactly. Use realistic, con
     return {
       feedback: out.feedback || '',
       score: typeof out.score === 'number' ? out.score : 0,
+      rating_1_to_5: typeof out.rating_1_to_5 === 'number' ? out.rating_1_to_5 : undefined,
       suggestions: out.suggestions || [],
       strengths: out.strengths || [],
       improvements: out.improvements || [],

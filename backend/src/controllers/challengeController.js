@@ -25,6 +25,9 @@ const challengeController = {
   getChallengeById: asyncHandler(async (req, res, next) => {
     try {
       const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid challenge id' });
+      }
       const challenge = await challengeService.getChallengeById(id);
       if (!challenge)
         throw new AppError('Challenge not found', 404, 'NOT_FOUND');
@@ -65,7 +68,7 @@ const challengeController = {
     const goal = await goalService.getGoalById({ userId, goalId: goalIdParam });
     console.log('🧩 Goal fetched from DB:', goal);
 
-    if (!goal || goal.user_id !== userId) {
+    if (!goal || Number(goal.user_id) !== Number(userId)) {
       throw new AppError('Unauthorized: goal not found or not yours', 403);
     }
 
@@ -155,7 +158,7 @@ const challengeController = {
         userId,
         goalId: challenge.goal_id,
       });
-      if (!goal || goal.user_id !== userId) {
+      if (!goal || Number(goal.user_id) !== Number(userId)) {
         throw new AppError('Unauthorized: this challenge is not part of your goal', 403);
       }
     }

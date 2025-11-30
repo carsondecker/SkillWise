@@ -5,7 +5,7 @@ const { asyncHandler } = require('../utils/helpers');
 
 // ✅ Validation Schemas
 const submitReviewSchema = z.object({
-  submissionId: z.string().uuid(),
+  submissionId: z.coerce.number().int().positive(),
   rating: z.number().int().min(1).max(5),
   feedback: z.string().max(2000).optional(),
 });
@@ -97,6 +97,17 @@ const peerReviewController = {
     });
 
     res.json({ history });
+  }),
+
+  // -------------------------
+  // Get reviews for a specific submission
+  // -------------------------
+  getReviewsForSubmission: asyncHandler(async (req, res) => {
+    const submissionId = parseInt(req.params.id, 10);
+    if (Number.isNaN(submissionId)) return res.status(400).json({ message: 'Invalid submission id' });
+
+    const reviews = await peerReviewService.getReviewsForSubmission(submissionId);
+    res.json({ reviews });
   }),
 };
 

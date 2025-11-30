@@ -37,7 +37,7 @@ class Challenge {
   static async findById (id) {
     const query = `
       SELECT id, title, description, instructions, category, difficulty_level, points_reward,max_attempts,
-             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at, status
+             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at, status, goal_id
       FROM challenges
       WHERE id = $1
     `;
