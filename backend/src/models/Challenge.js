@@ -86,14 +86,16 @@ class Challenge {
       status = 'pending',
     } = data;
 
+    // Avoid explicitly writing DB-managed timestamp columns here so
+    // the code won't fail if the migrations haven't been applied yet.
     const query = `
       INSERT INTO challenges (
         title, description, instructions, category, difficulty_level,
         points_reward, estimated_time_minutes, requires_peer_review, max_attempts,
         is_active, created_by, tags, learning_objectives, prerequisites,
-        goal_id, ai_generated, status, created_at, updated_at
+        goal_id, ai_generated, status
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW(),NOW())
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
         RETURNING *
     `;
 
@@ -163,6 +165,8 @@ class Challenge {
       status,
     } = data;
 
+    // Do not set `updated_at` here to avoid failing when the DB column is missing.
+    // The database trigger (when present) can still manage timestamps.
     const query = `
       UPDATE challenges
       SET
@@ -179,8 +183,7 @@ class Challenge {
         learning_objectives = COALESCE($12, learning_objectives),
         prerequisites = COALESCE($13, prerequisites),
         max_attempts = COALESCE($14, max_attempts),
-        status = COALESCE($15, status),
-        updated_at = NOW()
+        status = COALESCE($15, status)
       WHERE id = $1
         RETURNING *
     `;

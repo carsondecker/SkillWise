@@ -2,6 +2,7 @@ const challengeService = require('../services/challengeService');
 const { asyncHandler } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 const goalService = require('../services/goalService');
+const progressService = require('../services/progressService');
 
 const challengeController = {
   // 🟢 Get all challenges
@@ -168,6 +169,18 @@ const challengeController = {
       id: challengeId,
       data: { status: 'completed' },
     });
+
+    // Track the completion event so progress_events are recorded and points awarded
+    try {
+      const points = Number(updated.points_reward) || 10;
+      await progressService.trackEvent(userId, 'challenge_completed', {
+        challenge_id: challengeId,
+        points_earned: points,
+      });
+    } catch (e) {
+      // Do not block response on tracking failure — log and continue
+      console.error('Failed to track challenge completion event:', e);
+    }
 
     res.status(200).json({
       message: 'Challenge marked as complete',

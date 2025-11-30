@@ -27,6 +27,7 @@ const ChallengeSubmissionPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submissionText, setSubmissionText] = useState('');
   const [file, setFile] = useState(null);
+  const [markingComplete, setMarkingComplete] = useState(false);
 
   // 🔹 Fetch challenge details + past submissions
   useEffect(() => {
@@ -147,20 +148,24 @@ const ChallengeSubmissionPage = () => {
   const handleMarkAsComplete = async () => {
     if (!window.confirm('Mark this challenge as complete?')) return;
 
+    // prevent duplicate clicks while request is in-flight
+    setMarkingComplete(true);
     try {
       const res = await apiService.challenges.markAsComplete(id);
       alert('✅ Challenge marked as complete!');
       // Update the challenge in state
       setChallenge((prev) => ({
         ...prev,
-        status: res.data.challenge.status || 'completed',
+        status: res.data.challenge?.status || 'completed',
       }));
     } catch (err) {
       console.error('❌ Failed to mark challenge as complete:', err);
-      const msg =
-        err.response?.data?.message ||
-        'Something went wrong while marking complete.';
-      alert(`⚠️ ${msg}`);
+      // Show a simple, non-technical message to the user. Full error is logged.
+      alert(
+        '⚠️ Failed to mark challenge as complete. Please try again. If this problem continues, contact support or check the server logs.'
+      );
+    } finally {
+      setMarkingComplete(false);
     }
   };
 
@@ -324,10 +329,11 @@ const ChallengeSubmissionPage = () => {
             <motion.button
               className="btn-success"
               onClick={handleMarkAsComplete}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: markingComplete ? 1 : 1.05 }}
+              whileTap={{ scale: markingComplete ? 1 : 0.95 }}
+              disabled={markingComplete}
             >
-              ✅ Mark Challenge as Complete
+              {markingComplete ? 'Marking...' : '✅ Mark Challenge as Complete'}
             </motion.button>
           </motion.div>
         )}
