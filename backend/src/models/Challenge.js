@@ -97,6 +97,31 @@ class Challenge {
         RETURNING *
     `;
 
+    // Debug: log the parameters we will send to the database to help diagnose failures
+    try {
+      console.error('Challenge.create: params ->', JSON.stringify({
+        title,
+        description: description && description.length ? `${description.substring(0, 500)}${description.length > 500 ? '... (truncated)' : ''}` : null,
+        instructions: instructions && instructions.length ? `${instructions.substring(0, 500)}${instructions.length > 500 ? '... (truncated)' : ''}` : null,
+        category,
+        difficulty_level,
+        points_reward,
+        estimated_time_minutes,
+        requires_peer_review,
+        max_attempts,
+        is_active,
+        created_by,
+        tags,
+        learning_objectives,
+        prerequisites,
+        goal_id,
+        ai_generated,
+        status,
+      }, null, 2));
+    } catch (e) {
+      console.error('Challenge.create: failed to stringify params', e && e.message);
+    }
+
     const result = await db.query(query, [
       title,
       description,

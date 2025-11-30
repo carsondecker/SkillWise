@@ -32,6 +32,8 @@ const peerReviewController = {
     const userId = req.user?.id;
     const { limit, offset } = paginationSchema.parse(req.query);
 
+    console.error('peerReviewController.getReviewAssignments called for', { userId, limit, offset });
+
     const assignments = await peerReviewService.getAssignments({
       reviewerId: userId,
       limit,
@@ -48,15 +50,21 @@ const peerReviewController = {
     const reviewerId = req.user?.id;
     const payload = submitReviewSchema.parse(req.body);
 
-    const review = await peerReviewService.submitReview({
+    const result = await peerReviewService.submitReview({
       reviewerId,
       ...payload,
     });
 
-    res.status(201).json({
+    // Include counts if provided by service
+    const responsePayload = {
       message: 'Review submitted successfully',
-      review,
-    });
+      review: result.review || result,
+    };
+
+    if (typeof result.peer_reviews_count !== 'undefined') responsePayload.peer_reviews_count = result.peer_reviews_count;
+    if (typeof result.ai_feedback_count !== 'undefined') responsePayload.ai_feedback_count = result.ai_feedback_count;
+
+    res.status(201).json(responsePayload);
   }),
 
   // -------------------------

@@ -29,4 +29,7 @@ router.post('/', auth, single('file'), submissionController.submitWork);
 // 🟣 Update an existing submission (e.g., resubmit or edit)
 router.put('/:id', auth, submissionController.updateSubmission);
 
+// 🟠 Grade a submission on-demand (manual trigger)
+// NOTE: grading is handled under the AI/feedback route
+
 module.exports = router;

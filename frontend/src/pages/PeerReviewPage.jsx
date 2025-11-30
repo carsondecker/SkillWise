@@ -2,106 +2,143 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
+import { apiService } from '../services/api';
 import '../styles/PeerReviewPage.scss';
 
 const PeerReviewPage = () => {
   const [reviews, setReviews] = useState([]);
   const [mySubmissions, setMySubmissions] = useState([]);
+  const [aiLoading, setAiLoading] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('review-others');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const { user } = useAuth();
 
-  // Mock data - TODO: Replace with API calls
+  // Mapping helpers used both for initial fetch and updates
+  const mapAssignment = (item) => {
+    return {
+      id: item.id || item.submission_id || item.submissionId,
+      title:
+        item.challenge_title || item.title ||
+        (item.submission_preview
+          ? item.submission_preview.substring(0, 80)
+          : item.submission_text
+          ? item.submission_text.substring(0, 80)
+          : 'Submission'),
+      author: item.reviewee_name || item.author || item.user_name || 'Unknown',
+      authorAvatar: item.authorAvatar || '',
+      category: item.category || 'General',
+      difficulty: item.difficulty || 'Beginner',
+      description: item.submission_text || item.description || '',
+      codeSnippet: (item.submission_text || '').substring(0, 400),
+      submittedAt: item.submitted_at || item.created_at || item.submittedAt,
+      needsReview: item.is_completed === false || item.status === 'submitted' || !!item.needsReview,
+      reviewsCount: item.reviews_count || item.reviewsReceived || 0,
+      maxReviews: item.max_reviews || 3,
+    };
+  };
+
+  const mapSubmission = (s) => {
+    return {
+      id: s.id,
+      title: s.challenge_title || (s.submission_text || '').substring(0, 60) || 'Submission',
+      category: s.category || 'General',
+      difficulty: s.difficulty || 'Beginner',
+      status: s.status || 'submitted',
+      feedback: s.feedback || null,
+      peerReviewsReceived: s.peer_reviews_count || s.reviews_count || s.reviewsReceived || 0,
+      aiFeedbackCount: s.ai_feedback_count || 0,
+      latestAiFeedback: s.latest_ai_feedback || null,
+      maxReviews: s.max_reviews || 3,
+      averageRating: s.score || null,
+      submittedAt: s.submitted_at || s.created_at || s.submittedAt,
+      submission_text: s.submission_text,
+    };
+  };
+
+  // Fetch review queue and user's submissions from API
   useEffect(() => {
-    const mockReviews = [
-      {
-        id: 1,
-        submissionId: 'sub_001',
-        title: 'React Component Optimization',
-        author: 'Sarah Kim',
-        authorAvatar: '👩‍🎨',
-        category: 'React',
-        difficulty: 'Intermediate',
-        submittedAt: '2024-01-15T10:00:00Z',
-        description: 'Created a custom hook for data fetching with caching',
-        codeSnippet: 'const useDataFetch = (url) => { ... }',
-        needsReview: true,
-        reviewsCount: 2,
-        maxReviews: 3,
-      },
-      {
-        id: 2,
-        submissionId: 'sub_002',
-        title: 'Algorithm Implementation',
-        author: 'Mike Chen',
-        authorAvatar: '👨‍🔬',
-        category: 'Algorithms',
-        difficulty: 'Advanced',
-        submittedAt: '2024-01-14T15:30:00Z',
-        description: 'Implemented merge sort with performance optimizations',
-        codeSnippet: 'function mergeSort(arr) { ... }',
-        needsReview: true,
-        reviewsCount: 1,
-        maxReviews: 3,
-      },
-      {
-        id: 3,
-        submissionId: 'sub_003',
-        title: 'Database Design Pattern',
-        author: 'Emma Rodriguez',
-        authorAvatar: '👩‍💼',
-        category: 'Database',
-        difficulty: 'Intermediate',
-        submittedAt: '2024-01-13T09:15:00Z',
-        description: 'Repository pattern implementation with TypeORM',
-        codeSnippet: 'class UserRepository extends Repository { ... }',
-        needsReview: false,
-        reviewsCount: 3,
-        maxReviews: 3,
-      },
-    ];
+    let cancelled = false;
 
-    const mockMySubmissions = [
-      {
-        id: 1,
-        submissionId: 'my_sub_001',
-        title: 'CSS Grid Layout Challenge',
-        category: 'CSS',
-        difficulty: 'Beginner',
-        submittedAt: '2024-01-12T14:20:00Z',
-        status: 'under-review',
-        reviewsReceived: 2,
-        maxReviews: 3,
-        averageRating: 4.5,
-        feedback: 'Great responsive design approach!',
-      },
-      {
-        id: 2,
-        submissionId: 'my_sub_002',
-        title: 'API Integration Pattern',
-        category: 'JavaScript',
-        difficulty: 'Intermediate',
-        submittedAt: '2024-01-10T11:45:00Z',
-        status: 'completed',
-        reviewsReceived: 3,
-        maxReviews: 3,
-        averageRating: 4.7,
-        feedback: 'Excellent error handling and clean code structure',
-      },
-    ];
+    // Listen for created reviews so we can update counts optimistically
+    const onReviewCreated = (e) => {
+      try {
+        const { submissionId, reviews_count } = e.detail || {};
+        if (!submissionId) return;
+        setMySubmissions((list) =>
+          list.map((it) =>
+            it.id === submissionId ? { ...it, reviewsReceived: Number(reviews_count) || it.reviewsReceived } : it,
+          ),
+        );
+        setReviews((list) =>
+          list.map((it) => (it.id === submissionId ? { ...it, reviewsCount: Number(reviews_count) || it.reviewsCount } : it)),
+        );
+      } catch (err) {
+        console.error('Error handling peerReview:created event', err);
+      }
+    };
+    window.addEventListener('peerReview:created', onReviewCreated);
 
-    setTimeout(() => {
-      setReviews(mockReviews);
-      setMySubmissions(mockMySubmissions);
-      setLoading(false);
-    }, 1000);
+    const fetchData = async () => {
+      setLoading(true);
+
+      try {
+        const [queueRes, mySubsRes] = await Promise.all([
+          apiService.peerReview.getReviewQueue().catch((e) => {
+            console.error('Failed to fetch review queue', e);
+            return { data: [] };
+          }),
+          // Use the submissions endpoint with the current user's id
+          user?.id
+            ? apiService.peerReview.getMySubmissions(user.id).catch((e) => {
+                console.error('Failed to fetch my submissions', e);
+                return { data: [] };
+              })
+            : Promise.resolve({ data: [] }),
+        ]);
+
+        if (cancelled) return;
+
+        // Build queueData from several possible shapes
+        let rawQueue = [];
+        if (!queueRes || !queueRes.data) rawQueue = [];
+        else if (Array.isArray(queueRes.data)) rawQueue = queueRes.data;
+        else if (Array.isArray(queueRes.data.assignments)) rawQueue = queueRes.data.assignments;
+        else if (Array.isArray(queueRes.data.submissions)) rawQueue = queueRes.data.submissions;
+
+        // Build my submissions from several possible shapes
+        let rawSubs = [];
+        if (!mySubsRes || !mySubsRes.data) rawSubs = [];
+        else if (Array.isArray(mySubsRes.data)) rawSubs = mySubsRes.data;
+        else if (Array.isArray(mySubsRes.data.submissions)) rawSubs = mySubsRes.data.submissions;
+        else if (Array.isArray(mySubsRes.data.items)) rawSubs = mySubsRes.data.items;
+
+        const normalizedQueue = rawQueue.map(mapAssignment);
+        const normalizedSubs = rawSubs.map(mapSubmission);
+
+        setReviews(normalizedQueue);
+        setMySubmissions(normalizedSubs);
+      } catch (err) {
+        console.error('Error fetching peer review data', err);
+        setReviews([]);
+        setMySubmissions([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('peerReview:created', onReviewCreated);
+    };
   }, []);
 
-  const filteredReviews = reviews.filter(
-    (review) =>
-      selectedCategory === 'all' ||
-      review.category.toLowerCase() === selectedCategory.toLowerCase()
+  const filteredReviews = reviews.filter((review) =>
+    selectedCategory === 'all'
+      ? true
+      : (review.category || 'all').toLowerCase() === selectedCategory.toLowerCase()
   );
 
   const getStatusBadge = (status) => {
@@ -258,7 +295,6 @@ const PeerReviewPage = () => {
         <div className="my-submissions-section">
           <div className="section-header">
             <h2>Your Submissions</h2>
-            <button className="btn-primary">Submit New Work</button>
           </div>
 
           {loading ? (
@@ -289,13 +325,59 @@ const PeerReviewPage = () => {
                     </div>
                     <div className="submission-actions">
                       <button className="btn-secondary">View Details</button>
+                      {/* AI Feedback button: show when there's no feedback yet */}
+                      {!submission.feedback && (
+                        <button
+                          className="btn-primary"
+                          disabled={!!aiLoading[submission.id]}
+                          onClick={async () => {
+                            try {
+                              setAiLoading((s) => ({ ...s, [submission.id]: true }));
+                              const res = await apiService.ai.generateFeedback({ submission_id: submission.id });
+                              // The backend returns { message, submission }
+                              const updated = res.data && (res.data.submission || res.data.submission || res.data);
+                              if (updated) {
+                                // Normalize and replace in state
+                                const norm = (function mapSubmissionLocal(s) {
+                                  return {
+                                    id: s.id,
+                                    title: s.challenge_title || (s.submission_text || '').substring(0, 60) || 'Submission',
+                                    category: s.category || 'General',
+                                    difficulty: s.difficulty || 'Beginner',
+                                    status: s.status || 'submitted',
+                                    feedback: s.feedback || null,
+                                    reviewsReceived: s.reviews_count || s.reviewsReceived || 0,
+                                    maxReviews: s.max_reviews || 3,
+                                    averageRating: s.score || null,
+                                    submittedAt: s.submitted_at || s.created_at || s.submittedAt,
+                                    submission_text: s.submission_text,
+                                  };
+                                })(updated);
+
+                                setMySubmissions((list) => list.map((it) => (it.id === norm.id ? norm : it)));
+                              }
+                            } catch (err) {
+                              console.error('AI feedback request failed', err);
+                              // Optionally show toast/notification
+                            } finally {
+                              setAiLoading((s) => ({ ...s, [submission.id]: false }));
+                            }
+                          }}
+                        >
+                          {aiLoading[submission.id] ? 'Generating...' : 'Get AI Feedback'}
+                        </button>
+                      )}
                     </div>
                   </div>
 
                   <div className="submission-stats">
                     <div className="stat-item">
-                      <strong>{submission.reviewsReceived}</strong>
-                      <span>Reviews Received</span>
+                      <strong>{submission.peerReviewsReceived}</strong>
+                      <span>Peer Reviews</span>
+                    </div>
+                    <div className="stat-item">
+                      <strong>{submission.aiFeedbackCount}</strong>
+                      <span>AI Feedback</span>
                     </div>
                     <div className="stat-item">
                       <strong>{submission.averageRating}</strong>
@@ -307,16 +389,23 @@ const PeerReviewPage = () => {
                     </div>
                   </div>
 
+                  {submission.latestAiFeedback && (
+                    <div className="latest-ai-feedback">
+                      <h5>AI Feedback:</h5>
+                      <p>"{submission.latestAiFeedback}"</p>
+                    </div>
+                  )}
+
                   {submission.feedback && (
                     <div className="latest-feedback">
-                      <h5>Latest Feedback:</h5>
+                      <h5>Latest Peer Feedback:</h5>
                       <p>"{submission.feedback}"</p>
                     </div>
                   )}
 
                   <div className="progress-bar">
                     <div className="progress-label">
-                      Review Progress: {submission.reviewsReceived}/
+                      Peer Review Progress: {submission.peerReviewsReceived}/
                       {submission.maxReviews}
                     </div>
                     <div className="progress-track">
@@ -324,7 +413,7 @@ const PeerReviewPage = () => {
                         className="progress-fill"
                         style={{
                           width: `${
-                            (submission.reviewsReceived /
+                            (submission.peerReviewsReceived /
                               submission.maxReviews) *
                             100
                           }%`,
@@ -339,10 +428,7 @@ const PeerReviewPage = () => {
                 <div className="empty-state">
                   <div className="empty-icon">📤</div>
                   <h3>No submissions yet</h3>
-                  <p>
-                    Submit your first piece of work to get feedback from peers!
-                  </p>
-                  <button className="btn-primary">Submit Your Work</button>
+                  <p>Submit your first piece of work to get feedback from peers!</p>
                 </div>
               )}
             </div>

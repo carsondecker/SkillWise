@@ -7,6 +7,9 @@ const auth = require('../middleware/auth');
 // TODO: Add POST /feedback route for generating AI feedback
 router.post('/feedback', auth, aiController.generateFeedback);
 
+// Generate a new challenge from AI for a given goal
+router.post('/generate-challenge', auth, aiController.generateChallenge);
+
 // TODO: Add GET /hints/:challengeId route for getting hints
 router.get('/hints/:challengeId', auth, aiController.getHints);
 

@@ -154,6 +154,15 @@ const submissionController = {
       submission: updated,
     });
   }),
+  // -------------------------
+  // Grade a submission on-demand (manual request triggers AI evaluation)
+  // -------------------------
+  gradeSubmission: asyncHandler(async (req, res) => {
+    const submissionId = z.string().uuid().parse(req.params.id);
+    // Optionally verify user permissions here (instructors/admins or owner depending on policy)
+    const result = await submissionService.gradeSubmission(submissionId);
+    res.json(result);
+  }),
 };
 
 module.exports = submissionController;

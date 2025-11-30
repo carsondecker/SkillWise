@@ -134,7 +134,10 @@ const submissionService = {
     try {
       const result = await db.query(
         `
-        SELECT s.*, u.first_name, u.last_name, c.title AS challenge_title
+         SELECT s.*, u.first_name, u.last_name, c.title AS challenge_title,
+           (SELECT COUNT(*) FROM peer_reviews pr WHERE pr.submission_id = s.id) AS peer_reviews_count,
+           (SELECT COUNT(*) FROM ai_feedback af WHERE af.submission_id = s.id) AS ai_feedback_count,
+           (SELECT af.feedback_text FROM ai_feedback af WHERE af.submission_id = s.id ORDER BY af.created_at DESC LIMIT 1) AS latest_ai_feedback
         FROM submissions s
         LEFT JOIN users u ON s.user_id = u.id
         LEFT JOIN challenges c ON s.challenge_id = c.id
@@ -158,7 +161,10 @@ const submissionService = {
     try {
       const result = await db.query(
         `
-        SELECT s.*, c.title AS challenge_title
+         SELECT s.*, c.title AS challenge_title,
+           (SELECT COUNT(*) FROM peer_reviews pr WHERE pr.submission_id = s.id) AS peer_reviews_count,
+           (SELECT COUNT(*) FROM ai_feedback af WHERE af.submission_id = s.id) AS ai_feedback_count,
+           (SELECT af.feedback_text FROM ai_feedback af WHERE af.submission_id = s.id ORDER BY af.created_at DESC LIMIT 1) AS latest_ai_feedback
         FROM submissions s
         LEFT JOIN challenges c ON s.challenge_id = c.id
         WHERE s.user_id = $1
@@ -216,10 +222,12 @@ const submissionService = {
       let feedback = 'Auto-graded placeholder: requires manual review.';
       let score = 0;
 
+      let aiResult = null;
       if (aiService && aiService.evaluateSubmission) {
-        const aiResult = await aiService.evaluateSubmission(submission.content);
-        feedback = aiResult.feedback || feedback;
-        score = aiResult.score || 0;
+        const submissionPayload = submission.submission_text || submission.content || '';
+        aiResult = await aiService.evaluateSubmission(submissionPayload);
+        feedback = aiResult?.feedback || feedback;
+        score = aiResult?.score || 0;
       }
 
       // Update submission with grade
@@ -229,7 +237,7 @@ const submissionService = {
         SET score = $2,
             feedback = $3,
             status = 'graded',
-            reviewed_at = NOW(),
+            graded_at = NOW(),
             updated_at = NOW()
         WHERE id = $1
         RETURNING *
@@ -237,7 +245,46 @@ const submissionService = {
         [submissionId, score, feedback],
       );
 
+
       const graded = updated.rows[0];
+
+      // Persist structured AI feedback to ai_feedback table if available
+      if (aiResult) {
+        try {
+          await db.query(
+            `INSERT INTO ai_feedback (submission_id, feedback_text, confidence_score, suggestions, strengths, improvements, ai_model, processing_time_ms, created_at, updated_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7, $8, NOW(), NOW()) RETURNING *`,
+            [
+              submissionId,
+              aiResult.feedback || feedback,
+              typeof aiResult.confidence_score === 'number' ? aiResult.confidence_score : null,
+              aiResult.suggestions && aiResult.suggestions.length ? aiResult.suggestions : null,
+              aiResult.strengths && aiResult.strengths.length ? aiResult.strengths : null,
+              aiResult.improvements && aiResult.improvements.length ? aiResult.improvements : null,
+              process.env.OPENAI_MODEL || null,
+              null,
+            ],
+          );
+        } catch (err) {
+          console.error('Failed to persist AI feedback:', err);
+        }
+      }
+
+      // Attach combined reviews_count (peer reviews + AI feedback) so frontend can display unified counts
+      try {
+        const cnt = await db.query(
+          `SELECT (
+             (SELECT COUNT(*) FROM peer_reviews pr WHERE pr.submission_id = $1)::int
+           + (SELECT COUNT(*) FROM ai_feedback af WHERE af.submission_id = $1)::int
+           ) AS reviews_count`,
+          [submissionId],
+        );
+        if (cnt.rows[0]) {
+          graded.reviews_count = cnt.rows[0].reviews_count ?? cnt.rows[0].cnt ?? Number(cnt.rows[0].cnt || 0);
+        }
+      } catch (cntErr) {
+        console.error('Failed to compute combined reviews_count after grading:', cntErr);
+      }
 
       // Award points if score passes threshold
       if (score >= 70) {

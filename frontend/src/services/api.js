@@ -80,6 +80,15 @@ api.interceptors.response.use(
           response.config.url
         } - ${response.status}`
       );
+      // Also log the response payload for easier debugging
+      try {
+        console.debug(
+          `📥 API Response Data: ${response.config.method?.toUpperCase()} ${response.config.url}`,
+          response.data
+        );
+      } catch (e) {
+        console.debug('📥 API Response Data: <unserializable>');
+      }
     }
 
     return response;
@@ -231,6 +240,14 @@ export const apiService = {
     getById: (id) => api.get(`/goals/${id}`),
   },
 
+  // AI methods
+  ai: {
+    // Generate a challenge using the backend AI endpoint. Body: { goal_id, difficulty, auto_activate }
+    generateChallenge: (body) => api.post('/ai/generate-challenge', body),
+    // Request AI feedback for a submission. Body: { submission_id }
+    generateFeedback: (body) => api.post('/ai/feedback', body),
+  },
+
   // Challenges methods
   challenges: {
     getAll: (params) => api.get('/challenges', { params }),
@@ -318,12 +335,47 @@ export const apiService = {
 
   // Peer Review methods
   peerReview: {
-    getReviewQueue: (params) => api.get('/peer-review/queue', { params }),
-    getMySubmissions: () => api.get('/peer-review/my-submissions'),
-    submitReview: (submissionId, review) =>
-      api.post(`/peer-review/submissions/${submissionId}/review`, review),
-    getReviewDetails: (submissionId) =>
-      api.get(`/peer-review/submissions/${submissionId}`),
+    // Backend mounts peer review routes under `/reviews`
+    getReviewQueue: (params) =>
+      api.get('/reviews/assignments', { params }).then((res) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('apiService.peerReview.getReviewQueue response:', res.data);
+        }
+        return res;
+      }),
+    // Use the submissions endpoint to fetch the current user's submissions
+    getMySubmissions: (userId, params) =>
+      api.get(`/submissions/user/${userId}`, { params }).then((res) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('apiService.peerReview.getMySubmissions response:', res.data);
+        }
+        return res;
+      }),
+    // Submit a review: backend expects POST /reviews with body { submissionId, rating, feedback }
+    submitReview: (review) =>
+      api.post('/reviews', review).then((res) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('apiService.peerReview.submitReview response:', res.data);
+        }
+        // If backend returned an updated reviews_count, emit a client-side event for UI to listen
+        try {
+          const peerCount = res.data && (res.data.peer_reviews_count || (res.data.review && res.data.review.peer_reviews_count));
+          const aiCount = res.data && (res.data.ai_feedback_count || (res.data.review && res.data.review.ai_feedback_count));
+          const submissionId = res.data && (res.data.review && (res.data.review.submission_id || res.data.review.submissionId)) || (review && review.submissionId) || (review && review.submissionId);
+          if ((typeof peerCount !== 'undefined' || typeof aiCount !== 'undefined') && submissionId) {
+            window.dispatchEvent(
+              new CustomEvent('peerReview:created', {
+                detail: { submissionId: Number(submissionId), peer_reviews_count: Number(peerCount || 0), ai_feedback_count: Number(aiCount || 0) },
+              }),
+            );
+          }
+        } catch (e) {
+          console.debug('Failed to emit peerReview:created event', e);
+        }
+        return res;
+      }),
+    // Detailed review endpoints are not implemented server-side; keep a simple getter if needed
+    getReviewDetails: (reviewId) => api.get(`/reviews/${reviewId}`),
   },
 
   // Notifications methods
