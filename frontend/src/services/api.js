@@ -206,7 +206,16 @@ export const apiService = {
   user: {
     getProfile: () => api.get('/users/profile'),
     getStatistics: () => api.get('/users/statistics'),
+
+    // Update profile text fields (firstName, lastName, bio, etc.)
     updateProfile: (data) => api.put('/users/profile', data),
+
+    // NEW: Upload or change profile image
+    updateAvatar: (formData) =>
+      api.put('/users/profile/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+
     deleteAccount: () => api.delete('/users/profile'),
     changePassword: (data) => api.put('/users/change-password', data),
   },
@@ -229,7 +238,7 @@ export const apiService = {
     update: (id, data) => api.put(`/challenges/${id}`, data),
     markAsComplete: (id) => api.patch(`/challenges/${id}/complete`),
     submitForPeerReview: (id) => api.patch(`/challenges/${id}/submitForPeerReview`),
-
+    getLatestSubmissions: (id) => api.get(`/challenges/${id}/latest-submissions`),
   },
   // --------------------------------
   // 🧩 Submission Endpoints
@@ -326,11 +335,14 @@ export const apiService = {
   // Peer Review methods
   peerReview: {
     getReviewQueue: (params) => api.get('/peer-review/queue', { params }),
+    getSubmissionById: (id) => api.get(`/peer-review/submissions/${id}`),
     getMySubmissions: () => api.get('/peer-review/my-submissions'),
-    submitReview: (submissionId, review) =>
-      api.post(`/peer-review/submissions/${submissionId}/review`, review),
+    submitReview: (submissionId, payload) =>
+      api.post(`/peer-review/submissions/${submissionId}/review`, payload),
     getReviewDetails: (submissionId) =>
       api.get(`/peer-review/submissions/${submissionId}`),
+    getSubmissionReviews: (submissionId) =>
+      api.get(`/peer-review/submissions/${submissionId}/reviews`),
   },
 
   // Notifications methods
@@ -338,6 +350,22 @@ export const apiService = {
     getAll: () => api.get('/notifications'),
     markAsRead: (id) => api.put(`/notifications/${id}/read`),
     markAllAsRead: () => api.put('/notifications/read-all'),
+  },
+  // --------------------------------
+  // ⭐ Streaks API
+  // --------------------------------
+  streaks: {
+    /**
+     * 🔥 Log today's streak
+     * POST /api/streaks/log
+     */
+    log: () => api.post('/streaks/log'),
+
+    /**
+     * 🌟 Get current streak data
+     * GET /api/streaks
+     */
+    getStreak: () => api.get('/streaks'),
   },
 };
 

@@ -1,0 +1,26 @@
+.badges-tab {
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+
+  .badges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+
+  .badge-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 14px;
+    text-align: center;
+
+    &.earned {
+      border: 2px solid #2563eb;
+    }
+
+    &.locked {
+      opacity: 0.6;
+    }
+  }
+}

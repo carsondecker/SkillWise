@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
-import PeerReviewCard from "../components/peerReview/PeerReviewCard.jsx";
+import PeerReviewCard from "../components/peerReview/PeerReviewCard";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { apiService } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
 import "../styles/PeerReviewPage.scss";
+import { useNavigate } from "react-router-dom";
+
 
 const PeerReviewPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [mySubmissions, setMySubmissions] = useState([]);
-
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("review-others");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -25,6 +27,7 @@ const PeerReviewPage = () => {
 
         setReviews(reviewTasks.data.queue || []);
         setMySubmissions(mySubs.data.submissions || []);
+        console.log(reviewTasks,mySubs);
       } catch (err) {
         console.error("Peer Review Fetch Error:", err);
       } finally {
@@ -32,7 +35,7 @@ const PeerReviewPage = () => {
       }
     };
 
-    loadData();
+    void loadData();
   }, []);
 
   const filteredReviews = reviews.filter(
@@ -40,6 +43,12 @@ const PeerReviewPage = () => {
       selectedCategory === "all" ||
       r.category.toLowerCase() === selectedCategory.toLowerCase()
   );
+  const handleViewMySubmission = (submission) => {
+    navigate(`/challenges/${submission.challenge_id}/submit?mode=peer-review-view`);
+  };
+  const handleStartReview = (review) => {
+    navigate(`/peer-review/${review.submission_id}`);
+  };
 
   return (
     <div className="peer-review-page">
@@ -93,6 +102,7 @@ const PeerReviewPage = () => {
                 <PeerReviewCard
                   key={review.submission_id}
                   review={review}
+                  onStartReview={handleStartReview}
                 />
               ))}
 
@@ -126,13 +136,18 @@ const PeerReviewPage = () => {
                     <div>
                       <h4>{s.challenge_title}</h4>
                       <div className="submission-meta">
-                        <span className="category-badge">{s.category}</span>
+                        <span className={`category-badge ${s.challenge_status === 'peer_reviewed'? 'peer-reviewed':''}`}>{s.challenge_status}</span>
                         <span className="difficulty-badge diff-medium">
-                          {s.difficulty_level}
+                          {s.challenge_difficulty}
                         </span>
                       </div>
                     </div>
-                    <button className="btn-secondary">View</button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => handleViewMySubmission(s)}
+                    >
+                      View
+                    </button>
                   </div>
                 </div>
               ))}

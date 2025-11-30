@@ -4,10 +4,12 @@ import { motion } from 'framer-motion';
 import { apiService } from '../services/api';
 import Lottie from 'lottie-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import ballon_pop_confettie from '../assets/animations/ballon_pop_confettie.json'; // 👈 You’ll add this file
+import ballon_pop_confettie from '../assets/animations/ballon_pop_confettie.json';
 import { useAuth } from '../hooks/useAuth';
 import { validateSubmission } from '../validation/submissionValidation';
 import '../styles/ChallengeSubmissionPage.scss';
+import { useLocation } from 'react-router-dom';
+
 
 const fadeIn = {
   hidden: { opacity: 0, y: 15 },
@@ -17,11 +19,12 @@ const fadeIn = {
     transition: { delay: i * 0.15, duration: 0.4, ease: 'easeOut' },
   }),
 };
-
 const ChallengeSubmissionPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { user } = useAuth();
+  const mode = new URLSearchParams(search).get("mode") || "normal";
 
   const [challenge, setChallenge] = useState(null);
   const [submissions, setSubmissions] = useState([]);
@@ -29,8 +32,61 @@ const ChallengeSubmissionPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submissionText, setSubmissionText] = useState('');
   const [file, setFile] = useState(null);
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [peerReviews, setPeerReviews] = useState([]);
+  const [goal, setGoal] = useState(null);
+  const [latestSubmission, setLatestSubmission] = useState(null);
 
+  const [showCelebration, setShowCelebration] = useState(false);
+  const isReviewView = mode === "peer-review-view";
+
+
+  // 🔹 Fetch Peer Reviews + Goal + Challenge + Submission
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // 1. fetch challenge + submissions
+        const [challengeRes, submissionsRes] = await Promise.all([
+          apiService.challenges.getById(id),
+          apiService.submissions.getForChallenge(id),
+        ]);
+
+        const challengeData = challengeRes.data.challenge;
+        const submissionList =
+          submissionsRes.data.submissions ?? submissionsRes.data ?? [];
+
+        setChallenge(challengeData);
+        setSubmissions(submissionList);
+
+        // 2. determine the latest submission to use for peer-review-view
+        const latest = submissionList[0] || null;
+        setLatestSubmission(latest);
+
+        // 3. fetch peer reviews for submission (only in peer-review-view mode)
+        let peerReviews = [];
+        if (mode === "peer-review-view" && latest?.id) {
+          const peerReviewsRes = await apiService.peerReview.getSubmissionReviews(
+            latest.id
+          );
+          peerReviews = peerReviewsRes.data.reviews || [];
+          console.log(peerReviewsRes);
+        }
+        setPeerReviews(peerReviews);
+
+        // 4. fetch the goal
+        const goalRes = await apiService.goals.getById(challengeData.goal_id);
+        setGoal(goalRes.data.goal || goalRes.data);
+
+      } catch (err) {
+        console.error("❌ Peer Review View fetch error", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchData();
+  }, [id, mode]);
   // 🔹 Fetch challenge details + past submissions
   useEffect(() => {
     const fetchData = async () => {
@@ -193,6 +249,7 @@ const ChallengeSubmissionPage = () => {
   };
   const isCompleted = challenge?.status === "completed";
   const isInPeerReview = challenge?.status === "in_peer_review";
+  const isPeerReviewed = challenge?.status === "peer_reviewed";
 
   if (loading) return <LoadingSpinner message="Loading challenge..." />;
 
@@ -300,78 +357,100 @@ const ChallengeSubmissionPage = () => {
             </div>
           )}
       </motion.section>
+      {isReviewView ? (
+          <motion.section className="submission-section locked" variants={fadeIn}>
+            <h2>📄 Your Submitted Answer</h2>
 
-      {/* Submission Form */}
-      <motion.section className={`submission-section ${isCompleted ? 'locked' : ''}`} variants={fadeIn}>
-        <h2>✏️ Submit Your Solution</h2>
-        {isCompleted ? (
-          <p className="completed-text">🎉 This challenge is completed! No more submissions can be made.</p>
-        ) : isInPeerReview ? (
-          <p className="peer-review-text">🔍 This challenge is currently under peer review. You cannot submit new work at this time.</p>
-        ) : (
-          <form onSubmit={handleSubmit} encType="multipart/form-data">
-          {/* Textarea */}
-          <motion.textarea
-            rows="10"
-            placeholder="Write your solution, notes, or explanation here..."
-            value={submissionText}
-            onChange={(e) => setSubmissionText(e.target.value)}
-            whileFocus={{ scale: 1.005 }}
-            className="submission-textarea"
-          />
+            {latestSubmission ? (
+              <div className="preview-box">
+                <p>{latestSubmission.submission_text}</p>
 
-          {/* File Upload */}
-          <div className="file-upload-area">
-            <label className="upload-box">
-              <input type="file" onChange={handleFileChange} hidden />
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="upload-content"
+                {latestSubmission.submission_files?.url && (
+                  <a
+                    className="file-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href={`${process.env.REACT_APP_BACKEND_URL}${latestSubmission.submission_files.url}`}
+                  >
+                    📎 View Attachment
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="no-submissions">You did not submit any answer.</p>
+            )}
+          </motion.section>
+      ) : (
+        <motion.section className={`submission-section ${isCompleted ? 'locked' : ''}`} variants={fadeIn}>
+          <h2>✏️ Submit Your Solution</h2>
+          {isCompleted ? (
+            <p className="completed-text">🎉 This challenge is completed! No more submissions can be made.</p>
+          ) : isInPeerReview ? (
+            <p className="peer-review-text">🔍 This challenge is currently under peer review. You cannot submit new work at this time.</p>
+          ) : (
+            <form onSubmit={handleSubmit} encType="multipart/form-data">
+            {/* Textarea */}
+            <motion.textarea
+              rows="10"
+              placeholder="Write your solution, notes, or explanation here..."
+              value={submissionText}
+              onChange={(e) => setSubmissionText(e.target.value)}
+              whileFocus={{ scale: 1.005 }}
+              className="submission-textarea"
+            />
+
+            {/* File Upload */}
+            <div className="file-upload-area">
+              <label className="upload-box">
+                <input type="file" onChange={handleFileChange} hidden />
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="upload-content"
+                >
+                  📎{' '}
+                  {file
+                    ? `Selected: ${file.name}`
+                    : 'Drag or drop your file here'}
+                </motion.div>
+              </label>
+
+              <button
+                type="button"
+                className="upload-btn"
+                onClick={() =>
+                  document.querySelector('input[type="file"]').click()
+                }
               >
-                📎{' '}
-                {file
-                  ? `Selected: ${file.name}`
-                  : 'Drag or drop your file here'}
-              </motion.div>
-            </label>
+                Choose File
+              </button>
+            </div>
 
-            <button
-              type="button"
-              className="upload-btn"
-              onClick={() =>
-                document.querySelector('input[type="file"]').click()
-              }
-            >
-              Choose File
-            </button>
-          </div>
-
-          <div className="actions">
-            <motion.button
-              type="submit"
-              className="btn-primary"
-              disabled={submitting || attemptsLeft <= 0}
-              whileHover={{ scale: attemptsLeft > 0 ? 1.05 : 1 }}
-              whileTap={{ scale: attemptsLeft > 0 ? 0.95 : 1 }}
-            >
-              {submitting
-                ? 'Submitting...'
-                : attemptsLeft <= 0
-                ? '🔒 No Attempts Left'
-                : 'Submit Challenge'}
-            </motion.button>
-          </div>
-        </form>
-        )}
-      </motion.section>
-
+            <div className="actions">
+              <motion.button
+                type="submit"
+                className="btn-primary"
+                disabled={submitting || attemptsLeft <= 0}
+                whileHover={{ scale: attemptsLeft > 0 ? 1.05 : 1 }}
+                whileTap={{ scale: attemptsLeft > 0 ? 0.95 : 1 }}
+              >
+                {submitting
+                  ? 'Submitting...'
+                  : attemptsLeft <= 0
+                  ? '🔒 No Attempts Left'
+                  : 'Submit Challenge'}
+              </motion.button>
+            </div>
+          </form>
+          )}
+        </motion.section>
+      )}
       {/* Submissions History */}
       <motion.section className="submissions-history" variants={fadeIn}>
         <h2>📜 Past Submissions</h2>
         {/* If challenge requires peer review */}
         {challenge.requires_peer_review ? (
           submissions.length > 0 &&
-          challenge.status !== "submitted_for_peer_review" && (
+          !isInPeerReview && !isPeerReviewed && (
             <motion.div className="mark-complete-container">
               <motion.button
                 className="btn-primary"
@@ -484,6 +563,45 @@ const ChallengeSubmissionPage = () => {
           </motion.p>
         )}
       </motion.section>
+      {isReviewView && (
+        <motion.section className="peer-review-results" variants={fadeIn}>
+          <h2>⭐ Peer Reviews Received</h2>
+
+          {peerReviews.length === 0 ? (
+            <p className="no-submissions">You have not received any peer reviews yet.</p>
+          ) : (
+            <div className="review-list">
+              {peerReviews.map((rev) => (
+                <motion.div
+                  key={rev.id}
+                  className="review-card"
+                  whileHover={{ scale: 1.01 }}
+                >
+                  <div className="review-header">
+                    <h3>{rev.is_anonymous ? "Anonymous Reviewer" : rev.reviewer_name}</h3>
+                    <span className="rating">{rev.rating} / 5 ⭐</span>
+                  </div>
+
+                  <p className="review-text">{rev.review_text}</p>
+
+                  <div className="criteria-grid">
+                    {Object.entries(rev.criteria_scores || {}).map(([k, v]) => (
+                      <div key={k} className="criteria-item">
+                        <span className="criteria-label">{k}</span>
+                        <span className="criteria-value">{v}/5</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="review-time">
+                    ⏱️ Time spent: <strong>{rev.time_spent_minutes} min</strong>
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.section>
+      )}
     </motion.div>
   );
 };

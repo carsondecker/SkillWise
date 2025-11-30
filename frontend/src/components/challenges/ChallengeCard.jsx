@@ -19,6 +19,7 @@ const ChallengeCard = ({ challenge, onEdit }) => {
   } = challenge;
   const isCompleted = status === "completed";
   const isInPeerReview = status === "in_peer_review";
+  const isPeerReviewed = status === "peer_reviewed";
 
   return (
     <motion.div
@@ -39,6 +40,10 @@ const ChallengeCard = ({ challenge, onEdit }) => {
         {isInPeerReview && (
           <span className="in-peer-review-tag">⏳ In Peer Review</span>
         )}
+        {isPeerReviewed && (
+          <span className="peer-reviewed-tag"> 🏷️︎Peer Reviewed</span>
+        )}
+
       </div>
 
       {/* Meta info */}
@@ -55,15 +60,16 @@ const ChallengeCard = ({ challenge, onEdit }) => {
       {/* Footer actions */}
       <div className="challenge-footer">
         <motion.button
-          className={`btn-primary ${isCompleted ? "disabled" : isInPeerReview ? "in-peer-review" : ""}`}
+          className={`btn-primary ${isCompleted ? "disabled" : isInPeerReview ? "in-peer-review": isPeerReviewed?"peer-reviewed" : ""}`}
           disabled={isCompleted}
           whileHover={!isCompleted ? { scale: 1.05 } : {}}
           whileTap={!isCompleted ? { scale: 0.95 } : {}}
           onClick={() =>
-            !isCompleted && navigate(`/challenges/${challenge.id}/submit`)
+            !isCompleted && !isPeerReviewed? navigate(`/challenges/${challenge.id}/submit`): isPeerReviewed ? navigate(`/challenges/${challenge.id}/submit?mode=peer-review-view`) : null
+
           }
         >
-          {isCompleted ? "🔒 Completed" : isInPeerReview ? " Challenge in Peer Review" : "Start Challenge"}
+          {isCompleted ? "🔒 Completed" : isInPeerReview ? " Challenge in Peer Review" : isPeerReviewed?"Challenge has been reviewed": "Start Challenge"}
         </motion.button>
 
         {user?.role === "admin" && (

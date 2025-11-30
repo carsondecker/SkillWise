@@ -21,6 +21,7 @@ const ChallengesPage = () => {
     search: '',
   });
 
+
   // 🔹 Fetch challenges from API
   useEffect(() => {
     const fetchChallenges = async () => {

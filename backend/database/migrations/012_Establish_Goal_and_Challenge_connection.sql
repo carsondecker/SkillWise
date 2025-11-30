@@ -73,6 +73,7 @@ VALUES (p_user_id, p_goal_id, total_ch, completed_ch, percent)
 
 UPDATE goals
 SET progress_percentage = percent,
+    is_completed = (percent = 100),
     updated_at = NOW()
 WHERE id = p_goal_id;
 END;

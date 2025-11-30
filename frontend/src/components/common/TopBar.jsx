@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
-import '../../styles/TopBar.scss';
+import '../../styles/components/Common/TopBar.scss';
 
 const Topbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -42,7 +42,12 @@ const Topbar = () => {
             onClick={() => navigate('/profile')}
           >
             <div className="avatar">
-              {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+              {user?.profileImage ? (
+              <img
+                src={process.env.REACT_APP_BACKEND_URL + user.profileImage}
+                alt="User Avatar"
+              />
+            ) : (user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
             </div>
             {user?.role === 'admin' && <span className="admin-tag">Admin</span>}
           </motion.div>

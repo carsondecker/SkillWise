@@ -28,6 +28,25 @@ const userService = {
     }
   },
 
+  updateAvatar: async (userId, fileUrl) => {
+    try {
+      const { rows } = await db.query(
+        `
+        UPDATE users
+        SET profile_image = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        RETURNING id, first_name, last_name, email, role, bio, profile_image
+      `,
+        [fileUrl, userId],
+      );
+
+      if (!rows[0]) throw new AppError('User not found', 404);
+
+      return rows[0];
+    } catch (err) {
+      throw new AppError(`Error updating avatar: ${err.message}`, 500);
+    }
+  },
   /**
    * ✏️ Update user profile
    */

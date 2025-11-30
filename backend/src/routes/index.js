@@ -29,6 +29,7 @@ const submissionRoutes = require('./submissions');
 const aiRoutes = require('./ai');
 const reviewRoutes = require('./reviews');
 const leaderboardRoutes = require('./leaderboard');
+const streakRoutes = require('./streaks');
 
 // --------------------------------------------------
 // API Metadata Route (default /api)
@@ -49,6 +50,7 @@ router.get('/', (req, res) => {
       ai: '/api/ai',
       reviews: '/api/peer-review',
       leaderboard: '/api/leaderboard',
+      streaks: '/api/streaks',
       health: '/api/health',
     },
     timestamp: new Date().toISOString(),
@@ -67,7 +69,7 @@ router.use('/submissions', submissionRoutes);
 router.use('/ai', aiRoutes);
 router.use('/peer-review', reviewRoutes);
 router.use('/leaderboard', leaderboardRoutes);
-
+router.use('/streaks', streakRoutes);
 // --------------------------------------------------
 // Health Check Endpoint
 // --------------------------------------------------

@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }) => {
     const initialize = async () => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
 
-      const publicPaths = ['/login', '/signup', '/forgot-password'];
+      const publicPaths = ['/login', '/signup', '/forgot-password', '/'];
       const currentPath = window.location.pathname;
 
       // Skip auth bootstrap on public pages to avoid redirect loops for new users

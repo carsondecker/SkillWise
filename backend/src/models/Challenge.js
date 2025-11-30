@@ -45,6 +45,18 @@ class Challenge {
     return result.rows[0];
   }
 
+  static async findLatestSubmissions (challengeId) {
+    const query = `
+      SELECT *
+      FROM submissions
+      WHERE challenge_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    const result = await db.query(query, [challengeId]);
+    return result.rows;
+  }
+
   static async findByDifficulty (difficulty) {
     const query = `
       SELECT * FROM challenges

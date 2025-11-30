@@ -1,6 +1,7 @@
 // src/controllers/peerReviewController.js
 const { z } = require('zod');
 const peerReviewService = require('../services/peerReviewService');
+const { peerReviewSchema } = require('../middleware/validation');
 const { asyncHandler } = require('../utils/helpers');
 
 // ----------------------------
@@ -19,10 +20,6 @@ const paginationSchema = z.object({
     .default('0'),
 });
 
-const submitReviewSchema = z.object({
-  rating: z.number().int().min(1).max(5),
-  feedback: z.string().max(2000).optional(),
-});
 
 // ----------------------------
 // Controller
@@ -43,6 +40,17 @@ const peerReviewController = {
 
     res.json({ submissions });
   }),
+  getSubmissionById: asyncHandler(async (req, res) => {
+    const reviewerId = req.user?.id;
+    const submissionId = req.params.id;
+
+    const submission = await peerReviewService.getSubmissionForReviewById({
+      reviewerId,
+      submissionId,
+    });
+
+    res.json({ submission });
+  }),
 
   // ---------------------------------------------------
   // 🟡 2. Submit a peer review
@@ -51,13 +59,12 @@ const peerReviewController = {
     const reviewerId = req.user?.id;
     const submissionId = req.params.id;
 
-    const payload = submitReviewSchema.parse(req.body);
+    const payload = req.validated.body;
 
     const review = await peerReviewService.submitReview({
       reviewerId,
       submissionId,
-      rating: payload.rating,
-      feedback: payload.feedback,
+      ...payload,
     });
 
     res.status(201).json({
@@ -95,6 +102,20 @@ const peerReviewController = {
     });
 
     res.json({ details });
+  }),
+  // ---------------------------------------------------
+  // 🟠 5. Get all peer reviews for a specific submission
+  // ---------------------------------------------------
+  getReviewsForSubmission: asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    const submissionId = req.params.id;
+
+    const reviews = await peerReviewService.getReviewsForSubmission({
+      userId,
+      submissionId,
+    });
+
+    res.json({ reviews });
   }),
 };
 

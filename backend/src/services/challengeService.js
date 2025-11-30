@@ -31,6 +31,15 @@ const challengeService = {
     }
   },
 
+  getLatestSubmissionsForChallenge: async ({ challengeId }) => {
+    try {
+      const submissions = await Challenge.findLatestSubmissions(challengeId);
+      return submissions;
+    } catch (error) {
+      throw new AppError(`Error fetching submissions: ${error.message}`, 500);
+    }
+  },
+
   createChallenge: async (data) => {
     try {
       return await Challenge.create({

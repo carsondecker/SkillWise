@@ -4,25 +4,43 @@ const router = express.Router();
 
 const peerReviewController = require('../controllers/peerReviewController');
 const auth = require('../middleware/auth');
+const { peerReviewValidation } = require('../middleware/validation');
 
 // --------------------------------------------------
 // 🔹 Peer Review Routes (Protected)
 // --------------------------------------------------
 
-// 🟢 Get review assignments for the logged-in user
-// Optional query params: ?limit=10&offset=0
-router.get('/my-submissions', auth, peerReviewController.getMySubmissions);
-
-// 🟡 Submit a new peer review
-// Expected body: { submissionId, rating, feedback }
-router.post('/submissions/:id/review', auth, peerReviewController.submitReview);
-
-// 🔵 Get reviews queues. Fetched all the submissions needing reviews
-// Optional query params: ?limit=10&offset=0
+// 🟢 1. All submissions YOU need to review
 router.get('/queue', auth, peerReviewController.getReviewQueue);
 
-// 🟣 Get review details by id
-router.get('/submissions/:id', auth, peerReviewController.getReviewDetails);
+// 🟣 2. All submissions YOU have made (to show in My Submissions)
+router.get('/my-submissions', auth, peerReviewController.getMySubmissions);
+
+// 🟡 3. USED WHEN STARTING A REVIEW
+// Return: submission + challenge + author basic info
+router.get('/submissions/:id', auth, peerReviewController.getSubmissionById);
+
+// 🔵 4. SUBMIT PEER REVIEW
+router.post(
+  '/submissions/:id/review',
+  auth,
+  peerReviewValidation,
+  peerReviewController.submitReview,
+);
+
+// 🟣 5. VIEW MODE — full details for owner viewing peer review page
+// Return: submission + challenge + goal
+router.get(
+  '/submissions/:id/details',
+  auth,
+  peerReviewController.getReviewDetails,
+);
+
+// 🟠 6. GET ALL REVIEWS RECEIVED FOR A SUBMISSION
+router.get(
+  '/submissions/:id/reviews',
+  auth,
+  peerReviewController.getReviewsForSubmission,
+);
 
 module.exports = router;
-

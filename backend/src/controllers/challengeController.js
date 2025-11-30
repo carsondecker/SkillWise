@@ -20,7 +20,23 @@ const challengeController = {
       next(error);
     }
   }),
+  // Get latest submissions for a challenge
+  getLatestSubmissionsForChallenge: asyncHandler(
+    async (req, res, next) => {
+      try {
+        const challengeId = parseInt(req.params.id, 10);
 
+        const submissions =
+          await challengeService.getLatestSubmissionsForChallenge({
+            challengeId,
+          });
+
+        res.json({ submissions });
+      } catch (error) {
+        next(error);
+      }
+    },
+  ),
   // 🟢 Get single challenge by ID
   getChallengeById: asyncHandler(async (req, res, next) => {
     try {

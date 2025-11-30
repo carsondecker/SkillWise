@@ -52,3 +52,52 @@ CREATE TRIGGER update_peer_reviews_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 END IF;
 END $$;
+-- ======================================================
+-- 🔥 Function: Update challenge status after peer review
+-- ======================================================
+CREATE OR REPLACE FUNCTION mark_challenge_peer_reviewed_fn()
+RETURNS TRIGGER AS $$
+DECLARE
+challenge_id INT;
+  current_status TEXT;
+BEGIN
+  -- 1️⃣ Get challenge_id from submission
+SELECT s.challenge_id INTO challenge_id
+FROM submissions s
+WHERE s.id = NEW.submission_id;
+
+IF challenge_id IS NULL THEN
+    RETURN NEW;
+END IF;
+
+  -- 2️⃣ Get current challenge status
+SELECT status INTO current_status
+FROM challenges
+WHERE id = challenge_id;
+
+-- 3️⃣ Only update if the status is 'in_peer_review'
+IF current_status = 'in_peer_review' THEN
+UPDATE challenges
+SET status = 'peer_reviewed',
+    updated_at = NOW()
+WHERE id = challenge_id;
+END IF;
+
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- ======================================================
+-- 🔥 Trigger: When a peer review is created, update challenge status
+-- ======================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'trigger_mark_challenge_peer_reviewed'
+  ) THEN
+CREATE TRIGGER trigger_mark_challenge_peer_reviewed
+    AFTER INSERT ON peer_reviews
+    FOR EACH ROW
+    EXECUTE FUNCTION mark_challenge_peer_reviewed_fn();
+END IF;
+END $$;
