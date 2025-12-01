@@ -785,7 +785,6 @@ const PeerReviewPage = () => {
                       </div>
                     </div>
                     <div className="submission-actions">
-                      <button className="btn-secondary">View Details</button>
                       {/* AI Feedback button: show when there's no feedback yet */}
                       {!submission.feedback && (
                         <button
@@ -833,12 +832,8 @@ const PeerReviewPage = () => {
 
                   <div className="submission-stats">
                     <div className="stat-item">
-                      <strong>{submission.peerReviewsReceived}</strong>
+                      <strong>{submission.peerReviewsReceived || 0}</strong>
                       <span>Peer Reviews</span>
-                    </div>
-                    <div className="stat-item">
-                      <strong>{submission.aiFeedbackCount}</strong>
-                      <span>AI Feedback</span>
                     </div>
                     <div className="stat-item">
                       <strong>
