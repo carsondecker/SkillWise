@@ -1,5 +1,5 @@
 // TODO: Implement authentication middleware unit tests
-const auth = require('../../src/middleware/auth');
+const auth = require('../../../src/middleware/auth');
 
 describe('Auth Middleware', () => {
   test('should authenticate valid JWT token', async () => {

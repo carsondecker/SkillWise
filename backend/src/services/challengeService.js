@@ -46,10 +46,17 @@ const challengeService = {
 
   updateChallenge: async ({ id, data }) => {
     try {
+      console.debug('challengeService.updateChallenge: updating id=', id, 'data=', JSON.stringify(data));
       const updated = await Challenge.update(id, data);
       if (!updated) throw new AppError('Challenge not found', 404);
       return updated;
     } catch (error) {
+      // log full error for debugging trigger/DB issues
+      try {
+        console.error('challengeService.updateChallenge: error updating challenge:', error && error.message || error, { id, data });
+      } catch (e) {
+        console.error('challengeService.updateChallenge: error while logging error');
+      }
       if (error instanceof AppError) throw error;
       throw new AppError(`Error updating challenge: ${error.message}`, 500);
     }

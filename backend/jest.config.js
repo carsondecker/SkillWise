@@ -1,5 +1,7 @@
 module.exports = {
   testEnvironment: 'node',
+  // Load env vars before any modules are imported
+  setupFiles: ['<rootDir>/tests/jest.env.js'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: [
     '<rootDir>/tests/**/*.test.js',

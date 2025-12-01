@@ -1,0 +1,66 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AI Service snapshots evaluateSubmission returns expected evaluation (snapshot) 1`] = `
+{
+  "confidence_score": 0.87,
+  "detailed_analysis": [
+    {
+      "area": "logic",
+      "comment": "Loop termination looks correct",
+    },
+    {
+      "area": "style",
+      "comment": "Consider consistent naming",
+    },
+  ],
+  "feedback": "Good attempt. The solution handles typical cases but misses edge cases.",
+  "improvements": [
+    "Edge case handling",
+    "Performance on large inputs",
+  ],
+  "rating_1_to_5": 4,
+  "recommended_resources": [
+    {
+      "title": "Binary Search - Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Binary_search",
+    },
+  ],
+  "score": 72,
+  "strengths": [
+    "Correct algorithm choice",
+    "Readable code",
+  ],
+  "suggestions": [
+    "Add bounds checks",
+    "Write more unit tests",
+    "Handle empty input",
+  ],
+}
+`;
+
+exports[`AI Service snapshots generateChallenge returns expected structure (snapshot) 1`] = `
+{
+  "ai_generated": true,
+  "category": "algorithms",
+  "description": "Write a function that performs binary search on a sorted array.",
+  "difficulty_level": "easy",
+  "estimated_time_minutes": 45,
+  "instructions": "Implement iterative binary search and handle edge cases.",
+  "learning_objectives": [
+    "Implement binary search",
+    "Analyze time complexity",
+  ],
+  "max_attempts": 3,
+  "points_reward": 20,
+  "prerequisites": [
+    "Arrays",
+    "Basic Loops",
+  ],
+  "requires_peer_review": false,
+  "tags": [
+    "search",
+    "arrays",
+  ],
+  "title": "Implement binary search",
+}
+`;

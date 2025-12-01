@@ -20,6 +20,7 @@ module.exports = {
     'no-trailing-spaces': 'off',
     'eol-last': 'off',
     'comma-dangle': 'off',
+    'no-undef': 'warn',
     quotes: 'off',
     semi: 'off',
     indent: 'off',

@@ -256,3 +256,19 @@ backend/
 - Error tracking and alerting
 - Performance monitoring
 - API usage analytics
+
+### Sentry (optional)
+
+- Enable Sentry by setting `SENTRY_DSN` in your environment (or `.env.test` for tests).
+- Additional optional env vars: `SENTRY_ENVIRONMENT` (defaults to `NODE_ENV`) and `SENTRY_TRACES_SAMPLE_RATE` (default `0.0`).
+- The backend initializes Sentry only when `SENTRY_DSN` is present — absence of this var is safe and will not alter app behavior.
+- During tests, if `SENTRY_DSN` is set in the test environment, test-run errors and unhandled rejections will be forwarded to Sentry.
+
+Example (Linux / PowerShell):
+
+```powershell
+$env:SENTRY_DSN='https://<public>@sentry.io/<project>'
+$env:SENTRY_ENVIRONMENT='test'
+$env:SENTRY_TRACES_SAMPLE_RATE='0.0'
+npm test
+```
