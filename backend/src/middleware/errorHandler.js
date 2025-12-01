@@ -6,6 +6,9 @@ const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
 });
 
+// Optional Sentry wrapper (safe no-op when not configured)
+const Sentry = require('../sentry');
+
 /**
  * Custom operational error class
  * Used for trusted errors (invalid input, unauthorized, etc.)
@@ -61,6 +64,15 @@ const sendErrorDev = (err, req, res) => {
     ip: req.ip,
   });
 
+  // Capture to Sentry in test and when enabled — do not crash if Sentry not configured
+  try {
+    if (Sentry && typeof Sentry.captureException === 'function') {
+      Sentry.captureException(err, { request: req });
+    }
+  } catch (e) {
+    // ignore sentry capture errors
+  }
+
   return res.status(err.statusCode).json({
     status: err.status,
     message: err.message,
@@ -99,6 +111,15 @@ const sendErrorProd = (err, req, res) => {
     url: req.originalUrl,
     method: req.method,
   });
+
+  // Capture unknown / programming errors to Sentry if enabled
+  try {
+    if (Sentry && typeof Sentry.captureException === 'function') {
+      Sentry.captureException(err, { request: req });
+    }
+  } catch (e) {
+    // ignore sentry capture errors
+  }
 
   return res.status(500).json({
     status: 'error',

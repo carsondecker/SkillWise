@@ -2,6 +2,14 @@ const { Pool } = require('pg');
 const { execSync } = require('child_process');
 require('dotenv').config({ path: '.env.test' });
 
+// Initialize optional Sentry for tests. If SENTRY_DSN is not set, this is a no-op.
+try {
+  // require the wrapper which safely initializes Sentry when configured
+  require('../src/sentry');
+} catch (e) {
+  // ignore
+}
+
 // Allow skipping DB setup for fast unit tests by setting SKIP_DB_SETUP=true
 const skipDbSetup = process.env.SKIP_DB_SETUP === 'true';
 if (skipDbSetup) {

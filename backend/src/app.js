@@ -13,6 +13,9 @@ const cookieParser = require('cookie-parser');
 // Middleware
 const errorHandler = require('./middleware/errorHandler');
 
+// Optional Sentry initialization (safe no-op when not configured)
+require('./sentry');
+
 // Routes
 const routes = require('./routes/index');
 
