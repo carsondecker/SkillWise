@@ -33,4 +33,10 @@ router.get('/suggestions', auth, aiController.suggestChallenges);
 // ---------------------------------------------
 router.get('/analysis', auth, aiController.analyzeProgress);
 
+// ---------------------------------------------
+// 🧾 Grade a completed/peer-reviewed challenge
+// POST /ai/grade/challenge/:challengeId
+// ---------------------------------------------
+router.post('/grade/challenge/:challengeId', auth, aiController.gradeChallenge);
+
 module.exports = router;

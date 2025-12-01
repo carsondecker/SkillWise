@@ -176,6 +176,14 @@ VALUES (
            NOW(),
            NOW()
        );
+-- When a submission is created, update the challenge
+-- status to in_progress ONLY if it is not already.
+-- ================================================
+UPDATE challenges
+SET status = 'in_progress',
+    updated_at = NOW()
+WHERE id = NEW.challenge_id
+  AND status IS DISTINCT FROM 'in_progress';
 RETURN NEW;
 END;
       $$ LANGUAGE plpgsql;

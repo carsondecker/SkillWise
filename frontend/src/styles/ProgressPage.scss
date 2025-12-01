@@ -5,6 +5,23 @@
   font-family: 'Inter', sans-serif;
   color: #1f2937;
 
+  &.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-align: center;
+
+    h2 {
+      color: #b91c1c;
+    }
+
+    p {
+      color: #6b7280;
+    }
+  }
+
   /* ─── Header ───────────────────────────────────── */
   .page-header {
     text-align: center;
@@ -238,6 +255,95 @@
             }
           }
         }
+      }
+    }
+
+    /* ─── Sessions ─────────────────────────────--- */
+    .sessions-section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+
+        h2 {
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: #1e3a8a;
+        }
+
+        p {
+          color: #6b7280;
+          font-size: 0.9rem;
+        }
+      }
+
+      .sessions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+
+        .empty-state {
+          color: #6b7280;
+          font-size: 0.95rem;
+        }
+      }
+
+      .session-card {
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: #e0e7ff;
+          border-color: #c7d2fe;
+          transform: translateY(-4px);
+        }
+
+        .session-meta {
+          display: flex;
+          flex-direction: column;
+
+          h4 {
+            font-size: 1rem;
+            margin: 0;
+            color: #111827;
+          }
+
+          span {
+            color: #6b7280;
+            font-size: 0.8rem;
+          }
+        }
+
+        .session-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.5rem;
+
+          strong {
+            display: block;
+            font-size: 1rem;
+            color: #1e3a8a;
+          }
+
+          p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 0.8rem;
+          }
+        }
+
       }
     }
 

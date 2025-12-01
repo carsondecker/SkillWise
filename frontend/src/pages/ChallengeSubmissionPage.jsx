@@ -19,6 +19,7 @@ const fadeIn = {
     transition: { delay: i * 0.15, duration: 0.4, ease: 'easeOut' },
   }),
 };
+const MAX_AI_GRADES = 2;
 const ChallengeSubmissionPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,10 +36,60 @@ const ChallengeSubmissionPage = () => {
   const [peerReviews, setPeerReviews] = useState([]);
   const [goal, setGoal] = useState(null);
   const [latestSubmission, setLatestSubmission] = useState(null);
+  const [aiGrade, setAiGrade] = useState(null);
+  const [aiFeedbackCount, setAiFeedbackCount] = useState(0);
+  const [grading, setGrading] = useState(false);
+  const [gradeError, setGradeError] = useState('');
 
   const [showCelebration, setShowCelebration] = useState(false);
   const isReviewView = mode === "peer-review-view";
 
+  const parseAIFeedbackList = (submission) => {
+    if (!submission) return [];
+
+    let feedbackList = [];
+    if (Array.isArray(submission.ai_feedback)) {
+      feedbackList = submission.ai_feedback;
+    } else if (typeof submission.ai_feedback === 'string') {
+      try {
+        feedbackList = JSON.parse(submission.ai_feedback);
+      } catch (err) {
+        feedbackList = [];
+      }
+    }
+
+    return feedbackList?.filter?.((f) => f?.feedback_type === 'grading') || [];
+  };
+
+  const hydrateAiStateFromSubmission = (submission, totalFeedbackCount) => {
+    if (!submission) {
+      setAiGrade(null);
+      setAiFeedbackCount(0);
+      return;
+    }
+
+    const gradingFeedbacks = parseAIFeedbackList(submission);
+    const feedbackCount =
+      submission.ai_feedback_count ??
+      (Array.isArray(gradingFeedbacks) ? gradingFeedbacks.length : 0);
+
+    setAiFeedbackCount(
+      totalFeedbackCount != null ? totalFeedbackCount : feedbackCount,
+    );
+
+    if (gradingFeedbacks.length > 0) {
+      const latestFeedback = gradingFeedbacks[0];
+      setAiGrade({
+        score: submission.score ?? null,
+        summary: latestFeedback.feedback_text,
+        strengths: latestFeedback.strengths || [],
+        improvements: latestFeedback.improvements || [],
+        suggestions: latestFeedback.suggestions || [],
+      });
+    } else {
+      setAiGrade(null);
+    }
+  };
 
   // 🔹 Fetch Peer Reviews + Goal + Challenge + Submission
   useEffect(() => {
@@ -61,7 +112,6 @@ const ChallengeSubmissionPage = () => {
 
         // 2. determine the latest submission to use for peer-review-view
         const latest = submissionList[0] || null;
-        setLatestSubmission(latest);
 
         // 3. fetch peer reviews for submission (only in peer-review-view mode)
         let peerReviews = [];
@@ -70,7 +120,6 @@ const ChallengeSubmissionPage = () => {
             latest.id
           );
           peerReviews = peerReviewsRes.data.reviews || [];
-          console.log(peerReviewsRes);
         }
         setPeerReviews(peerReviews);
 
@@ -108,7 +157,6 @@ const ChallengeSubmissionPage = () => {
           : submissionsRes.data.submissions || [];
 
         setChallenge(challengeData);
-        console.log(challengeData);
         setSubmissions(submissionData);
       } catch (err) {
         console.error('Error fetching challenge details:', err);
@@ -119,6 +167,23 @@ const ChallengeSubmissionPage = () => {
     };
     void fetchData();
   }, [id]);
+  // Keep latest submission + AI state in sync when submissions change
+  useEffect(() => {
+    const latest = Array.isArray(submissions) ? submissions[0] || null : null;
+    setLatestSubmission(latest);
+
+    const totalFeedbackCount = Array.isArray(submissions)
+      ? submissions.reduce((count, submission) => {
+          const gradingFeedbacks = parseAIFeedbackList(submission);
+          if (submission?.ai_feedback_count != null) {
+            return count + Number(submission.ai_feedback_count || 0);
+          }
+          return count + gradingFeedbacks.length;
+        }, 0)
+      : 0;
+
+    hydrateAiStateFromSubmission(latest, totalFeedbackCount);
+  }, [submissions]);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
@@ -247,9 +312,82 @@ const ChallengeSubmissionPage = () => {
       alert(`⚠️ ${msg}`);
     }
   };
-  const isCompleted = challenge?.status === "completed";
+  const refreshSubmissions = async () => {
+    try {
+      const submissionsRes = await apiService.submissions
+        .getForChallenge(id)
+        .catch((err) => {
+          if (err.response?.status === 404)
+            return { data: { submissions: [] } };
+          throw err;
+        });
+
+      const submissionData = Array.isArray(submissionsRes.data)
+        ? submissionsRes.data
+        : submissionsRes.data.submissions || [];
+      setSubmissions(submissionData);
+    } catch (err) {
+      console.error('Error refreshing submissions:', err);
+    }
+  };
+  const handleGradeWithAI = async (force = false) => {
+    if (!latestSubmission) {
+      alert('No submission available to grade.');
+      return;
+    }
+
+    if (aiFeedbackCount >= MAX_AI_GRADES) {
+      setGradeError('No AI grading attempts remaining for this challenge.');
+      return;
+    }
+
+    setGrading(true);
+    setGradeError('');
+
+    try {
+      const res = await apiService.ai.gradeChallenge(id, { force });
+      const gradeData = res.data?.grade || res.data || null;
+
+      if (gradeData) {
+        setAiGrade({
+          score: gradeData.score ?? latestSubmission.score ?? null,
+          summary: gradeData.summary || gradeData.feedback_text || '',
+          strengths: gradeData.strengths || [],
+          improvements: gradeData.improvements || [],
+          suggestions: gradeData.suggestions || [],
+        });
+        if (!gradeData.existing) {
+          setAiFeedbackCount((prev) =>
+            Math.min(MAX_AI_GRADES, (prev || 0) + 1),
+          );
+        }
+      }
+
+      await refreshSubmissions();
+    } catch (err) {
+      console.error('❌ AI grading failed:', err);
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        'Unable to grade right now.';
+      setGradeError(msg);
+    } finally {
+      setGrading(false);
+    }
+  };
+  const isCompleted = challenge?.status === 'completed';
+  const haveSubmissions = submissions.length > 0;
   const isInPeerReview = challenge?.status === "in_peer_review";
   const isPeerReviewed = challenge?.status === "peer_reviewed";
+  const aiAttemptsLeft = Math.max(MAX_AI_GRADES - aiFeedbackCount, 0);
+  const aiLimitReached = aiAttemptsLeft <= 0;
+  const canViewAiGrade = (haveSubmissions || isPeerReviewed) && latestSubmission;
+  const canGradeWithAI = canViewAiGrade && !aiLimitReached;
+  const hasGradedSubmission = submissions.some(
+    (s) => s?.status === 'graded',
+  );
+  const hasAIFeedback = aiFeedbackCount > 0;
 
   if (loading) return <LoadingSpinner message="Loading challenge..." />;
 
@@ -317,6 +455,12 @@ const ChallengeSubmissionPage = () => {
                 🔍 Requires Peer Review
               </span>
             )}
+            {goal && (
+              <span className="badge goal">
+                🎯 Goal: {goal.title}
+              </span>
+            )
+            }
 
             {/* 🧮 Attempts Left */}
             {challenge.max_attempts && (
@@ -335,6 +479,27 @@ const ChallengeSubmissionPage = () => {
               </span>
             )}
           </div>
+
+          {canViewAiGrade && (
+            <div className="ai-grade-action">
+              <motion.button
+                className={`btn-ai-grade ${aiLimitReached ? 'disabled' : ''}`}
+                whileHover={{ scale: aiLimitReached ? 1 : 1.04 }}
+                whileTap={{ scale: aiLimitReached ? 1 : 0.96 }}
+                onClick={() => handleGradeWithAI(false)}
+                disabled={grading || aiLimitReached}
+              >
+                {grading
+                  ? 'Grading with AI...'
+                  : aiLimitReached
+                  ? 'AI grade limit reached'
+                  : '🤖 Grade with AI'}
+              </motion.button>
+              <p className="ai-grade-meta">
+                AI grades left: {aiAttemptsLeft} / {MAX_AI_GRADES}
+              </p>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -448,7 +613,7 @@ const ChallengeSubmissionPage = () => {
       <motion.section className="submissions-history" variants={fadeIn}>
         <h2>📜 Past Submissions</h2>
         {/* If challenge requires peer review */}
-        {challenge.requires_peer_review ? (
+        {(challenge.requires_peer_review && !isPeerReviewed) ? (
           submissions.length > 0 &&
           !isInPeerReview && !isPeerReviewed && (
             <motion.div className="mark-complete-container">
@@ -464,8 +629,8 @@ const ChallengeSubmissionPage = () => {
           )
         ) : (
           /* Normal completion flow */
-          !isCompleted && !isInPeerReview &&
-          submissions.length > 0 && (
+          !isCompleted && !isInPeerReview && (challenge.requires_peer_review? isPeerReviewed : true) &&
+          hasGradedSubmission && (
             <motion.div className="mark-complete-container">
               <motion.button
                 className="btn-success"
@@ -563,6 +728,83 @@ const ChallengeSubmissionPage = () => {
           </motion.p>
         )}
       </motion.section>
+      {canViewAiGrade && (
+        <motion.section className="ai-grade-section" variants={fadeIn}>
+          <div className="ai-grade-header">
+            <div>
+              <h2>🤖 AI Grade</h2>
+              <p>
+                Get automated feedback on your completed challenge.
+                {aiLimitReached && ' AI grading limit reached for this challenge.'}
+              </p>
+            </div>
+            <div className="ai-grade-actions">
+              <motion.button
+                className="btn-secondary"
+                whileHover={{ scale: aiLimitReached ? 1 : 1.05 }}
+                whileTap={{ scale: aiLimitReached ? 1 : 0.96 }}
+                onClick={() => handleGradeWithAI(true)}
+                disabled={grading || aiLimitReached || !hasAIFeedback}
+              >
+                {grading
+                  ? 'Re-running...'
+                  : aiLimitReached
+                  ? 'No attempts left'
+                  : 'Re-run AI Grade'}
+              </motion.button>
+            </div>
+          </div>
+          <p className="ai-attempts-left">
+            Remaining AI grades: {aiAttemptsLeft} of {MAX_AI_GRADES}
+          </p>
+
+          {gradeError && <p className="error-text">{gradeError}</p>}
+          {grading && <p className="loading-text">AI is reviewing your submission...</p>}
+
+          {aiGrade ? (
+            <div className="ai-grade-card">
+              <div className="grade-score">
+                <span>Score</span>
+                <strong>{aiGrade.score ?? '—'} / 100</strong>
+              </div>
+              <div className="grade-summary">
+                <h4>Summary</h4>
+                <p>{aiGrade.summary}</p>
+              </div>
+              <div className="grade-columns">
+                <div>
+                  <h5>👍 Strengths</h5>
+                  <ul>
+                    {(aiGrade.strengths || []).map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h5>🛠️ Improvements</h5>
+                  <ul>
+                    {(aiGrade.improvements || []).map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h5>💡 Suggestions</h5>
+                  <ul>
+                    {(aiGrade.suggestions || []).map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            !grading && !gradeError && (
+              <p className="muted-text">No AI grade yet. Click the button above to generate one.</p>
+            )
+          )}
+        </motion.section>
+      )}
       {isReviewView && (
         <motion.section className="peer-review-results" variants={fadeIn}>
           <h2>⭐ Peer Reviews Received</h2>

@@ -278,11 +278,14 @@ export const apiService = {
 
     getAIFeedback: (submission) =>
       api.post('/ai/feedback', submission),
+
+    gradeChallenge: (challengeId, payload = {}) =>
+      api.post(`/ai/grade/challenge/${challengeId}`, payload),
   },
 
   // Progress methods
   progress: {
-    getProgress: () => api.get('/progress'),
+    getProgress: (params) => api.get('/progress', { params }),
     getLatestProgress: () => api.get('/progress/latest'),
     getOverview: () => api.get('/progress/overview'),
     getSkills: () => api.get('/progress/skills'),

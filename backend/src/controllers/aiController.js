@@ -140,6 +140,33 @@ const aiController = {
       });
     }
   },
+
+  /* ============================================================
+     🧾 6. Grade a completed or peer-reviewed challenge
+     Route: POST /ai/grade/challenge/:challengeId
+  ============================================================ */
+  gradeChallenge: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const challengeId = parseInt(req.params.challengeId, 10);
+      const force = req.body?.force === true || req.query?.force === 'true';
+
+      const grade = await aiService.gradeChallengeSubmission({
+        userId,
+        challengeId,
+        force,
+      });
+
+      return res.status(200).json({ grade });
+    } catch (err) {
+      console.error('❌ AI Grading Error:', err);
+      const status = err.statusCode || 500;
+      return res.status(status).json({
+        error: err.message || 'Failed to grade challenge',
+        code: err.code || err.name,
+      });
+    }
+  },
 };
 
 module.exports = aiController;

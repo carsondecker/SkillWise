@@ -319,6 +319,11 @@
   color: #92400e;
   border: 1px solid #f8e196;
 }
+.badge.goal {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
 .peer-review-results {
   background: white;
   padding: 1.5rem;
@@ -374,6 +379,155 @@
           }
         }
       }
+    }
+  }
+}
+
+.ai-grade-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  margin-top: 1.5rem;
+
+  .ai-grade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    h2 {
+      color: #1e3a8a;
+      margin: 0;
+    }
+
+    p {
+      color: #6b7280;
+      margin: 0.2rem 0 0;
+    }
+  }
+
+  .ai-grade-card {
+    margin-top: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1rem;
+    background: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .grade-score {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+
+    span {
+      color: #6b7280;
+    }
+
+    strong {
+      font-size: 1.4rem;
+      color: #1e3a8a;
+    }
+  }
+
+  .grade-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+
+    h5 {
+      margin-bottom: 0.4rem;
+      color: #111827;
+    }
+
+    ul {
+      padding-left: 1rem;
+      margin: 0;
+      color: #374151;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+  }
+
+  .grade-summary p {
+    margin: 0;
+    color: #374151;
+  }
+
+  .muted-text {
+    color: #6b7280;
+    margin-top: 0.5rem;
+  }
+
+  .error-text {
+    color: #b91c1c;
+    margin-top: 0.5rem;
+  }
+
+  .loading-text {
+    color: #1d4ed8;
+    margin-top: 0.5rem;
+  }
+
+  .ai-attempts-left {
+    margin: 0.35rem 0 0.6rem;
+    color: #2563eb;
+    font-weight: 600;
+  }
+}
+
+.ai-grade-action {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+
+  .btn-ai-grade {
+    background: linear-gradient(115deg, #0ea5e9, #2563eb, #7c3aed);
+    color: #fff;
+    font-weight: 700;
+    border: none;
+    padding: 0.85rem 1.35rem;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    letter-spacing: 0.01em;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(14, 165, 233, 0.28);
+      filter: saturate(1.05);
+    }
+
+    &:active {
+      transform: translateY(1px);
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+    }
+
+    &.disabled,
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+      box-shadow: none;
+      background: linear-gradient(115deg, #9ca3af, #6b7280);
+    }
+  }
+
+  .ai-grade-meta {
+    margin: 0;
+    color: #1f2937;
+    font-size: 0.92rem;
+
+    span {
+      font-weight: 700;
+      color: #2563eb;
     }
   }
 }

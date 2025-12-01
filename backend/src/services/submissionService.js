@@ -183,10 +183,32 @@ const submissionService = {
     try {
       const result = await db.query(
         `
-          SELECT *
-          FROM submissions
-          WHERE user_id = $1 AND challenge_id = $2
-          ORDER BY submitted_at DESC
+          SELECT
+            s.*,
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', af.id,
+                  'feedback_text', af.feedback_text,
+                  'feedback_type', af.feedback_type,
+                  'confidence_score', af.confidence_score,
+                  'suggestions', af.suggestions,
+                  'strengths', af.strengths,
+                  'improvements', af.improvements,
+                  'ai_model', af.ai_model,
+                  'processing_time_ms', af.processing_time_ms,
+                  'created_at', af.created_at
+                )
+                ORDER BY af.created_at DESC
+              ) FILTER (WHERE af.id IS NOT NULL),
+              '[]'::json
+            ) AS ai_feedback,
+            COUNT(af.id) FILTER (WHERE af.feedback_type = 'grading') AS ai_feedback_count
+          FROM submissions s
+          LEFT JOIN ai_feedback af ON af.submission_id = s.id
+          WHERE s.user_id = $1 AND s.challenge_id = $2
+          GROUP BY s.id
+          ORDER BY s.submitted_at DESC
         `,
         [userId, challengeId],
       );
