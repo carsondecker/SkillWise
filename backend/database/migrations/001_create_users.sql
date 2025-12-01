@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    profile_image TYPE TEXT,
+    profile_image TEXT,
     bio TEXT,
     is_active BOOLEAN DEFAULT true,
     is_verified BOOLEAN DEFAULT false,
