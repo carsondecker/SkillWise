@@ -14,7 +14,12 @@ describe('🔐 Authentication Integration', () => {
   let tokens = {};
 
   afterAll(async () => {
-    await db.end();
+    // Close DB pool if available
+    if (db && typeof db.closePool === 'function') {
+      await db.closePool();
+    } else if (db && db.pool && typeof db.pool.end === 'function') {
+      await db.pool.end();
+    }
   });
 
   describe('POST /api/auth/register', () => {
@@ -46,8 +51,9 @@ describe('🔐 Authentication Integration', () => {
         .expect(200);
 
       expect(res.body).toHaveProperty('message', 'Login successful');
-      tokens.accessToken = res.body.accessToken;
-      tokens.refreshToken = res.body.refreshToken;
+      // Tokens are returned under `tokens` in the response
+      tokens.accessToken = res.body.tokens && res.body.tokens.accessToken;
+      tokens.refreshToken = res.body.tokens && res.body.tokens.refreshToken;
     });
 
     it('should reject invalid credentials', async () => {
@@ -68,7 +74,11 @@ describe('🔐 Authentication Integration', () => {
         .expect(200);
 
       expect(res.body).toHaveProperty('accessToken');
-      expect(res.body).toHaveProperty('refreshToken');
+      // refresh token is returned via httpOnly cookie (Set-Cookie header)
+      const setCookie = res.headers && res.headers['set-cookie'];
+      expect(Array.isArray(setCookie)).toBe(true);
+      const hasRefresh = setCookie.some((c) => String(c).includes('refreshToken='));
+      expect(hasRefresh).toBe(true);
     });
   });
 });

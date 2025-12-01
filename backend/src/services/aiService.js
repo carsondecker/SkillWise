@@ -2,7 +2,12 @@
 const OpenAI = require('openai');
 const { z } = require('zod');
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAiClient() {
+  // Do not instantiate the client at module import time to avoid throwing
+  // when OPENAI_API_KEY is missing in test environments that don't need AI.
+  if (!process.env.OPENAI_API_KEY) return null;
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 // Minimal zod schema for AI output validation
 const challengeOutputSchema = z.object({
@@ -114,6 +119,13 @@ Return ONLY a single JSON object matching the schema exactly. Use realistic, con
       { role: 'user', content: userMsg },
     ];
 
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not configured on the server. AI generation is unavailable.');
+    }
+
+    const client = getOpenAiClient();
+    if (!client) throw new Error('OPENAI_API_KEY is not configured on the server. AI generation is unavailable.');
+
     let aiText;
     try {
       const resp = await client.chat.completions.create({
@@ -164,6 +176,9 @@ Return ONLY a single JSON object matching the schema exactly. Use realistic, con
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not configured on the server. AI evaluation is unavailable.');
     }
+
+    const client = getOpenAiClient();
+    if (!client) throw new Error('OPENAI_API_KEY is not configured on the server. AI evaluation is unavailable.');
 
     const model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
     const temperature = options.temperature ?? 0.0;

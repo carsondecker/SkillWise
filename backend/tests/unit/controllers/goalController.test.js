@@ -1,5 +1,5 @@
 // TODO: Implement goal controller unit tests
-const goalController = require('../../src/controllers/goalController');
+const goalController = require('../../../src/controllers/goalController');
 
 describe('GoalController', () => {
   describe('GET /goals', () => {
