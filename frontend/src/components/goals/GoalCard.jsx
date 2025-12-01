@@ -2,12 +2,14 @@ import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiService } from '../../services/api';
 import ChallengeModal from '../challenges/ChallengeModal';
+import AIGeneratorModal from '../challenges/AIGeneratorModal';
 import '../../styles/components/Goal/GoalCard.scss';
 
 const GoalCard = ({ goal, onUpdated, onDeleted }) => {
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
   const challengeModalRef = useRef(null);
 
   const {
@@ -69,7 +71,7 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
   // 🧩 Handle opening the ChallengeModal
   const handleCreateChallenge = (e) => {
     e.stopPropagation(); // prevent flipping the card
-    setShowChallengeModal(true);
+    setShowAIGenerator(true);
   };
 
   const handleChallengeCreated = (newChallenge) => {
@@ -194,6 +196,15 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
 
       {/* 🎯 Challenge Modal */}
       <AnimatePresence>
+        {showAIGenerator && (
+          <AIGeneratorModal
+            goalId={id}
+            onClose={() => setShowAIGenerator(false)}
+            onManual={() => setShowChallengeModal(true)}
+            onCreatedOrUpdated={(c) => handleChallengeCreated(c)}
+          />
+        )}
+
         {showChallengeModal && (
           <ChallengeModal
             ref={challengeModalRef}

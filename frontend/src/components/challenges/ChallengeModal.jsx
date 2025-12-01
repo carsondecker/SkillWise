@@ -27,8 +27,11 @@ const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref)
 
   useImperativeHandle(ref, () => ({
     prefillForm(challenge) {
+      // strip any DB-managed timestamp fields that shouldn't be sent back
+      const { updated_at, updatedAt, ...safeChallenge } = challenge || {};
+
       setForm({
-        ...challenge,
+        ...safeChallenge,
         id: challenge.id,
         tags: Array.isArray(challenge.tags)
           ? challenge.tags.join(', ')
@@ -86,6 +89,10 @@ const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref)
       };
 
       let response;
+      // Ensure we don't accidentally include DB-managed timestamp fields
+      delete payload.updated_at;
+      delete payload.updatedAt;
+
       if (form.id) {
         // existing challenge edit
         response = await apiService.challenges.update(form.id, payload);

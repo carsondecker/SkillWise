@@ -10,6 +10,7 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('global'); // matches backend
   const [category, setCategory] = useState('overall');
+  const [userRank, setUserRank] = useState(null);
   const { user } = useAuth();
 
   // 🧠 Fetch leaderboard data from API
@@ -39,7 +40,7 @@ const LeaderboardPage = () => {
 
         // Normalize data to match UI shape
         const formatted = data.map((entry, index) => ({
-          id: entry.user_id,
+          id: Number(entry.user_id),
           name:
             [entry.first_name, entry.last_name].filter(Boolean).join(' ') ||
             'Anonymous User',
@@ -53,7 +54,7 @@ const LeaderboardPage = () => {
           ),
           level: entry.level || 1,
           completedChallenges: Number(entry.total_challenges_completed || 0),
-          isCurrentUser: entry.user_id === user?.id,
+          isCurrentUser: Number(entry.user_id) === Number(user?.id),
         }));
 
         setLeaderboardData(formatted);
@@ -83,7 +84,36 @@ const LeaderboardPage = () => {
   };
 
   const currentUserRank =
-    leaderboardData.find((u) => u.isCurrentUser)?.rank || 0;
+    // Prefer explicit fetched user rank (server-side) if available, otherwise fall back to the visible list
+    userRank?.rank_position || leaderboardData.find((u) => u.isCurrentUser)?.rank || 0;
+
+  // If the current user is not in the returned leaderboard slice, fetch their full rank
+  useEffect(() => {
+    const fetchUserRank = async () => {
+      if (!user || !user.id) return;
+
+      const found = leaderboardData.find((u) => Number(u.id) === Number(user.id));
+      if (found) {
+        setUserRank(null);
+        return;
+      }
+
+      try {
+        const res = await apiService.leaderboard.getUserRank(user.id);
+        // backend returns { ranking }
+        if (res?.data?.ranking) {
+          setUserRank({
+            rank_position: Number(res.data.ranking.rank_position) || null,
+            total_points: Number(res.data.ranking.total_points) || 0,
+          });
+        }
+      } catch (err) {
+        console.debug('Could not fetch user rank:', err?.message || err);
+      }
+    };
+
+    void fetchUserRank();
+  }, [user, leaderboardData]);
 
   return (
     <div className="leaderboard-page">
@@ -141,9 +171,25 @@ const LeaderboardPage = () => {
               <span className="rank-number">#{currentUserRank}</span>
               <div className="rank-details">
                 <p>
-                  You're in the top{' '}
-                  {Math.round((currentUserRank / leaderboardData.length) * 100)}
-                  % of learners!
+                  {currentUserRank > 0 ? (
+                    <>
+                      Ranked <strong>#{currentUserRank}</strong>
+                      {leaderboardData.length > 0 && (
+                        <> — top{' '}
+                        {Math.round(
+                          ((Math.max(leaderboardData.length, currentUserRank) -
+                            currentUserRank +
+                            1) /
+                            Math.max(leaderboardData.length, currentUserRank)) *
+                            100
+                        )}
+                        %
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    'Your ranking will appear here once available.'
+                  )}
                 </p>
                 <small>Keep learning to climb higher!</small>
               </div>

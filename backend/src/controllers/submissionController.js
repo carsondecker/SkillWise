@@ -84,13 +84,10 @@ const submissionController = {
   // Get a single submission by ID
   // -------------------------
   getSubmission: asyncHandler(async (req, res) => {
-    const submissionId = z.string().uuid().parse(req.params.id);
+    const submissionId = idNum.parse(req.params.id);
     const userId = req.user?.id;
 
-    const submission = await submissionService.getSubmissionById({
-      userId,
-      submissionId,
-    });
+    const submission = await submissionService.getSubmissionById(submissionId);
 
     if (!submission) {
       return res.status(404).json({ message: 'Submission not found' });
@@ -133,15 +130,11 @@ const submissionController = {
   // Update an existing submission
   // -------------------------
   updateSubmission: asyncHandler(async (req, res) => {
-    const submissionId = z.string().uuid().parse(req.params.id);
+    const submissionId = idNum.parse(req.params.id);
     const userId = req.user?.id;
     const payload = updateSubmissionSchema.parse(req.body);
 
-    const updated = await submissionService.updateSubmissionStatus({
-      userId,
-      submissionId,
-      data: payload,
-    });
+    const updated = await submissionService.updateSubmissionStatus(submissionId, payload.status || payload);
 
     if (!updated) {
       return res
@@ -153,6 +146,15 @@ const submissionController = {
       message: 'Submission updated successfully',
       submission: updated,
     });
+  }),
+  // -------------------------
+  // Grade a submission on-demand (manual request triggers AI evaluation)
+  // -------------------------
+  gradeSubmission: asyncHandler(async (req, res) => {
+    const submissionId = idNum.parse(req.params.id);
+    // Optionally verify user permissions here (instructors/admins or owner depending on policy)
+    const result = await submissionService.gradeSubmission(submissionId);
+    res.json(result);
   }),
 };
 

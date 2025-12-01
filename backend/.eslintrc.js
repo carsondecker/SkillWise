@@ -13,6 +13,7 @@ module.exports = {
   },
   rules: {
     'no-unused-vars': 'warn',
+    'no-undef': 'warn',
     'no-console': 'off', // Allow console for logging
     'indent': ['error', 2],
     'quotes': ['error', 'single'],

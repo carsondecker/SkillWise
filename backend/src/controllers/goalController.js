@@ -72,9 +72,11 @@ const goalController = {
   updateGoal: asyncHandler(async (req, res) => {
     const goalId = parseInt(req.params.id, 10);
     const payload = updateGoalSchema.parse(req.body);
+    const userId = req.user?.id;
     const goal = await goalService.updateGoal({
       goalId,
       data: payload,
+      userId,
     });
     if (!goal) return res.status(404).json({ message: 'Goal not found' });
     res.json({ message: 'Goal updated successfully', goal });

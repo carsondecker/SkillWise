@@ -38,6 +38,12 @@ const progressService = {
    */
   trackEvent: async (userId, eventType, eventData = {}) => {
     try {
+      // Debug: log incoming progress event
+      try {
+        console.debug('progressService.trackEvent: userId=', userId, 'eventType=', eventType, 'eventData=', JSON.stringify(eventData));
+      } catch (e) {
+        console.debug('progressService.trackEvent: incoming event contains unserializable fields');
+      }
       // Record in progress_events table
       await db.query(
         `
@@ -47,9 +53,27 @@ const progressService = {
         [userId, eventType, JSON.stringify(eventData)],
       );
 
+      console.debug('progressService.trackEvent: progress_events insert completed for userId=', userId);
+
       // If user completed a challenge, award points
       if (eventType === 'challenge_completed') {
         const points = eventData.points_earned || 10;
+        console.debug('progressService.trackEvent: challenge_completed -> points=', points, 'challenge_id=', eventData.challenge_id);
+
+        // Increment the user's completed challenge counter in user_statistics
+        try {
+          await db.query(
+            `UPDATE user_statistics
+             SET total_challenges_completed = total_challenges_completed + 1,
+                 last_activity_date = NOW(),
+                 updated_at = NOW()
+             WHERE user_id = $1`,
+            [userId],
+          );
+        } catch (err) {
+          console.error('progressService.trackEvent: failed to update user_statistics for challenge completion', err && err.message);
+        }
+
         await leaderboardService.updateUserPoints(userId, points, eventType);
 
         await notificationService.sendNotification(
@@ -62,6 +86,7 @@ const progressService = {
 
       // If user completed a goal, send milestone notification
       if (eventType === 'goal_completed') {
+        console.debug('progressService.trackEvent: goal_completed -> goal_id=', eventData.goal_id);
         await notificationService.sendNotification(
           userId,
           'goal_completed',

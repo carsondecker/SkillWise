@@ -2,7 +2,9 @@ const request = require('supertest');
 const app = require('../../src/app');
 const { testPool, clearTestData } = require('../setup');
 
-describe('🧪 Authentication Integration Tests', () => {
+const describeOrSkip = process.env.SKIP_DB_SETUP === 'true' ? describe.skip : describe;
+
+describeOrSkip('🧪 Authentication Integration Tests', () => {
   beforeEach(async () => {
     await clearTestData();
   });

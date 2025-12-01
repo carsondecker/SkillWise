@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Lottie from 'lottie-react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -11,9 +10,9 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import aiAnimation from '../../assets/animations/ai-chat.json';
 import { useAuth } from '../../hooks/useAuth'; // 👈 import your auth hook
 import '../../styles/components/dashboard/DashboardOverview.scss';
+import { apiService } from '../../services/api';
 
 ChartJS.register(
   CategoryScale,
@@ -26,29 +25,21 @@ ChartJS.register(
 
 const DashboardOverview = () => {
   const { user } = useAuth(); // 👈 get user info (firstName, lastName)
-  const [aiInput, setAiInput] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      sender: 'ai',
-      text: 'Hello! I’m your AI Mentor 👋 How are you feeling today?',
-    },
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState([
+    { label: 'Goals Completed', value: 0, color: '#6C63FF' },
+    { label: 'Challenges Completed', value: 0, color: '#FF6584' },
+    { label: 'Current Streak', value: '0 days', color: '#00C9A7' },
+    { label: 'Total Points', value: 0, color: '#F9A826' },
   ]);
 
-  // 📊 Mock stats
-  const stats = [
-    { label: 'Goals Completed', value: 8, color: '#6C63FF' },
-    { label: 'Challenges Completed', value: 5, color: '#FF6584' },
-    { label: 'Current Streak', value: '12 days', color: '#00C9A7' },
-    { label: 'Total Points', value: 640, color: '#F9A826' },
-  ];
-
-  // 📈 Mock chart data
-  const chartData = {
+  const [chartData, setChartData] = useState({
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
       {
         label: 'Learning Progress',
-        data: [20, 35, 50, 45, 60, 80, 90],
+        data: [0, 0, 0, 0, 0, 0, 0],
         borderColor: '#6C63FF',
         tension: 0.3,
         fill: true,
@@ -56,7 +47,83 @@ const DashboardOverview = () => {
         pointBackgroundColor: '#6C63FF',
       },
     ],
-  };
+  });
+
+  // Fetch dashboard data from API and map to UI-friendly shape
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        // Try multiple progress endpoints if available
+        const [overviewRes, statsRes] = await Promise.allSettled([
+          apiService.progress.getOverview(),
+          apiService.progress.getStats(),
+        ]);
+
+        if (!mounted) return;
+
+        // Map overview -> chart activity if present
+        if (overviewRes.status === 'fulfilled' && overviewRes.value?.data) {
+          const overview = overviewRes.value.data;
+
+          // Look for weekly activity array (flexible mapping)
+          const activity =
+            overview.weekly || overview.activity || overview.series || null;
+
+          if (Array.isArray(activity) && activity.length >= 1) {
+            const labels = activity.map((a) => (a.label ? a.label : a.day || ''));
+            const values = activity.map((a) => (typeof a.value !== 'undefined' ? Number(a.value) : 0));
+
+            setChartData((prev) => ({
+              ...prev,
+              labels: labels.length ? labels : prev.labels,
+              datasets: [{ ...prev.datasets[0], data: values }],
+            }));
+          }
+
+          // Map overview counts into stats if available
+          setStats((prev) => {
+            try {
+              return [
+                { label: 'Goals Completed', value: overview.goals_completed ?? prev[0].value, color: prev[0].color },
+                { label: 'Challenges Completed', value: overview.challenges_completed ?? prev[1].value, color: prev[1].color },
+                { label: 'Current Streak', value: overview.current_streak ? `${overview.current_streak} days` : prev[2].value, color: prev[2].color },
+                { label: 'Total Points', value: overview.total_points ?? prev[3].value, color: prev[3].color },
+              ];
+            } catch (e) {
+              return prev;
+            }
+          });
+        }
+
+        // If there's a dedicated stats endpoint, prefer its data
+        if (statsRes.status === 'fulfilled' && statsRes.value?.data) {
+          const s = statsRes.value.data;
+          setStats((prev) => [
+            { label: 'Goals Completed', value: s.goals_completed ?? prev[0].value, color: prev[0].color },
+            { label: 'Challenges Completed', value: s.challenges_completed ?? prev[1].value, color: prev[1].color },
+            { label: 'Current Streak', value: s.current_streak ? `${s.current_streak} days` : prev[2].value, color: prev[2].color },
+            { label: 'Total Points', value: s.total_points ?? prev[3].value, color: prev[3].color },
+          ]);
+        }
+
+        setError(null);
+      } catch (err) {
+        console.error('Dashboard load failed', err);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const chartOptions = {
     responsive: true,
@@ -101,14 +168,10 @@ const DashboardOverview = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
     >
-      {/* 🧠 AI Mentor Header */}
+      {/* Header */}
       <div className="ai-top-section">
-        <Lottie animationData={aiAnimation} loop className="ai-top-lottie" />
         <h2>Welcome Back, {displayName} 👋</h2>
-        <p>
-          Your AI Mentor is here to help you stay motivated and track your
-          growth.
-        </p>
+        <p>Here’s a snapshot of your recent progress and activity.</p>
       </div>
 
       {/* 📊 Stats Section */}
@@ -140,37 +203,35 @@ const DashboardOverview = () => {
         >
           <h3>Your Weekly Progress</h3>
           <div className="chart-container">
-            <Line data={chartData} options={chartOptions} />
+            {loading ? (
+              <p>Loading chart...</p>
+            ) : error ? (
+              <p className="error">{error}</p>
+            ) : (
+              <Line data={chartData} options={chartOptions} />
+            )}
           </div>
         </motion.div>
-
         <motion.div
           className="ai-chat-section"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h3>Talk to Your AI Mentor 🤖</h3>
-          <div className="chat-box">
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`chat-bubble ${msg.sender === 'ai' ? 'ai' : 'user'}`}
-              >
-                {msg.text}
-              </div>
-            ))}
-          </div>
-
-          <form onSubmit={handleAiAsk} className="chat-input">
-            <input
-              type="text"
-              placeholder={`Ask something, ${displayName.split(' ')[0]}...`}
-              value={aiInput}
-              onChange={(e) => setAiInput(e.target.value)}
-            />
-            <button type="submit">Send</button>
-          </form>
+          <h3>Recent Activity</h3>
+          {loading ? (
+            <p>Loading activity...</p>
+          ) : error ? (
+            <p className="error">{error}</p>
+          ) : (
+            <div className="activity-insights">
+              <p>Quick stats and recent progress are shown on the left.</p>
+              <ul>
+                <li>Last sync: {new Date().toLocaleString()}</li>
+                <li>Tip: Complete challenges to earn points and climb the leaderboard.</li>
+              </ul>
+            </div>
+          )}
         </motion.div>
       </div>
     </motion.div>

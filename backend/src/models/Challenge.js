@@ -37,7 +37,7 @@ class Challenge {
   static async findById (id) {
     const query = `
       SELECT id, title, description, instructions, category, difficulty_level, points_reward,max_attempts,
-             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at, status
+             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at, status, goal_id
       FROM challenges
       WHERE id = $1
     `;
@@ -86,16 +86,43 @@ class Challenge {
       status = 'pending',
     } = data;
 
+    // Avoid explicitly writing DB-managed timestamp columns here so
+    // the code won't fail if the migrations haven't been applied yet.
     const query = `
       INSERT INTO challenges (
         title, description, instructions, category, difficulty_level,
         points_reward, estimated_time_minutes, requires_peer_review, max_attempts,
         is_active, created_by, tags, learning_objectives, prerequisites,
-        goal_id, ai_generated, status, created_at, updated_at
+        goal_id, ai_generated, status
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW(),NOW())
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
         RETURNING *
     `;
+
+    // Debug: log the parameters we will send to the database to help diagnose failures
+    try {
+      console.error('Challenge.create: params ->', JSON.stringify({
+        title,
+        description: description && description.length ? `${description.substring(0, 500)}${description.length > 500 ? '... (truncated)' : ''}` : null,
+        instructions: instructions && instructions.length ? `${instructions.substring(0, 500)}${instructions.length > 500 ? '... (truncated)' : ''}` : null,
+        category,
+        difficulty_level,
+        points_reward,
+        estimated_time_minutes,
+        requires_peer_review,
+        max_attempts,
+        is_active,
+        created_by,
+        tags,
+        learning_objectives,
+        prerequisites,
+        goal_id,
+        ai_generated,
+        status,
+      }, null, 2));
+    } catch (e) {
+      console.error('Challenge.create: failed to stringify params', e && e.message);
+    }
 
     const result = await db.query(query, [
       title,
@@ -138,6 +165,8 @@ class Challenge {
       status,
     } = data;
 
+    // Do not set `updated_at` here to avoid failing when the DB column is missing.
+    // The database trigger (when present) can still manage timestamps.
     const query = `
       UPDATE challenges
       SET
@@ -154,8 +183,7 @@ class Challenge {
         learning_objectives = COALESCE($12, learning_objectives),
         prerequisites = COALESCE($13, prerequisites),
         max_attempts = COALESCE($14, max_attempts),
-        status = COALESCE($15, status),
-        updated_at = NOW()
+        status = COALESCE($15, status)
       WHERE id = $1
         RETURNING *
     `;

@@ -1,6 +1,7 @@
 // src/services/goalService.js
 const Goal = require('../models/Goal');
 const { AppError } = require('../middleware/errorHandler');
+const progressService = require('./progressService');
 
 const goalService = {
   /**
@@ -20,9 +21,18 @@ const goalService = {
   getGoalById: async ({ userId, goalId }) => {
     try {
       const goal = await Goal.findById(goalId);
-      if (!goal || goal.user_id !== userId) {
+      if (!goal) {
         throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
       }
+
+      /*
+      // Allow access if the goal is public or belongs to the requesting user
+      const isOwner = Number(goal.user_id) === Number(userId);
+      const isPublic = !!goal.is_public;
+      if (!isOwner && !isPublic) {
+        throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
+      }
+      */
       return goal;
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -70,11 +80,34 @@ const goalService = {
   /**
    * ✏️ Update existing goal
    */
-  updateGoal: async ({ goalId, data }) => {
+  updateGoal: async ({ goalId, data, userId = null }) => {
     try {
+      // Fetch existing goal to detect state changes
+      const existing = await Goal.findById(goalId);
+      if (!existing) {
+        throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
+      }
+
       const updated = await Goal.update(goalId, data);
       if (!updated) {
         throw new AppError('Goal not found', 404, 'GOAL_NOT_FOUND');
+      }
+
+      // If the goal transitioned to completed (either is_completed flag or progress reached 100), track event
+      try {
+        const wasCompleted = !!existing.is_completed || Number(existing.progress_percentage || 0) >= 100;
+        const isNowCompleted = !!updated.is_completed || Number(updated.progress_percentage || 0) >= 100;
+
+        if (!wasCompleted && isNowCompleted) {
+          const ownerId = userId || updated.user_id || existing.user_id;
+          const points = Number(updated.points_reward) || 0;
+          await progressService.trackEvent(ownerId, 'goal_completed', {
+            goal_id: goalId,
+            points_earned: points,
+          });
+        }
+      } catch (trackErr) {
+        console.error('Failed to track goal completion:', trackErr);
       }
 
       return updated;

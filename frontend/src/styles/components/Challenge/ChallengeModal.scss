@@ -135,3 +135,226 @@
     opacity: 1;
   }
 }
+
+/* ============================= */
+/* 🔹 AI GENERATOR MODAL STYLES */
+/* ============================= */
+
+.modal-content {
+  .modal-description {
+    text-align: center;
+    color: #6b7280;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .difficulty-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    justify-content: center;
+
+    .difficulty-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+      border: 2px solid #d1d5db;
+      border-radius: 10px;
+      padding: 0.75rem 1.2rem;
+      color: #111827;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+
+      &:hover {
+        background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+        border-color: #9ca3af;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+
+  .back-button-container {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  &.working-state {
+    text-align: center;
+
+    .spinner {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      color: #2563eb;
+      font-weight: 600;
+      font-size: 1rem;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================= */
+/* 🔹 AI GENERATOR MODAL STYLES */
+/* ============================= */
+
+.modal-content {
+  .modal-description {
+    text-align: center;
+    color: #6b7280;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .difficulty-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    justify-content: center;
+
+    .difficulty-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+      border: 2px solid #d1d5db;
+      border-radius: 10px;
+      padding: 0.75rem 1.2rem;
+      color: #111827;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+
+      &:hover {
+        background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+        border-color: #9ca3af;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+
+  .back-button-container {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  &.working-state {
+    text-align: center;
+
+    .spinner {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      color: #2563eb;
+      font-weight: 600;
+      font-size: 1rem;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  }
+}
+
+/* AI Generator Modal Specific Overrides */
+.modal {
+  p {
+    text-align: center;
+    color: #6b7280;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    border: none;
+    border-radius: 10px;
+    padding: 0.7rem 1.4rem;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-secondary {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 10px;
+    padding: 0.7rem 1.2rem;
+    color: #111827;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: #e5e7eb;
+    }
+  }
+
+  .btn {
+    flex: 1;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    padding: 0.75rem 1.2rem;
+    color: #111827;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+
+    &:hover {
+      background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+      border-color: #9ca3af;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .spinner {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    color: #2563eb;
+    font-weight: 600;
+    font-size: 1rem;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+}

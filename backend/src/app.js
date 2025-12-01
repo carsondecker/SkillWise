@@ -13,6 +13,9 @@ const cookieParser = require('cookie-parser');
 // Middleware
 const errorHandler = require('./middleware/errorHandler');
 
+// Optional Sentry initialization (safe no-op when not configured)
+require('./sentry');
+
 // Routes
 const routes = require('./routes/index');
 
@@ -96,8 +99,9 @@ app.use(
 // --------------------------------------------------
 // 🚦 Rate Limiting
 // --------------------------------------------------
+/*
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 min
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 30 * 1000, // 30 seconds
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
   standardHeaders: true,
   legacyHeaders: false,
@@ -112,8 +116,8 @@ const limiter = rateLimit({
     });
   },
 });
-
-app.use(limiter);
+*/
+//app.use(limiter);
 
 // --------------------------------------------------
 // 📦 Body Parsers
