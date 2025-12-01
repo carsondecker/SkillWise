@@ -814,7 +814,34 @@ const PeerReviewPage = () => {
                                   };
                                 })(updated);
 
+                                // Update mySubmissions
                                 setMySubmissions((list) => list.map((it) => (it.id === norm.id ? norm : it)));
+
+                                // Recompute submissionScores (peerAvg, aiRating, combined) so Average Rating updates immediately
+                                try {
+                                  const sid = norm.id;
+                                  const existing = submissionScores[sid] || {};
+                                  const peerAvg = existing.peerAvg ?? null;
+                                  const peerCount = existing.peerCount ?? 0;
+
+                                  const aiScore100 = norm.averageRating || norm.score || null;
+                                  const aiRating = typeof aiScore100 === 'number' ? Math.round((aiScore100 / 100) * 4 + 1) : null;
+
+                                  let combined;
+                                  if (peerAvg !== null && peerCount > 0) {
+                                    const combinedCount = peerCount + (aiRating ? 1 : 0);
+                                    const combinedSum = (peerAvg * peerCount) + (aiRating || 0);
+                                    combined = combinedCount > 0 ? combinedSum / combinedCount : undefined;
+                                  } else if (aiRating) {
+                                    combined = aiRating;
+                                  } else {
+                                    combined = undefined;
+                                  }
+
+                                  setSubmissionScores((s) => ({ ...s, [sid]: { ...(s[sid] || {}), peerAvg, aiRating, combined, peerCount } }));
+                                } catch (err) {
+                                  console.debug('Failed to recompute submissionScores after AI feedback', err);
+                                }
                               }
                             } catch (err) {
                               console.error('AI feedback request failed', err);
