@@ -225,6 +225,24 @@ Gmail App Password setup:
 3. Generate password for "Mail"
 4. Use generated password (not regular Gmail password)
 
+### For Error Monitoring (Sentry)
+
+Add your DSNs to `.env` (or export them in your shell) so backend and frontend report errors:
+
+```env
+SENTRY_DSN=your-backend-dsn
+SENTRY_ENVIRONMENT=development
+SENTRY_TRACES_SAMPLE_RATE=0.1
+
+FRONTEND_SENTRY_DSN=your-frontend-dsn
+REACT_APP_SENTRY_DSN=your-frontend-dsn
+REACT_APP_SENTRY_TRACES_SAMPLE_RATE=0.1
+```
+
+Notes:
+- Backend Sentry is disabled if `SENTRY_DSN` is unset.
+- Frontend Sentry is initialized only when `REACT_APP_SENTRY_DSN` is provided (CRA requires the `REACT_APP_` prefix).
+
 ## Development Tools Setup
 
 ### VS Code Extensions (Recommended)

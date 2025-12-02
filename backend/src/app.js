@@ -5,6 +5,7 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const Sentry = require('@sentry/node');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
 const crypto = require('crypto');
@@ -18,6 +19,26 @@ const routes = require('./routes/index');
 
 // Create Express app
 const app = express();
+
+// --------------------------------------------------
+// 🛰️ Sentry Monitoring
+// --------------------------------------------------
+const SENTRY_DSN = process.env.SENTRY_DSN;
+const SENTRY_ENVIRONMENT =
+  process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development';
+const SENTRY_TRACES_SAMPLE_RATE = Number(
+  process.env.SENTRY_TRACES_SAMPLE_RATE || '0',
+);
+
+Sentry.init({
+  dsn: SENTRY_DSN,
+  environment: SENTRY_ENVIRONMENT,
+  tracesSampleRate: Number.isFinite(SENTRY_TRACES_SAMPLE_RATE)
+    ? SENTRY_TRACES_SAMPLE_RATE
+    : 0,
+  enabled: Boolean(SENTRY_DSN),
+});
+
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use(cookieParser());
 
@@ -61,6 +82,9 @@ app.use(
     },
   }),
 );
+
+// Sentry request handler should go after basic middleware setup
+app.use(Sentry.Handlers.requestHandler());
 
 // --------------------------------------------------
 // 🛡️ Security Middleware
@@ -170,8 +194,9 @@ app.use('*', (req, res) => {
 });
 
 // --------------------------------------------------
-// ❗ Global Error Handler
+// ❗ Global Error Handler (Sentry first, then app handler)
 // --------------------------------------------------
+app.use(Sentry.Handlers.errorHandler());
 app.use(errorHandler);
 
 app.set('logger', logger);

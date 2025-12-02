@@ -4,6 +4,7 @@
 
 const app = require('./src/app');
 const logger = app.get('logger');
+const Sentry = require('@sentry/node');
 const { closePool, testConnection } = require('./src/database/connection');
 
 const PORT = process.env.PORT || 3001;
@@ -69,17 +70,20 @@ const ENV = process.env.NODE_ENV || 'development';
     // 🧯 Global Error Handling
     // --------------------------------------------------
     process.on('uncaughtException', (err) => {
+      Sentry.captureException(err);
       logger.error('💥 Uncaught Exception:', err);
       process.exit(1);
     });
 
     process.on('unhandledRejection', (reason, promise) => {
+      Sentry.captureException(reason);
       logger.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
       process.exit(1);
     });
 
     module.exports = server;
   } catch (err) {
+    Sentry.captureException(err);
     logger.error('❌ Fatal startup error:', err);
     process.exit(1);
   }
