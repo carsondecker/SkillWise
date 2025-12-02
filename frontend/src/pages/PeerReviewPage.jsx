@@ -123,7 +123,7 @@ const PeerReviewPage = () => {
         <div className="my-submissions-section">
           <div className="section-header">
             <h2>Your Submissions</h2>
-            <button className="btn-primary">Submit New Work</button>
+            <button className="btn-primary" onClick={()=> navigate(`/challenges`)}>Submit New Work</button>
           </div>
 
           {loading ? (

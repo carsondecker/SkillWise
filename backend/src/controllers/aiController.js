@@ -15,6 +15,12 @@ const aiController = {
       const { goalId } = req.params;
       const userId = req.user.id;
       const count = Math.min(req.body.count || 1, 3);
+      const rawDifficulty = req.body.difficulty;
+      const requiresPeerReview = req.body.requires_peer_review === true;
+      const allowedDifficulties = ['easy', 'medium', 'hard'];
+      const difficulty = allowedDifficulties.includes(rawDifficulty)
+        ? rawDifficulty
+        : null;
 
       // 1️⃣ Fetch goal
       const goal = await Goal.findById(goalId);
@@ -23,7 +29,15 @@ const aiController = {
       }
 
       // 2️⃣ Generate N challenges (agentic loop handled in service)
-      const generatedChallenges = await aiService.generateChallengesForGoal(goal, userId, count);
+      const generatedChallenges = await aiService.generateChallengesForGoal(
+        goal,
+        userId,
+        {
+          count,
+          difficulty,
+          requiresPeerReview,
+        },
+      );
 
       // 3️⃣ Save all to DB
       const saved = [];

@@ -34,44 +34,56 @@ function safeJSON (text) {
 }
 const generateOneChallengeAgentic = async (goal, userId, difficulty) => {
   let attempts = 0;
+  const maxAttempts = 4; // initial try + 3 retries
 
-  while (attempts < 4) {
+  while (attempts < maxAttempts) {
     attempts++;
 
-    const prompt = buildAIChallengePrompt(goal, difficulty);
+    try {
+      const prompt = buildAIChallengePrompt(goal, difficulty);
 
-    const aiClient = getClient();
-    const response = await aiClient.chat.completions.create({
-      model: process.env.OPENAI_MODEL,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are SkillWise AI. You ONLY output clean, structured JSON challenges. No explanations.',
-        },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.6,
-    });
+      const aiClient = getClient();
+      const response = await aiClient.chat.completions.create({
+        model: process.env.OPENAI_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are SkillWise AI. You ONLY output clean, structured JSON challenges. No explanations.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.6,
+      });
 
-    const rawText = extractAIMessage(response);
-    const json = safeJSON(rawText);
+      const rawText = extractAIMessage(response);
+      const json = safeJSON(rawText);
 
-    const parsed = aiGeneratedChallengeSchema.safeParse(json);
+      const parsed = aiGeneratedChallengeSchema.safeParse(json);
 
-    if (parsed.success) {
-      const clean = parsed.data;
+      if (parsed.success) {
+        const clean = parsed.data;
 
-      return {
-        ...clean,
-        goal_id: goal.id,
-        created_by: userId,
-        ai_generated: true,
-        difficulty_level: difficulty,
-      };
+        return {
+          ...clean,
+          goal_id: goal.id,
+          created_by: userId,
+          ai_generated: true,
+          difficulty_level: difficulty,
+        };
+      }
+
+      console.warn(
+        `⚠️ Invalid AI challenge format (validation failed), retrying... (attempt ${attempts})`,
+      );
+    } catch (err) {
+      console.warn(
+        `⚠️ AI challenge parse error, retrying... (attempt ${attempts}): ${err.message}`,
+      );
+      if (attempts >= maxAttempts) {
+        throw new Error('AI failed to generate a valid challenge after several attempts');
+      }
     }
-
-    console.warn(`⚠️ Invalid AI challenge format, retrying... (attempt ${attempts})`);
   }
 
   throw new Error('AI failed to generate a valid challenge after several attempts');
@@ -191,16 +203,31 @@ module.exports = {
      Called by controller: aiService.generateChallengeFromGoal(goal, userId)
   ============================================================ */
   // services/aiService.js
-  generateChallengesForGoal: async (goal, userId, count) => {
+  generateChallengesForGoal: async (
+    goal,
+    userId,
+    { count = 1, difficulty = null, requiresPeerReview = false } = {},
+  ) => {
     const results = [];
 
-    // Enforce different difficulty levels
-    let difficultyPool = ['easy', 'medium', 'hard'].slice(0, count);
+    const allowedDifficulties = ['easy', 'medium', 'hard'];
+    const normalizedDifficulty = allowedDifficulties.includes(difficulty)
+      ? difficulty
+      : null;
+
+    // Enforce difficulty selection; if none chosen, keep varied defaults
+    let difficultyPool = normalizedDifficulty
+      ? Array.from({ length: count }, () => normalizedDifficulty)
+      : ['easy', 'medium', 'hard'].slice(0, count);
 
     for (let i = 0; i < count; i++) {
-      const difficulty = difficultyPool[i];
-      const challenge = await generateOneChallengeAgentic(goal, userId, difficulty);
-      results.push(challenge);
+      const level = difficultyPool[i] || 'medium';
+      const challenge = await generateOneChallengeAgentic(goal, userId, level);
+      const withPeerReview =
+        level === 'hard' && requiresPeerReview
+          ? { ...challenge, requires_peer_review: true }
+          : challenge;
+      results.push(withPeerReview);
     }
 
     return results;

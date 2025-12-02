@@ -60,18 +60,25 @@ const PeerReviewDetailPage = () => {
 
   const handleSubmitReview = async () => {
     if (rating === 0) {
-      return alert("Please select a rating before submitting.");
+      alert("Please select a rating before submitting.");
+      return;
+    }
+
+    const trimmedText = reviewText.trim();
+    if (trimmedText.length < 10) {
+      alert("Please provide at least 10 characters of constructive feedback.");
+      return;
     }
 
     try {
       const payload = {
         reviewee_id: submission.author_id,
-        review_text: reviewText,
+        review_text: trimmedText,
         rating,
         criteria_scores: criteriaScores,
         time_spent_minutes: timeSpent,
         is_anonymous: anonymous,
-        is_complete: true,
+        is_completed: true,
         completed_at: new Date().toISOString()
       };
       console.log("Review submitted:", payload);
@@ -81,7 +88,8 @@ const PeerReviewDetailPage = () => {
       navigate("/peer-review");
     } catch (err) {
       console.error("Review submission failed", err);
-      alert("❌ Something went wrong while submitting your review.");
+      const message = err.response?.data?.message || "❌ Something went wrong while submitting your review.";
+      alert(message);
     }
   };
 

@@ -10,6 +10,8 @@ const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref)
   const [submitting, setSubmitting] = useState(false);
   const [mode, setMode] = useState(goalId ? "select" : "manual");
   const [aiCount, setAiCount] = useState(1); // default = 1
+  const [aiDifficulty, setAiDifficulty] = useState('medium');
+  const [aiRequiresPeerReview, setAiRequiresPeerReview] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -115,7 +117,12 @@ const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref)
     setSubmitting(true);
 
     try {
-      const response = await apiService.ai.generateChallengeForGoal(goalId, { count });
+      const response = await apiService.ai.generateChallengeForGoal(goalId, {
+        count,
+        difficulty: aiDifficulty,
+        requires_peer_review:
+          aiDifficulty === 'hard' ? aiRequiresPeerReview : false,
+      });
       const challenges = response.data.challenges;
 
       // If backend returns array of challenges
@@ -177,6 +184,49 @@ const ChallengeModal = forwardRef(({ goalId, onClose, onCreatedOrUpdated }, ref)
                   </motion.button>
                 ))}
               </div>
+
+              <div className="form-group">
+                <label>Difficulty level</label>
+                <div className="ai-count-options">
+                  {['easy', 'medium', 'hard'].map((level) => (
+                    <motion.button
+                      key={level}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setAiDifficulty(level);
+                        if (level !== 'hard') setAiRequiresPeerReview(false);
+                      }}
+                      className={`ai-count-pill ${aiDifficulty === level ? 'selected' : ''}`}
+                    >
+                      {level.charAt(0).toUpperCase() + level.slice(1)}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {aiDifficulty === 'hard' && (
+                <div className="form-group">
+                  <label>Should these hard challenges require peer review?</label>
+                  <div className="ai-count-options">
+                    {[{ label: 'Yes', value: true }, { label: 'No', value: false }].map(
+                      (opt) => (
+                        <motion.button
+                          key={opt.label}
+                          whileHover={{ scale: 1.08 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setAiRequiresPeerReview(opt.value)}
+                          className={`ai-count-pill ${
+                            aiRequiresPeerReview === opt.value ? 'selected' : ''
+                          }`}
+                        >
+                          {opt.label}
+                        </motion.button>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Buttons — same layout but cleaner spacing */}
               <div className="modal-actions ai-count-actions">
