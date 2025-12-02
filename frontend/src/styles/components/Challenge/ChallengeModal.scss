@@ -1,0 +1,299 @@
+/* ============================= */
+/* 🔹 CREATE CHALLENGE MODAL STYLES */
+/* ============================= */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55); // semi-transparent dark overlay
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow-y: auto;
+  max-height: 90vh;
+  animation: slideUp 0.25s ease-out;
+
+  h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #1e3a8a;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+
+      label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+      }
+
+      input,
+      textarea,
+      select {
+        border: 1.8px solid #d1d5db;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.2s ease;
+        font-family: inherit;
+
+        &:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+      }
+
+      textarea {
+        resize: none;
+      }
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+
+      .form-group {
+        flex: 1;
+      }
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1rem;
+
+      .btn-primary {
+        background: linear-gradient(135deg, #2563eb, #1e3a8a);
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 1.4rem;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: linear-gradient(135deg, #1d4ed8, #1e40af);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      .btn-secondary {
+        background: #f3f4f6;
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 1.2rem;
+        color: #111827;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease;
+
+        &:hover {
+          background: #e5e7eb;
+        }
+      }
+    }
+  }
+}
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+/* ------------------------------------------------------ */
+/* 🔵 PRE-MODAL (MODE SELECTION STEP)                     */
+/* ------------------------------------------------------ */
+
+.challenge-modal__select-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4rem;
+  padding: 1rem 0;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.challenge-modal__select-buttons {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  gap: 1.2rem;
+  margin-top: 1rem;
+
+  button {
+    flex: 1;
+    padding: 0.9rem 1.2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+  }
+
+  .challenge-modal__btn-manual {
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    color: #fff;
+
+    &:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+  }
+
+  .challenge-modal__btn-ai {
+    background: #f3f4f6;
+    color: #111;
+
+    &:hover {
+      background: #e5e7eb;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* ------------------------------------------------------ */
+/* 🔵 AI LOADING STATE                                    */
+/* ------------------------------------------------------ */
+
+.challenge-modal__ai-loading {
+  text-align: center;
+  padding: 2rem 1rem;
+
+  h2 {
+    color: #1e40af;
+    font-size: 1.3rem;
+    margin-bottom: 0.4rem;
+  }
+
+  p {
+    color: #4b5563;
+    font-size: 1rem;
+  }
+}
+
+/* ======================================== */
+/* 🔵 AI COUNT SELECTOR                     */
+/* ======================================== */
+
+.challenge-modal__count-step {
+  text-align: center;
+  padding: 1rem 0;
+
+  h2 {
+    color: #1e3a8a;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: #4b5563;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.ai-count-options {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+  margin: 1rem 0 2rem;
+
+  .ai-count-pill {
+    padding: 0.8rem 1.4rem;
+    border-radius: 14px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 2.5px solid #d1d5db;
+    background: #f9fafb;
+    color: #1f2937;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    &.selected {
+      background: linear-gradient(135deg, #2563eb, #1e3a8a);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+      transform: scale(1.05);
+    }
+  }
+}
+
+/* Align Back / Generate buttons nicely */
+.ai-count-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+
+  .btn-primary {
+    flex: 0.6;
+    padding: 0.9rem 1.2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+  }
+  .btn-secondary{
+    flex: 0.4;
+
+    padding: 0.9rem 1.2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+  }
+}

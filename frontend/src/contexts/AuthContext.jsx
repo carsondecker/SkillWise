@@ -1,7 +1,22 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { apiService, getAccessToken, setAccessToken, clearTokens } from '../services/api';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useState,
+} from 'react';
 
-// Initial state
+import {
+  apiService,
+  setInMemoryAccessToken,
+  clearInMemoryAccessToken,
+  setInMemoryRefreshToken,
+  clearInMemoryRefreshToken,
+} from '../services/api';
+
+// ==========================
+// 🔹 Initial State & Actions
+// ==========================
 const initialState = {
   user: null,
   isAuthenticated: false,
@@ -9,7 +24,6 @@ const initialState = {
   error: null,
 };
 
-// Action types
 const AUTH_ACTIONS = {
   SET_LOADING: 'SET_LOADING',
   LOGIN_SUCCESS: 'LOGIN_SUCCESS',
@@ -19,14 +33,13 @@ const AUTH_ACTIONS = {
   CLEAR_ERROR: 'CLEAR_ERROR',
 };
 
-// Reducer function
+// ==========================
+// 🔹 Reducer
+// ==========================
 const authReducer = (state, action) => {
   switch (action.type) {
     case AUTH_ACTIONS.SET_LOADING:
-      return {
-        ...state,
-        isLoading: action.payload,
-      };
+      return { ...state, isLoading: action.payload };
 
     case AUTH_ACTIONS.LOGIN_SUCCESS:
       return {
@@ -38,97 +51,156 @@ const authReducer = (state, action) => {
       };
 
     case AUTH_ACTIONS.LOGOUT:
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      };
+      return { ...initialState, isLoading: false };
 
     case AUTH_ACTIONS.UPDATE_USER:
-      return {
-        ...state,
-        user: { ...state.user, ...action.payload },
-      };
+      return { ...state, user: { ...state.user, ...action.payload } };
 
     case AUTH_ACTIONS.SET_ERROR:
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false,
-      };
+      return { ...state, error: action.payload };
 
     case AUTH_ACTIONS.CLEAR_ERROR:
-      return {
-        ...state,
-        error: null,
-      };
+      return { ...state, error: null };
 
     default:
       return state;
   }
 };
 
-// Create context
 const AuthContext = createContext(null);
 
-// AuthProvider component
+// ======================================================
+// 🔥 CONFIG
+// ======================================================
+const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const REFRESH_THRESHOLD = 4 * 60 * 1000; // Refresh if token is >4 minutes old
+
+// ==========================
+// 🔹 Provider
+// ==========================
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const [lastActivity, setLastActivity] = useState(Date.now());
 
-  // Check if user is authenticated on app load
+  // ======================================================
+  // 1️⃣ Track user activity (mouse, keyboard, clicks)
+  // ======================================================
   useEffect(() => {
-    const initializeAuth = async () => {
-      const token = getAccessToken();
-      
-      if (token) {
+    const updateActivity = () => setLastActivity(Date.now());
+
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('click', updateActivity);
+    window.addEventListener('scroll', updateActivity);
+
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('click', updateActivity);
+      window.removeEventListener('scroll', updateActivity);
+    };
+  }, []);
+
+  // ======================================================
+  // 2️⃣ INITIAL LOAD — validate or refresh token
+  // ======================================================
+  useEffect(() => {
+    const initialize = async () => {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+
+      const publicPaths = ['/login', '/signup', '/forgot-password', '/'];
+      const currentPath = window.location.pathname;
+
+      // Skip auth bootstrap on public pages to avoid redirect loops for new users
+      if (publicPaths.includes(currentPath)) {
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+        return;
+      }
+
+      try {
+        const profile = await apiService.user.getProfile();
+        setInMemoryAccessToken(null); // trust cookies for now
+        dispatch({
+          type: AUTH_ACTIONS.LOGIN_SUCCESS,
+          payload: { user: profile.data.user || profile.data },
+        });
+      } catch {
+        // Try refresh
         try {
-          // Validate token by fetching user profile
-          const response = await apiService.user.getProfile();
+          const refreshRes = await apiService.auth.refresh();
+          if (refreshRes?.data?.accessToken) {
+            setInMemoryAccessToken(refreshRes.data.accessToken);
+          }
+          if (refreshRes?.data?.refreshToken) {
+            setInMemoryRefreshToken(refreshRes.data.refreshToken);
+          }
+
+          // no token body expected; rely on cookies
+          const profile = await apiService.user.getProfile();
           dispatch({
             type: AUTH_ACTIONS.LOGIN_SUCCESS,
-            payload: { user: response.data },
+            payload: { user: profile.data.user || profile.data },
           });
-        } catch (error) {
-          console.error('Token validation failed:', error);
-          // Token is invalid, clear it
-          clearTokens();
+        } catch {
           dispatch({ type: AUTH_ACTIONS.LOGOUT });
         }
-      } else {
+      } finally {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       }
     };
 
-    initializeAuth();
+    initialize();
   }, []);
 
-  // Listen for logout events from API interceptors
+  // ======================================================
+  // 3️⃣ ACTIVITY-BASED AUTO REFRESH
+  // ======================================================
   useEffect(() => {
-    const handleLogout = (event) => {
-      console.log('Logout event received:', event.detail?.reason);
-      dispatch({ type: AUTH_ACTIONS.LOGOUT });
-    };
+    const interval = setInterval(async () => {
+      if (!state.isAuthenticated) return;
 
-    window.addEventListener('auth:logout', handleLogout);
-    
-    return () => {
-      window.removeEventListener('auth:logout', handleLogout);
-    };
-  }, []);
+      const now = Date.now();
+      const sinceLastActivity = now - lastActivity;
 
-  // Login function
+      // 🚪 Auto-logout after 10 min inactivity
+      if (sinceLastActivity > IDLE_TIMEOUT) {
+        console.log("⏳ User idle for too long → logging out.");
+        logout();
+        return;
+      }
+
+      // 🔄 Only refresh if user is active
+      if (sinceLastActivity < 2000) {
+        try {
+          const refreshRes = await apiService.auth.refresh();
+          if (refreshRes?.data?.accessToken) {
+            setInMemoryAccessToken(refreshRes.data.accessToken);
+          }
+          if (refreshRes?.data?.refreshToken) {
+            setInMemoryRefreshToken(refreshRes.data.refreshToken);
+          }
+          console.log("🔄 Token refreshed (active user)");
+        } catch (err) {
+          console.warn("⚠️ Refresh failed:", err);
+        }
+      }
+    }, REFRESH_THRESHOLD);
+
+    return () => clearInterval(interval);
+  }, [state.isAuthenticated, lastActivity]);
+
+  // ======================================================
+  // 🔹 Auth Actions
+  // ======================================================
   const login = async (credentials) => {
     dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
     try {
       const response = await apiService.auth.login(credentials);
       const { user, accessToken } = response.data;
 
-      // Store access token
-      setAccessToken(accessToken);
+      if (accessToken) setInMemoryAccessToken(accessToken);
+      if (response.data?.refreshToken) setInMemoryRefreshToken(response.data.refreshToken);
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -136,184 +208,68 @@ export const AuthProvider = ({ children }) => {
       });
 
       return { success: true, user };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Register function
-  const register = async (userData) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
-    try {
-      const response = await apiService.auth.register(userData);
-      const { user, accessToken } = response.data;
-
-      // Store access token
-      setAccessToken(accessToken);
-
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_SUCCESS,
-        payload: { user },
-      });
-
-      return { success: true, user };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Logout function
-  const logout = async () => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-
-    try {
-      // Call logout endpoint to clear httpOnly refresh cookie
-      await apiService.auth.logout();
-    } catch (error) {
-      // Continue with logout even if API call fails
-      console.error('Logout API call failed:', error);
+    } catch (err) {
+      const message = err.response?.data?.message || 'Login failed';
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
+      return { success: false, error: message };
     } finally {
-      // Clear tokens and update state
-      clearTokens();
-      dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
     }
   };
 
-  // Update profile function
-  const updateProfile = async (profileData) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
+  const logout = async () => {
     try {
-      const response = await apiService.user.updateProfile(profileData);
-      const updatedUser = response.data;
-
-      dispatch({
-        type: AUTH_ACTIONS.UPDATE_USER,
-        payload: updatedUser,
-      });
-
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return { success: true, user: updatedUser };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Profile update failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
+      await apiService.auth.logout();
+    } catch (err){
+      console.warn("⚠️ Logout request failed:", err);
     }
+    clearInMemoryAccessToken();
+    clearInMemoryRefreshToken();
+    dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    window.location.href = '/login';
   };
 
-  // Change password function
-  const changePassword = async (passwordData) => {
+  const register = async (data) => {
     dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
     try {
-      await apiService.user.changePassword(passwordData);
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      const response = await apiService.auth.register(data);
+      const { accessToken } = response.data;
+
+      if (accessToken) setInMemoryAccessToken(accessToken);
+      if (response.data?.refreshToken) setInMemoryRefreshToken(response.data.refreshToken);
+
+      dispatch({
+        type: AUTH_ACTIONS.LOGIN_SUCCESS,
+        payload: { user: response.data.user },
+      });
       return { success: true };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password change failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Forgot password function
-  const forgotPassword = async (email) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
-    try {
-      await apiService.auth.forgotPassword(email);
+    } catch (err) {
+      const message = err.response?.data?.message || 'Registration failed';
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
+      return { success: false, error: message };
+    } finally {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset request failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
     }
-  };
-
-  // Reset password function
-  const resetPassword = async (token, password) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
-    try {
-      await apiService.auth.resetPassword(token, password);
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset failed';
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: errorMessage,
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Clear error function
-  const clearError = () => {
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  };
-
-  // Context value
-  const value = {
-    // State
-    user: state.user,
-    isAuthenticated: state.isAuthenticated,
-    isLoading: state.isLoading,
-    error: state.error,
-
-    // Actions
-    login,
-    register,
-    logout,
-    updateProfile,
-    changePassword,
-    forgotPassword,
-    resetPassword,
-    clearError,
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+        isLoading: state.isLoading,
+        error: state.error,
+        login,
+        logout,
+        register,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook to use auth context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  
-  return context;
-};
-
-export default AuthContext;
+// ==========================
+// 🔹 Hook
+// ==========================
+export const useAuth = () => useContext(AuthContext);

@@ -1,32 +1,71 @@
-// TODO: Implement validation middleware unit tests
-const validation = require('../../src/middleware/validation');
+const validation = require('../../../src/middleware/validation');
+const { AppError } = require('../../../src/middleware/errorHandler');
+
+const createMock = (body = {}) => {
+  const req = { body, query: {}, params: {} };
+  const res = {};
+  const next = jest.fn();
+  return { req, res, next };
+};
 
 describe('Validation Middleware', () => {
   describe('loginValidation', () => {
-    test('should validate correct login data', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+    test('passes through valid login data', () => {
+      const { req, res, next } = createMock({
+        email: 'user@example.com',
+        password: 'Password123',
+      });
+
+      validation.loginValidation(req, res, next);
+
+      expect(req.validated.body.email).toBe('user@example.com');
+      expect(next).toHaveBeenCalledWith();
     });
 
-    test('should reject invalid email format', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+    test('rejects invalid email', () => {
+      const { req, res, next } = createMock({
+        email: 'not-an-email',
+        password: 'Password123',
+      });
+
+      validation.loginValidation(req, res, next);
+
+      const error = next.mock.calls[0][0];
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.message).toMatch(/Invalid email format/);
     });
   });
 
   describe('registerValidation', () => {
-    test('should validate registration data', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+    const basePayload = {
+      email: 'user@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
+      firstName: 'John',
+      lastName: 'Doe',
+    };
+
+    test('accepts valid registration data', () => {
+      const { req, res, next } = createMock(basePayload);
+
+      validation.registerValidation(req, res, next);
+
+      expect(req.validated.body.firstName).toBe('John');
+      expect(next).toHaveBeenCalledWith();
     });
 
-    test('should enforce password requirements', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+    test('enforces password complexity', () => {
+      const { req, res, next } = createMock({
+        ...basePayload,
+        password: 'simple',
+        confirmPassword: 'simple',
+      });
+
+      validation.registerValidation(req, res, next);
+
+      const error = next.mock.calls[0][0];
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.message).toMatch(/Password must contain/);
     });
   });
-
-  // TODO: Add more test cases
 });
-
-module.exports = {};

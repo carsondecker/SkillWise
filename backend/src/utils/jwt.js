@@ -1,34 +1,96 @@
-// TODO: JWT utility functions for token generation and verification
 const jwt = require('jsonwebtoken');
+const { AppError } = require('../middleware/errorHandler');
 
-const generateToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '15m'
-  });
-};
+const ACCESS_EXP = process.env.JWT_EXPIRES_IN || '7d';
+const REFRESH_EXP = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+const RESET_EXP = process.env.JWT_RESET_EXPIRES_IN || '1h';
 
-const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
-  });
-};
+// ===============================
+// 🔹 Token Signers
+// ===============================
+const signAccessToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: ACCESS_EXP });
+const signRefreshToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: REFRESH_EXP });
+const signPasswordResetToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_RESET_SECRET, { expiresIn: RESET_EXP });
 
-const verifyToken = (token) => {
-  return jwt.verify(token, process.env.JWT_SECRET);
+// ===============================
+// 🔹 Token Verifiers
+// ===============================
+const verifyAccessToken = (token) => {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    throw new AppError('Invalid access token', 401, 'INVALID_TOKEN');
+  }
 };
 
 const verifyRefreshToken = (token) => {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  try {
+    return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  } catch (err) {
+    throw new AppError(
+      'Invalid or expired refresh token',
+      401,
+      'INVALID_REFRESH',
+    );
+  }
 };
 
-const decodeToken = (token) => {
-  return jwt.decode(token);
+const verifyResetToken = (token) => {
+  try {
+    return jwt.verify(token, process.env.JWT_RESET_SECRET);
+  } catch (err) {
+    throw new AppError('Invalid or expired reset token', 401, 'INVALID_RESET');
+  }
+};
+
+// ===============================
+// 🍪 Cookie Helpers
+// ===============================
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches default access token exp)
+  });
+
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/', // ✅ FIX: must match clearAuthCookies
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days to match refresh token exp
+  });
+};
+
+const clearAuthCookies = (res) => {
+  res.clearCookie('accessToken', {
+    httpOnly: false,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+  });
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/', // ✅ Must match cookie creation path
+  });
 };
 
 module.exports = {
-  generateToken,
-  generateRefreshToken,
-  verifyToken,
+  signAccessToken,
+  signRefreshToken,
+  signPasswordResetToken,
+  verifyAccessToken,
   verifyRefreshToken,
-  decodeToken
+  verifyResetToken,
+  generateAccessToken: signAccessToken,
+  generateRefreshToken: signRefreshToken,
+  setAuthCookies,
+  clearAuthCookies,
 };

@@ -1,22 +1,20 @@
-// TODO: Implement goal routes
+// src/routes/goals.js
 const express = require('express');
 const router = express.Router();
-const goalController = require('../controllers/goalController');
+
 const auth = require('../middleware/auth');
+const goalController = require('../controllers/goalController');
+const challengeController = require('../controllers/challengeController');
 
-// TODO: Add GET / route for user goals
-router.get('/', auth, goalController.getGoals);
+// 🔐 Protect all routes
+router.use(auth);
 
-// TODO: Add GET /:id route for single goal
-router.get('/:id', auth, goalController.getGoalById);
-
-// TODO: Add POST / route for creating goal
-router.post('/', auth, goalController.createGoal);
-
-// TODO: Add PUT /:id route for updating goal
-router.put('/:id', auth, goalController.updateGoal);
-
-// TODO: Add DELETE /:id route for deleting goal
-router.delete('/:id', auth, goalController.deleteGoal);
+router.post('/:id/challenges', challengeController.createChallengeForGoal);
+// 🟢 Routes
+router.get('/', goalController.getGoals);
+router.get('/:id', goalController.getGoalById);
+router.post('/', goalController.createGoal);
+router.put('/:id', goalController.updateGoal);
+router.delete('/:id', goalController.deleteGoal);
 
 module.exports = router;

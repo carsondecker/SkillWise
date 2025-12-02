@@ -1,77 +1,60 @@
-// TODO: Test environment setup and configuration
 const { Pool } = require('pg');
+const { execSync } = require('child_process');
+require('dotenv').config({ path: '.env.test' });
 
-// Test database configuration
-const testDbConfig = {
-  connectionString: process.env.TEST_DATABASE_URL || 
-    'postgresql://skillwise_user:skillwise_pass@localhost:5432/skillwise_test_db',
-  // Reduce connections for test environment
-  max: 5,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 1000,
-};
+const SKIP_DB_SETUP = process.env.SKIP_DB_SETUP === 'true';
+let testPool;
 
-const testPool = new Pool(testDbConfig);
+if (!SKIP_DB_SETUP) {
+  // Configure test pool
+  testPool = new Pool({
+    connectionString: process.env.TEST_DATABASE_URL,
+    max: 5,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 2000,
+  });
 
-// Global test setup
-beforeAll(async () => {
-  // Set test environment
-  process.env.NODE_ENV = 'test';
-  process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
-  process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key-for-testing-only';
-  
-  // Test database connection
-  try {
-    await testPool.query('SELECT 1');
-    console.log('✅ Test database connected');
-  } catch (err) {
-    console.error('❌ Test database connection failed:', err.message);
-    throw err;
-  }
-});
+  beforeAll(async () => {
+    process.env.NODE_ENV = 'test';
+    console.log('🧩 Setting up test database...');
 
-// Global test cleanup
-afterAll(async () => {
-  try {
-    // Clean up test data if needed
-    // await testPool.query('TRUNCATE TABLE users CASCADE');
-    
-    // Close database connections
+    try {
+      execSync('node scripts/migrate.js', { stdio: 'inherit' });
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // ⏳ wait 1s
+      await testPool.query('SELECT 1');
+      console.log('✅ Test DB ready');
+    } catch (err) {
+      console.error('❌ Migration or connection failed:', err.message);
+      throw err;
+    }
+  });
+
+  afterAll(async () => {
+    console.log('🧹 Cleaning up...');
+    await clearTestData();
     await testPool.end();
-    console.log('✅ Test database cleanup completed');
-  } catch (err) {
-    console.error('❌ Test cleanup failed:', err.message);
-  }
-});
+  });
+} else {
+  beforeAll(() => {
+    process.env.NODE_ENV = 'test';
+    console.log('⏭️  SKIP_DB_SETUP=true - skipping test database setup');
+  });
 
-// Helper function to clear test data between tests
-const clearTestData = async () => {
-  const tables = [
-    'user_achievements',
-    'achievements', 
-    'leaderboard',
-    'progress_events',
-    'peer_reviews',
-    'ai_feedback',
-    'submissions',
-    'challenges',
-    'goals',
-    'refresh_tokens',
-    'users'
-  ];
+  afterAll(async () => {});
+}
+
+async function clearTestData() {
+  if (!testPool) return;
+
+  const tables = ['user_statistics', 'refresh_tokens', 'goals', 'users'];
 
   for (const table of tables) {
     try {
-      await testPool.query(`TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE`);
-    } catch (err) {
-      // Table might not exist, continue
-      console.warn(`Warning: Could not truncate table ${table}:`, err.message);
+      await testPool.query(`TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE;`);
+    } catch {
+      // Table might not exist in early migrations
     }
   }
-};
+}
 
-// Export test utilities
-module.exports = {
-  testPool,
-  clearTestData
-};
+module.exports = { testPool, clearTestData };

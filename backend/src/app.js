@@ -1,126 +1,225 @@
-// TODO: Main Express application setup with middleware and routing
+// src/app.js
+// ✅ Main Express Application Setup
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const Sentry = require('@sentry/node');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
+const crypto = require('crypto');
+const cookieParser = require('cookie-parser');
 
-// Import middleware
+// Middleware
 const errorHandler = require('./middleware/errorHandler');
 
-// Import routes
+// Routes
 const routes = require('./routes/index');
 
 // Create Express app
 const app = express();
 
-// Create logger
+// --------------------------------------------------
+// 🛰️ Sentry Monitoring
+// --------------------------------------------------
+const SENTRY_DSN = process.env.SENTRY_DSN;
+const SENTRY_ENVIRONMENT =
+  process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development';
+const SENTRY_TRACES_SAMPLE_RATE = Number(
+  process.env.SENTRY_TRACES_SAMPLE_RATE || '0',
+);
+
+Sentry.init({
+  dsn: SENTRY_DSN,
+  environment: SENTRY_ENVIRONMENT,
+  tracesSampleRate: Number.isFinite(SENTRY_TRACES_SAMPLE_RATE)
+    ? SENTRY_TRACES_SAMPLE_RATE
+    : 0,
+  enabled: Boolean(SENTRY_DSN),
+});
+
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use(cookieParser());
+
+// --------------------------------------------------
+// 🧩 Logger Setup
+// --------------------------------------------------
 const logger = pino({
   name: 'skillwise-api',
   level: process.env.LOG_LEVEL || 'info',
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname'
-    }
-  }
-});
-
-// Add request logging middleware
-app.use(pinoHttp({
-  logger,
-  autoLogging: true,
-  serializers: {
-    req: (req) => ({
-      method: req.method,
-      url: req.url,
-      headers: {
-        'user-agent': req.headers['user-agent'],
-        'content-type': req.headers['content-type']
+  transport:
+    process.env.NODE_ENV === 'development'
+      ? {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'SYS:standard',
+          ignore: 'pid,hostname',
+        },
       }
-    }),
-    res: (res) => ({
-      statusCode: res.statusCode
-    })
-  }
-}));
-
-// Security middleware
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-}));
-
-// CORS configuration
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: Math.ceil((parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000) / 1000)
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+      : undefined,
 });
 
-app.use(limiter);
+// --------------------------------------------------
+// 🧱 Middleware: Request Logging
+// --------------------------------------------------
+app.use(
+  pinoHttp({
+    logger,
+    autoLogging: true,
+    genReqId: () => crypto.randomUUID(),
+    serializers: {
+      req: (req) => ({
+        id: req.id,
+        method: req.method,
+        url: req.url,
+        userAgent: req.headers['user-agent'],
+      }),
+      res: (res) => ({
+        statusCode: res.statusCode,
+      }),
+    },
+  }),
+);
 
-// Body parsing middleware
-app.use(express.json({ 
-  limit: '10mb',
-  strict: true
-}));
+// Sentry request handler should go after basic middleware setup
+app.use(Sentry.Handlers.requestHandler());
 
-app.use(express.urlencoded({ 
-  extended: true,
-  limit: '10mb'
-}));
+// --------------------------------------------------
+// 🛡️ Security Middleware
+// --------------------------------------------------
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ['\'self\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        scriptSrc: ['\'self\''],
+        imgSrc: ['\'self\'', 'data:', 'https:'],
+      },
+    },
+  }),
+);
 
-// Health check endpoint
+app.set('trust proxy', 1);
+
+// --------------------------------------------------
+// 🌍 CORS Configuration
+// --------------------------------------------------
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  }),
+);
+
+// --------------------------------------------------
+// 🚦 **Improved Rate Limiting**
+// 🔥 EXCLUDES /auth routes entirely
+// 🔥 EXCLUDES OPTIONS so preflight requests don’t count
+// 🔥 Much more relaxed global rate limiting
+// --------------------------------------------------
+
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1-minute window
+  max: 5000,            // allow 500 requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    if (req.method === 'OPTIONS') return true;
+    return false;
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      status: 'fail',
+      error: 'Too many requests — relax 😅',
+      retryAfter: 60,
+      timestamp: new Date().toISOString(),
+    });
+  },
+});
+
+app.use(globalLimiter);
+
+// --------------------------------------------------
+// 📦 Body Parsers
+// --------------------------------------------------
+app.use(
+  express.json({
+    limit: '10mb',
+    strict: true,
+  }),
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: '10mb',
+  }),
+);
+
+// --------------------------------------------------
+// 💚 Health Check Endpoint
+// --------------------------------------------------
 app.get('/healthz', (req, res) => {
   res.status(200).json({
     status: 'healthy',
+    service: 'SkillWise API',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0'
+    version: process.env.npm_package_version || '1.0.0',
   });
 });
 
-// Mount API routes
+// --------------------------------------------------
+// 🧪 Sentry debug endpoint (non-production)
+// --------------------------------------------------
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug-sentry', () => {
+    throw new Error('Sentry debug endpoint triggered');
+  });
+}
+
+// --------------------------------------------------
+// 🧩 API Routes
+// --------------------------------------------------
 app.use('/api', routes);
 
-// 404 handler for unmatched routes
+// --------------------------------------------------
+// 🚫 404 Handler
+// --------------------------------------------------
 app.use('*', (req, res) => {
   res.status(404).json({
+    status: 'fail',
     error: 'Not Found',
     message: `Route ${req.method} ${req.originalUrl} not found`,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-// Global error handler (must be last)
+// --------------------------------------------------
+// ❗ Global Error Handler (Sentry first, then app handler)
+// --------------------------------------------------
+app.use(Sentry.Handlers.errorHandler());
 app.use(errorHandler);
 
-// Make logger available to other modules
 app.set('logger', logger);
+
+process.on('SIGINT', () => {
+  logger.info('🛑 Server shutting down gracefully (SIGINT)');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  logger.info('🛑 Server shutting down gracefully (SIGTERM)');
+  process.exit(0);
+});
+
+logger.info(`🚀 SkillWise API initialized at ${new Date().toISOString()}`);
 
 module.exports = app;

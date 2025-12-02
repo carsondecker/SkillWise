@@ -1,0 +1,318 @@
+.leaderboard-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+  padding: 2.5rem 3rem;
+  font-family: 'Inter', sans-serif;
+  color: #1f2937;
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    p {
+      color: #6b7280;
+      margin-top: 0.3rem;
+      font-size: 0.95rem;
+    }
+  }
+
+  /* FILTER BAR */
+  .leaderboard-filters {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.2rem 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+
+    .filters-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 200px;
+
+      label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.4rem;
+      }
+
+      select {
+        border: 1.5px solid #d1d5db;
+        border-radius: 10px;
+        padding: 0.6rem 1rem;
+        font-size: 0.95rem;
+        outline: none;
+        transition: 0.2s ease;
+        background: #f9fafb;
+
+        &:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+      }
+    }
+  }
+
+  /* USER RANK SUMMARY */
+  .user-rank-summary {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+
+    .rank-card {
+      background: linear-gradient(135deg, #2563eb, #1e3a8a);
+      color: #fff;
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+      transform: translateY(0);
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4);
+      }
+
+      .rank-number {
+        font-size: 2rem;
+        font-weight: 800;
+      }
+
+      .rank-details {
+        margin-top: 0.5rem;
+        small {
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+  /* PODIUM SECTION */
+  .podium-section {
+    text-align: center;
+    margin-bottom: 3rem;
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-bottom: 1rem;
+    }
+
+    .podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 2rem;
+      margin-top: 1rem;
+
+      .podium-position {
+        position: relative;
+        background: #fff;
+        border-radius: 16px;
+        padding: 1rem;
+        width: 160px;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+
+        &:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        &.position-1 {
+          height: 220px;
+          background: linear-gradient(145deg, #fcd34d, #f59e0b);
+        }
+        &.position-2 {
+          height: 180px;
+          background: linear-gradient(145deg, #d1d5db, #9ca3af);
+        }
+        &.position-3 {
+          height: 160px;
+          background: linear-gradient(145deg, #fca5a5, #ef4444);
+        }
+
+        .podium-user {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          color: #111827;
+
+          .user-avatar {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+          }
+
+          h4 {
+            font-weight: 700;
+          }
+
+          .level-badge {
+            background: #fff;
+            border-radius: 8px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+            margin-top: 0.3rem;
+            font-weight: 600;
+            color: #1e3a8a;
+          }
+        }
+
+        .podium-rank {
+          position: absolute;
+          top: -1rem;
+          right: 1rem;
+          font-size: 1.5rem;
+        }
+      }
+    }
+  }
+
+  /* RANKINGS TABLE */
+  .full-rankings {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+    margin-bottom: 3rem;
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-bottom: 1rem;
+    }
+
+    .rankings-table {
+      .table-header,
+      .table-row {
+        display: grid;
+        grid-template-columns: 0.7fr 2fr 1fr 1fr 1fr;
+        align-items: center;
+        padding: 0.7rem 1rem;
+      }
+
+      .table-header {
+        font-weight: 700;
+        color: #374151;
+        border-bottom: 2px solid #e5e7eb;
+      }
+
+      .table-row {
+        transition: all 0.25s ease;
+        border-bottom: 1px solid #f3f4f6;
+
+        &:hover {
+          background: #f9fafb;
+          transform: translateX(4px);
+        }
+
+        &.current-user {
+          background: rgba(37, 99, 235, 0.1);
+          border-left: 4px solid #2563eb;
+        }
+
+        .user-info {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+
+          .user-avatar {
+            font-size: 1.4rem;
+          }
+
+          .user-name {
+            font-weight: 600;
+            small {
+              color: #2563eb;
+              font-weight: 500;
+            }
+          }
+        }
+
+        .level-badge {
+          background: #e0e7ff;
+          color: #1e3a8a;
+          padding: 0.2rem 0.6rem;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  /* ACHIEVEMENTS */
+  .achievements-section {
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      padding: 1rem;
+
+      .achievement-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+        text-align: center;
+        transition: all 0.3s ease;
+        transform: translateY(0);
+
+        &:hover {
+          transform: translateY(-8px) scale(1.03);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .achievement-icon {
+          font-size: 2rem;
+          margin-bottom: 0.8rem;
+        }
+
+        h4 {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+
+        p {
+          font-size: 0.9rem;
+          color: #4b5563;
+          margin-bottom: 0.4rem;
+        }
+
+        small {
+          color: #6b7280;
+          font-style: italic;
+        }
+      }
+    }
+  }
+}

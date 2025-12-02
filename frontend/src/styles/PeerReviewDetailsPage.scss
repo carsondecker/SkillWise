@@ -1,0 +1,253 @@
+.peer-review-detail-page {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  font-family: 'Inter', sans-serif;
+
+  .header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    .back-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #2563eb;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      transition: 0.2s;
+
+      &:hover {
+        color: #1e40af;
+        transform: translateX(-3px);
+      }
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #1e3a8a;
+      margin-bottom: 0.3rem;
+    }
+    p {
+      color: #6b7280;
+    }
+  }
+
+  /* Submission Box */
+  .submission-preview {
+    background: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+
+    h2 {
+      color: #111827;
+      font-size: 1.4rem;
+    }
+
+    .meta {
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+
+    .preview-box {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+
+      p {
+        color: #374151;
+        line-height: 1.55;
+      }
+
+      .file-link {
+        margin-top: 1rem;
+        display: inline-block;
+        color: #2563eb;
+        font-weight: 600;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  /* Review Card */
+  .review-card {
+    background: white;
+    margin-top: 2rem;
+    padding: 1.7rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+
+    h2 {
+      color: #1e3a8a;
+      margin-bottom: 1rem;
+    }
+
+    /* Rating stars */
+    .star-row {
+      display: flex;
+      gap: 10px;
+      margin: 0.7rem 0;
+
+      .star {
+        cursor: pointer;
+        font-size: 1.9rem;
+        color: #d1d5db;
+        transition: color 0.2s;
+
+        &.active {
+          color: #fbbf24; // Amber star
+        }
+      }
+    }
+
+    .criteria-section {
+      margin-top: 1rem;
+
+      .criteria-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+
+        label {
+          flex: 1;
+          font-weight: 600;
+        }
+        input {
+          flex: 3;
+        }
+        span {
+          font-weight: 600;
+        }
+      }
+    }
+
+    .form-group {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+
+      textarea {
+        border: 1px solid #d1d5db;
+        padding: 1rem;
+        border-radius: 10px;
+      }
+    }
+
+    .form-toggle {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: space-between;
+      padding: 0.7rem;
+      background: #f3f4f6;
+      border-radius: 10px;
+      align-items: center;
+      font-weight: 600;
+    }
+
+    .time-tracker {
+      margin-top: 1rem;
+      color: #6b7280;
+    }
+
+    .btn-submit {
+      margin-top: 1.5rem;
+      width: 100%;
+      background: linear-gradient(135deg, #2563eb, #1e3a8a);
+      color: white;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: 0.2s;
+
+      &:hover {
+        background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      }
+    }
+  }
+}
+.goal-box, .challenge-box {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+  animation: fadeIn 0.3s ease-out;
+
+  h2 {
+    color: #1e3a8a;
+    margin-bottom: 0.5rem;
+  }
+
+  .goal-meta, .category {
+    background: #eef2ff;
+    color: #3730a3;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+  }
+
+  .goal-desc, .challenge-desc {
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .challenge-tags {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+
+    .difficulty {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+
+      &.diff-easy {
+        background: #dcfce7;
+        color: #166534;
+      }
+      &.diff-medium {
+        background: #fef9c3;
+        color: #92400e;
+      }
+      &.diff-hard {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+    }
+
+    .points {
+      font-weight: 600;
+      color: #2563eb;
+    }
+  }
+
+  .instructions-preview {
+    margin-top: 1rem;
+
+    h4 {
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 0.3rem;
+    }
+
+    p {
+      background: #f9fafb;
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      line-height: 1.55;
+    }
+  }
+}

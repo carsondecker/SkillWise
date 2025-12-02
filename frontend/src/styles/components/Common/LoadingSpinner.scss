@@ -1,0 +1,27 @@
+.loading-spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+
+  .loading-message {
+    margin-top: 0.8rem;
+    color: #4b5563;
+    font-size: 1rem;
+    font-weight: 500;
+    animation: fadeIn 1.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
