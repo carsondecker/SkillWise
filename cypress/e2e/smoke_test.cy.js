@@ -30,33 +30,28 @@ describe('SkillWise E2E Smoke Test', () => {
     cy.contains('Welcome', { matchCase: false }).should('exist');
   });
 
+  const login = () => {
+    cy.visit('/login');
+    cy.get('#email').should('be.visible').clear().type(testUser.email);
+    cy.get('#password').should('be.visible').clear().type(testUser.password);
+    cy.get('button[type="submit"]').click();
+    cy.url().should('include', '/dashboard');
+  };
+
   // ---------------------------
   // 2️⃣ Log In
   // ---------------------------
-// cypress/e2e/smoke_login.cy.js
-    it('logs into the app', () => {
-      cy.visit('/login');
-
-      cy.get('#email').should('be.visible').clear().type(testUser.email);
-      cy.get('#password').should('be.visible').clear().type(testUser.password);
-
-      // click by type or text
-      cy.get('button[type="submit"]').click();
-      // cy.contains('button', 'Login').click();
-
-      cy.url().should('include', '/dashboard');
-      cy.contains('Welcome Back').should('exist'); // adjust to your dashboard text
-    });
+  it('logs into the app', () => {
+    login();
+    cy.contains(/dashboard|goals/i, { timeout: 10000 }).should('exist');
+  });
 
   // ---------------------------
   // 3️⃣ Create a New Goal
   // ---------------------------
   it('Creates a new goal successfully', () => {
     // 🧭 Step 1: Login
-    cy.visit('/login');
-    cy.get('#email').should('be.visible').type(testUser.email);
-    cy.get('#password').should('be.visible').type(testUser.password);
-    cy.get('button[type="submit"]').click();
+    login();
 
     // 🏠 Step 2: Navigate to dashboard, then goals
     cy.url({ timeout: 15000 }).should('include', '/dashboard');
@@ -114,12 +109,7 @@ describe('SkillWise E2E Smoke Test', () => {
   // 4️⃣ Creates a challenge from a goal
   // ---------------------------
   it('Creates a challenge from a goal', () => {
-    cy.visit('/login');
-
-    // Login
-    cy.get('#email').type(testUser.email);
-    cy.get('#password').type(testUser.password);
-    cy.get('button[type="submit"]').click();
+    login();
 
     cy.url({ timeout: 15000 }).should('include', '/dashboard');
     cy.visit('/goals');
@@ -127,15 +117,16 @@ describe('SkillWise E2E Smoke Test', () => {
     // Wait for goals grid
     cy.get('#goals-grid', { timeout: 15000 }).should('exist');
 
-    // Find specific goal
-    cy.contains('Learn Cypress E2E Testing', { timeout: 10000 })
-      .should('be.visible')
-      .then(($el) => {
-        const goalCard = $el.closest('.goal-card-container');
-        cy.wrap(goalCard).as('targetGoal');
-      });
+    // ensure API alias for challenge creation
+    cy.intercept('POST', '/api/goals/*/challenges').as('createChallenge');
 
-    // Flip card
+    // Find specific goal
+    cy.contains('.goal-card-container h3', 'Learn Cypress E2E Testing', { timeout: 15000 })
+      .should('be.visible')
+      .parents('.goal-card-container')
+      .as('targetGoal');
+
+    // Flip card to reveal actions
     cy.get('@targetGoal')
       .click()
       .should('have.class', 'flipped');
@@ -151,10 +142,10 @@ describe('SkillWise E2E Smoke Test', () => {
     // Modal should open
     cy.get('.modal', { timeout: 10000 }).should('exist');
 
-    // 🔵 NEW: Click “Create Manually” (select step)
-    cy.contains('button', 'Create Manually', { timeout: 10000 })
-      .should('exist')
-      .click({ force: true });
+    // 🔵 Step chooser: pick manual creation
+    cy.get('.challenge-modal__btn-manual', { timeout: 10000 })
+      .should('be.visible')
+      .click();
 
     // Now manual form should be visible
     cy.get('input[name="title"]', { timeout: 10000 })
@@ -184,12 +175,17 @@ describe('SkillWise E2E Smoke Test', () => {
     cy.get('input[name="learning_objectives"]').type('automation,confidence');
 
     // Submit
+    cy.window().then((win) => cy.stub(win, 'alert').as('alert')); // capture success alert
     cy.get('#challengeModalSubmission')
       .should('be.visible')
       .click({ force: true });
 
+    // Wait for API to finish
+    cy.wait('@createChallenge').its('response.statusCode').should('be.oneOf', [200, 201]);
+
     // Modal disappears
     cy.get('.modal', { timeout: 10000 }).should('not.exist');
+    cy.get('@alert').should('have.been.called');
 
     // Check challenge page
     cy.visit('/challenges');

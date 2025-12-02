@@ -177,6 +177,15 @@ app.get('/healthz', (req, res) => {
 });
 
 // --------------------------------------------------
+// 🧪 Sentry debug endpoint (non-production)
+// --------------------------------------------------
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug-sentry', () => {
+    throw new Error('Sentry debug endpoint triggered');
+  });
+}
+
+// --------------------------------------------------
 // 🧩 API Routes
 // --------------------------------------------------
 app.use('/api', routes);
