@@ -281,6 +281,8 @@ export const apiService = {
 
     gradeChallenge: (challengeId, payload = {}) =>
       api.post(`/ai/grade/challenge/${challengeId}`, payload),
+
+    chat: (payload) => api.post('/ai/chat', payload, { timeout: 30000 }),
   },
 
   // Progress methods

@@ -39,4 +39,10 @@ router.get('/analysis', auth, aiController.analyzeProgress);
 // ---------------------------------------------
 router.post('/grade/challenge/:challengeId', auth, aiController.gradeChallenge);
 
+// ---------------------------------------------
+// 💬 AI chat with Memori-backed memory
+// POST /ai/chat
+// ---------------------------------------------
+router.post('/chat', auth, aiController.chatWithMemory);
+
 module.exports = router;

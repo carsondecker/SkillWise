@@ -1,8 +1,10 @@
 // services/aiService.js
 
 const OpenAI = require('openai');
+const axios = require('axios');
 const db = require('../database/connection');
 const { AppError } = require('../middleware/errorHandler');
+const Progress = require('../models/Progress');
 
 const { aiGeneratedChallengeSchema } = require('../middleware/validation').schemas;
 
@@ -522,5 +524,51 @@ Return ONLY JSON:
       feedbackId: feedback.id,
       existing: false,
     };
+  },
+
+  /* ============================================================
+     💬 7. Chat with Memori-backed memory service
+     Route: POST /ai/chat (controller)
+  ============================================================ */
+  chatWithMemory: async ({ userId, message }) => {
+    if (!message || !message.trim()) {
+      throw new AppError('Message is required', 400, 'INVALID_INPUT');
+    }
+
+    const memoriUrl = process.env.MEMORI_SERVICE_URL || 'http://localhost:8001';
+    let userStats = null;
+
+    if (userId) {
+      try {
+        userStats = await Progress.getUserStats(userId);
+      } catch (err) {
+        console.warn('⚠️ Unable to fetch user stats for chat context:', err.message);
+      }
+    }
+
+    const payload = {
+      user_id: String(userId || 'anonymous'),
+      message,
+      stats: userStats,
+    };
+
+    try {
+      const { data } = await axios.post(`${memoriUrl}/chat`, payload, {
+        timeout: 30000,
+      });
+
+      const reply = data?.reply || data?.message || data?.response || '';
+      return {
+        reply,
+        raw: data || {},
+      };
+    } catch (err) {
+      console.error('❌ Memori chat error:', err.message);
+      throw new AppError(
+        'Memori service unavailable. Please try again later.',
+        503,
+        'MEMORI_UNAVAILABLE',
+      );
+    }
   },
 };

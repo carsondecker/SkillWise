@@ -35,8 +35,10 @@ const DashboardOverview = () => {
       text: 'Hello! I’m your AI Mentor 👋 How are you feeling today?',
     },
   ]);
+  const [aiLoading, setAiLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [chatError, setChatError] = useState('');
   const [stats, setStats] = useState(null);
   const [progress, setProgress] = useState(null);
   const [streak, setStreak] = useState(null);
@@ -125,25 +127,28 @@ const DashboardOverview = () => {
     },
   };
 
-  // 💬 AI Chat (mock)
-  const handleAiAsk = (e) => {
+  // 💬 AI Chat (Memori-backed)
+  const handleAiAsk = async (e) => {
     e.preventDefault();
-    if (!aiInput.trim()) return;
+    const prompt = aiInput.trim();
+    if (!prompt) return;
 
-    const newMessages = [...messages, { sender: 'user', text: aiInput }];
-    setMessages(newMessages);
+    setChatError('');
+    setMessages((prev) => [...prev, { sender: 'user', text: prompt }]);
     setAiInput('');
+    setAiLoading(true);
 
-    setTimeout(() => {
-      const responses = [
-        'Try reviewing your notes from yesterday.',
-        'Focus on one topic and master it today!',
-        'Consistency builds excellence 💪',
-        'Your progress looks strong — keep the streak alive 🔥',
-      ];
-      const random = responses[Math.floor(Math.random() * responses.length)];
-      setMessages((prev) => [...prev, { sender: 'ai', text: random }]);
-    }, 1000);
+    try {
+      const res = await apiService.ai.chat({ message: prompt });
+      const aiText = res?.data?.reply || 'I’m here and ready to help.';
+
+      setMessages((prev) => [...prev, { sender: 'ai', text: aiText }]);
+    } catch (err) {
+      console.error('❌ AI chat failed', err);
+      setChatError('Unable to reach your AI mentor right now. Please try again.');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   // 🧩 Format full name
@@ -275,6 +280,7 @@ const DashboardOverview = () => {
               {stats?.current_streak_days || streak?.current_streak || 0} day streak
             </span>
           </div>
+          {chatError && <div className="chat-error">{chatError}</div>}
           <div className="chat-box">
             {messages.map((msg, idx) => (
               <div
@@ -284,6 +290,9 @@ const DashboardOverview = () => {
                 {msg.text}
               </div>
             ))}
+            {aiLoading && (
+              <div className="chat-bubble ai">Thinking...</div>
+            )}
           </div>
 
           <form onSubmit={handleAiAsk} className="chat-input">

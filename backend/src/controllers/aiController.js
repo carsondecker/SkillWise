@@ -181,6 +181,32 @@ const aiController = {
       });
     }
   },
+
+  /* ============================================================
+     💬 7. Chat with Memori-backed memory service
+     Route: POST /ai/chat
+  ============================================================ */
+  chatWithMemory: async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { message } = req.body;
+
+      if (!message || !message.trim()) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      const result = await aiService.chatWithMemory({ userId, message });
+
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error('❌ AI Chat Error:', err.message);
+      const status = err.statusCode || 500;
+      return res.status(status).json({
+        error: err.message || 'Failed to process chat message',
+        code: err.code || err.name,
+      });
+    }
+  },
 };
 
 module.exports = aiController;

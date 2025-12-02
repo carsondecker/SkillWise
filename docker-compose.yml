@@ -93,6 +93,9 @@ services:
       - OPENAI_MODEL=gpt-3.5-turbo
       - OPENAI_MAX_TOKENS=1000
 
+      # Memori service (Python sidecar)
+      - MEMORI_SERVICE_URL=http://memori_service:8005
+
       # Email Configuration
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=587
@@ -151,6 +154,42 @@ services:
     restart: unless-stopped
     stdin_open: true
     tty: true
+
+  memori_service:
+    build:
+      context: ./memori_service
+      dockerfile: Dockerfile
+    container_name: memori_service
+    environment:
+      - MEMORI_DATABASE__CONNECTION_STRING=postgresql://skillwise_user:skillwise_pass@database:5432/memori_db
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-api-key}
+      - OPENAI_MODEL=gpt-4o-mini
+      - MEMORI_MEMORY__NAMESPACE=development
+    ports:
+      - "8005:8005"
+    depends_on:
+      database:
+        condition: service_healthy
+      memori_db_init:
+        condition: service_started
+    networks:
+      - skillwise_network
+    restart: unless-stopped
+
+  # One-shot init to ensure the Memori database exists in Postgres
+  memori_db_init:
+    image: postgres:15
+    container_name: memori_db_init
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: skillwise_pass
+    command: >
+      sh -c "psql -h database -U skillwise_user -d postgres -c 'CREATE DATABASE memori_db OWNER skillwise_user;' || true"
+    networks:
+      - skillwise_network
+    restart: "no"
 
 volumes:
   postgres_data:
