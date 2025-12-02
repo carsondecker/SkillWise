@@ -29,6 +29,7 @@ const ProfilePage = () => {
       const userData = profileRes.data.user || profileRes.data;
       const statsData = statsRes.data.statistics || statsRes.data;
       const progressData = progressRes.data.latest || [];
+      console.log(progressData);
       const streakData = streaksRes.data.streak || {};
 
       const fullProfile = {
@@ -54,7 +55,7 @@ const ProfilePage = () => {
         type: p.challengeId ? 'challenge' : p.goalId ? 'goal' : 'progress',
         title: p.challengeTitle || p.goalTitle || 'Progress Update',
         date: p.updatedAt || p.createdAt,
-        points: p.pointsEarned || 10,
+        points: p.pointsEarned || 0,
       }));
 
       setRecentActivity(formattedActivity);

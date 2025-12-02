@@ -59,6 +59,7 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
   const handleChallengeCreated = (newChallenge) => {
     alert(`🆕 Challenge "${newChallenge.title}" created for goal "${title}"`);
     setShowChallengeModal(false);
+    onUpdated?.(); // Refresh goal data after creating a challenge
   };
 
   return (

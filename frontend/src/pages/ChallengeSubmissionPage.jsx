@@ -480,7 +480,7 @@ const ChallengeSubmissionPage = () => {
             )}
           </div>
 
-          {canViewAiGrade && (
+          {canViewAiGrade && !isCompleted && (
             <div className="ai-grade-action">
               <motion.button
                 className={`btn-ai-grade ${aiLimitReached ? 'disabled' : ''}`}
@@ -615,7 +615,7 @@ const ChallengeSubmissionPage = () => {
         {/* If challenge requires peer review */}
         {(challenge.requires_peer_review && !isPeerReviewed) ? (
           submissions.length > 0 &&
-          !isInPeerReview && !isPeerReviewed && (
+          !isInPeerReview && !isPeerReviewed && !isCompleted && (
             <motion.div className="mark-complete-container">
               <motion.button
                 className="btn-primary"

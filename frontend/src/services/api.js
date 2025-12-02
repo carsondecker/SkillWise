@@ -4,7 +4,7 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
   withCredentials: true, // Include cookies for httpOnly refresh token
-  timeout: 10000, // 10 second timeout
+  timeout: 20000, // allow slower AI/generation calls
   headers: {
     'Content-Type': 'application/json',
   },
@@ -268,7 +268,7 @@ export const apiService = {
   // --------------------------------
   ai: {
     generateChallengeForGoal: (goalId, options = {}) =>
-      api.post(`/ai/generate-challenge/${goalId}`, options),
+      api.post(`/ai/generate-challenge/${goalId}`, options, { timeout: 30000 }),
 
     generateChallengesBulk: (payload) =>
       api.post('/ai/generate-challenges', payload),

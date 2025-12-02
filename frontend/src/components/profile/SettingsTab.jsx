@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { apiService } from '../../services/api';
 import '../../styles/components/Profile/SettingsTab.scss';
 
@@ -11,8 +11,25 @@ const SettingsTab = ({ profile, refreshProfile }) => {
     bio: profile.bio || '',
   });
 
-  const [avatarPreview, setAvatarPreview] = useState(process.env.REACT_APP_BACKEND_URL+""+profile.avatar || profile.avatar);
+  const getAvatarUrl = (value) => {
+    if (!value) return null;
+    const base = process.env.REACT_APP_BACKEND_URL || '';
+    return value.startsWith('http') ? value : `${base}${value}`;
+  };
+
+  const [avatarPreview, setAvatarPreview] = useState(getAvatarUrl(profile.avatar));
   const [avatarFile, setAvatarFile] = useState(null);
+
+  useEffect(() => {
+    setFormData({
+      firstName: profile.firstName || '',
+      lastName: profile.lastName || '',
+      bio: profile.bio || '',
+    });
+    setAvatarPreview(getAvatarUrl(profile.avatar));
+    setAvatarFile(null);
+    setEditMode(false);
+  }, [profile]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -70,7 +87,11 @@ const SettingsTab = ({ profile, refreshProfile }) => {
       {!editMode && (
         <div className="settings-view">
           <div className="avatar-wrapper">
-            <img src={avatarPreview || profile.avatar} className="settings-avatar" />
+            {avatarPreview ? (
+              <img src={avatarPreview} className="settings-avatar" alt="Profile avatar" />
+            ) : (
+              <div className="avatar-fallback">👤</div>
+            )}
           </div>
 
           <div className="settings-section">

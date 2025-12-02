@@ -296,6 +296,7 @@ const submissionService = {
         'graded',
         'rejected',
         'completed',
+        'peer_reviewed',
       ];
       if (!allowedStatuses.includes(status)) {
         throw new AppError(
@@ -324,6 +325,93 @@ const submissionService = {
         `Your submission status was updated to '${status}'.`,
         { submission_id: submissionId },
       );
+
+      // Log milestone events to progress_events for recent activity
+      if (['completed', 'peer_reviewed'].includes(status)) {
+        try {
+          const submission = result.rows[0];
+          const { rows: challengeRows } = await db.query(
+            'SELECT title, points_reward FROM challenges WHERE id = $1',
+            [submission.challenge_id],
+          );
+          const challenge = challengeRows[0] || {};
+          const pointsPotential = Number(challenge.points_reward || 0);
+          const pointsEarned = status === 'completed' ? pointsPotential : 0;
+          const eventType =
+            status === 'completed' ? 'challenge_completed' : 'submission_peer_reviewed';
+
+          const payload = {
+            submission_id: submissionId,
+            challenge_id: submission.challenge_id,
+            challenge_title: challenge.title,
+            status,
+            points_earned: pointsEarned,
+            points_reward: pointsPotential,
+            title:
+              status === 'completed'
+                ? challenge.title || 'Challenge completed'
+                : challenge.title || 'Submission peer reviewed',
+          };
+
+          const { rows: existingEvents } = await db.query(
+            `
+            SELECT id
+            FROM progress_events
+            WHERE user_id = $1
+              AND event_type = $2
+              AND related_submission_id = $3
+            LIMIT 1
+            `,
+            [submission.user_id, eventType, submissionId],
+          );
+
+          if (existingEvents.length) {
+            await db.query(
+              `
+              UPDATE progress_events
+              SET event_data = $1::jsonb,
+                  points_earned = $2,
+                  related_challenge_id = $3,
+                  timestamp_occurred = NOW(),
+                  updated_at = NOW()
+              WHERE id = $4
+              `,
+              [
+                JSON.stringify(payload),
+                pointsEarned,
+                submission.challenge_id,
+                existingEvents[0].id,
+              ],
+            );
+          } else {
+            await db.query(
+              `
+              INSERT INTO progress_events (
+                user_id,
+                event_type,
+                event_data,
+                points_earned,
+                related_challenge_id,
+                related_submission_id,
+                timestamp_occurred,
+                created_at
+              )
+              VALUES ($1, $2, $3::jsonb, $4, $5, $6, NOW(), NOW())
+              `,
+              [
+                submission.user_id,
+                eventType,
+                JSON.stringify(payload),
+                pointsEarned,
+                submission.challenge_id,
+                submissionId,
+              ],
+            );
+          }
+        } catch (eventErr) {
+          console.error('⚠️ Failed to log submission progress event', eventErr);
+        }
+      }
 
       return {
         message: 'Submission status updated successfully',

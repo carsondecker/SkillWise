@@ -4,7 +4,13 @@ import '../../styles/components/Profile/BadgesTab.scss';
 const BadgesTab = ({ badges }) => {
   return (
     <div className="badges-tab">
-      <h3>Badges</h3>
+      <div className="badges-header">
+        <div>
+          <p className="eyebrow">Recognition</p>
+          <h3>Badges & milestones</h3>
+        </div>
+        <span className="pill">{badges.filter((b) => b.earned).length} earned</span>
+      </div>
 
       <div className="badges-grid">
         {badges.map((b) => (

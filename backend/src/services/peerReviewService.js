@@ -110,7 +110,9 @@ const peerReviewService = {
         SELECT
           s.*,
           c.requires_peer_review,
-          c.id AS challenge_id_fk
+          c.id AS challenge_id_fk,
+          c.title AS challenge_title,
+          c.points_reward AS challenge_points
         FROM submissions s
           LEFT JOIN challenges c ON c.id = s.challenge_id
         WHERE s.id = $1
@@ -216,6 +218,76 @@ const peerReviewService = {
 
     console.log('✅ Step 5 SUCCESS: Review inserted:', insertRes.rows[0]);
     console.log('🔥 submitReview END');
+
+    // 6️⃣ Log a progress event for the submission author so it shows in recent activity
+    try {
+      const eventPayload = {
+        submission_id: submissionId,
+        challenge_id: submission.challenge_id,
+        challenge_title: submission.challenge_title,
+        title: submission.challenge_title || 'Submission peer reviewed',
+        review_id: insertRes.rows[0].id,
+        rating,
+        reviewer_id: reviewerId,
+        reviewed_at: completed_at || new Date().toISOString(),
+        points_earned: 0,
+      };
+
+      const { rows: existingEvents } = await db.query(
+        `
+        SELECT id
+        FROM progress_events
+        WHERE user_id = $1
+          AND event_type = 'submission_peer_reviewed'
+          AND related_submission_id = $2
+        LIMIT 1
+        `,
+        [reviewee_id, submissionId],
+      );
+
+      if (existingEvents.length) {
+        await db.query(
+          `
+          UPDATE progress_events
+          SET event_data = $1::jsonb,
+              related_challenge_id = $2,
+              points_earned = 0,
+              timestamp_occurred = NOW(),
+              updated_at = NOW()
+          WHERE id = $4
+          `,
+          [
+            JSON.stringify(eventPayload),
+            submission.challenge_id,
+            existingEvents[0].id,
+          ],
+        );
+      } else {
+        await db.query(
+          `
+          INSERT INTO progress_events (
+            user_id,
+            event_type,
+            event_data,
+            points_earned,
+            related_challenge_id,
+            related_submission_id,
+            timestamp_occurred,
+            created_at
+          )
+          VALUES ($1, 'submission_peer_reviewed', $2::jsonb, 0, $3, $4, NOW(), NOW())
+          `,
+          [
+            reviewee_id,
+            JSON.stringify(eventPayload),
+            submission.challenge_id,
+            submissionId,
+          ],
+        );
+      }
+    } catch (eventErr) {
+      console.error('⚠️ Failed to log peer review progress event', eventErr);
+    }
 
     return insertRes.rows[0];
   },
