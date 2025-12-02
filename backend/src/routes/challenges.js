@@ -21,6 +21,13 @@ router.get('/', auth, challengeController.getChallenges);
 // 🟢 Get single challenge by ID
 router.get('/:id', auth, challengeController.getChallengeById);
 
+// 🔵 Get latest submissions for a challenge
+router.get(
+  '/:id/latest-submissions',
+  auth,
+  challengeController.getLatestSubmissionsForChallenge,
+);
+
 // 🟡 Create new challenge (Admin only)
 router.post(
   '/',
@@ -39,16 +46,12 @@ router.put(
   challengeController.updateChallenge,
 );
 
-// 🔴 Delete challenge (Admin only)
-router.delete(
-  '/:id',
-  auth,
-  restrictTo('admin'),
-  challengeController.deleteChallenge,
-);
+// 🔴 Delete challenge (Admin or owner)
+router.delete('/:id', auth, challengeController.deleteChallenge);
 
 
 // 🟢 Mark a challenge as complete (User)
 router.patch('/:id/complete', auth, challengeController.markChallengeComplete);
+router.patch('/:id/submitForPeerReview', auth, challengeController.submitForPeerReview);
 
 module.exports = router;

@@ -5,6 +5,180 @@ const { AppError } = require('../middleware/errorHandler');
 const notificationService = require('./notificationService');
 const leaderboardService = require('./leaderboardService');
 
+const TIMEFRAME_WINDOWS = {
+  week: 7,
+  month: 30,
+  year: 365,
+};
+
+const resolveWindow = (timeframe) =>
+  TIMEFRAME_WINDOWS[timeframe] ? TIMEFRAME_WINDOWS[timeframe] : TIMEFRAME_WINDOWS.week;
+
+const fetchOverallStats = async (userId) => {
+  const { rows } = await db.query(
+    `
+    SELECT
+      us.total_points,
+      us.total_challenges_completed,
+      us.total_goals_completed,
+      us.average_score,
+      us.level,
+      us.experience_points,
+      us.total_time_spent_minutes,
+      us.current_streak_days,
+      us.longest_streak_days
+    FROM user_statistics us
+    WHERE us.user_id = $1
+    `,
+    [userId],
+  );
+
+  const stats = rows[0] || {};
+  const totalPoints = Number(stats.total_points || 0);
+  const level = Number(stats.level || 1);
+  const fallbackStats = (await Progress.getUserStats(userId)) || {};
+
+  return {
+    totalPoints: totalPoints || Number(fallbackStats.total_points || 0),
+    level,
+    experiencePoints: Number(stats.experience_points || totalPoints),
+    nextLevelXP: (level + 1) * 500,
+    completedGoals: Number(stats.total_goals_completed || 0),
+    completedChallenges: Number(
+      stats.total_challenges_completed ?? fallbackStats.completed_challenges ?? 0,
+    ),
+    currentStreak: Number(stats.current_streak_days || 0),
+    longestStreak: Number(stats.longest_streak_days || 0),
+    totalTimeSpentMinutes: Number(stats.total_time_spent_minutes || 0),
+    averageScore: Number(stats.average_score || fallbackStats.average_score || 0),
+  };
+};
+
+const fetchRecentActivity = async (userId, limit = 5) => {
+  const { rows } = await db.query(
+    `
+    SELECT
+      p.id,
+      p.event_type,
+      p.points_earned,
+      p.created_at,
+      p.event_data,
+      g.title AS goal_title,
+      c.title AS challenge_title
+    FROM progress_events p
+    LEFT JOIN goals g ON p.related_goal_id = g.id
+    LEFT JOIN challenges c ON p.related_challenge_id = c.id
+    WHERE p.user_id = $1
+    ORDER BY p.created_at DESC
+    LIMIT $2
+    `,
+    [userId, limit],
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    type: row.event_type,
+    title: row.challenge_title || row.goal_title || row.event_data?.title || 'Progress update',
+    points: Number(row.points_earned || 0),
+    timestamp: row.created_at,
+    extra: row.event_data || {},
+  }));
+};
+
+const fetchWeeklyProgress = async (userId, timeframe = 'week') => {
+  const daysWindow = resolveWindow(timeframe);
+
+  const { rows } = await db.query(
+    `
+    WITH days AS (
+      SELECT generate_series(
+        (DATE_TRUNC('day', NOW()) - INTERVAL '${daysWindow - 1} days'),
+        DATE_TRUNC('day', NOW()),
+        '1 day'
+      )::date AS day
+    ),
+    event_rollup AS (
+      SELECT
+        DATE_TRUNC('day', created_at)::date AS day,
+        SUM(points_earned) AS points,
+        COUNT(*) FILTER (WHERE event_type = 'challenge_completed') AS challenges_completed,
+        MIN(created_at) AS first_event,
+        MAX(created_at) AS last_event
+      FROM progress_events
+      WHERE user_id = $1
+        AND created_at >= DATE_TRUNC('day', NOW()) - INTERVAL '${daysWindow - 1} days'
+      GROUP BY DATE_TRUNC('day', created_at)
+    )
+    SELECT
+      d.day,
+      COALESCE(er.points, 0) AS points,
+      COALESCE(er.challenges_completed, 0) AS challenges_completed,
+      CASE
+        WHEN er.first_event IS NULL THEN 0
+        ELSE GREATEST(
+          ROUND(EXTRACT(EPOCH FROM (er.last_event - er.first_event)) / 60.0),
+          5
+        )
+      END AS time_spent_minutes
+    FROM days d
+    LEFT JOIN event_rollup er ON er.day = d.day
+    ORDER BY d.day
+    `,
+    [userId],
+  );
+
+  return rows.map((row) => ({
+    date: row.day,
+    points: Number(row.points || 0),
+    timeSpentMinutes: Number(row.time_spent_minutes || 0),
+    challengesCompleted: Number(row.challenges_completed || 0),
+  }));
+};
+
+const fetchSessionStats = async (userId, timeframe = 'week') => {
+  const daysWindow = resolveWindow(timeframe);
+
+  const { rows } = await db.query(
+    `
+    WITH sessions AS (
+      SELECT
+        COALESCE(session_id, TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD')) AS session_key,
+        MIN(created_at) AS started_at,
+        MAX(created_at) AS ended_at,
+        COUNT(*) FILTER (WHERE event_type = 'challenge_completed') AS challenges_completed,
+        COALESCE(SUM(points_earned), 0) AS points_earned
+      FROM progress_events
+      WHERE user_id = $1
+        AND created_at >= NOW() - INTERVAL '${daysWindow} days'
+      GROUP BY COALESCE(session_id, TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD'))
+    )
+    SELECT
+      session_key,
+      started_at,
+      ended_at,
+      GREATEST(
+        ROUND(EXTRACT(EPOCH FROM (ended_at - started_at)) / 60.0),
+        5
+      ) AS duration_minutes,
+      challenges_completed,
+      points_earned
+    FROM sessions
+    ORDER BY ended_at DESC
+    LIMIT 10
+    `,
+    [userId],
+  );
+
+  return rows.map((row) => ({
+    sessionId: row.session_key,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    durationMinutes: Number(row.duration_minutes || 0),
+    challengesCompleted: Number(row.challenges_completed || 0),
+    pointsEarned: Number(row.points_earned || 0),
+  }));
+};
+
 const progressService = {
   /**
    * 📊 Calculate overall progress summary for a user
@@ -95,6 +269,7 @@ const progressService = {
           p.related_goal_id AS goal_id,
           p.related_challenge_id AS challenge_id,
           p.event_type,
+          p.points_earned,
           p.created_at,
           p.updated_at,
           g.title AS goal_title,
@@ -118,6 +293,7 @@ const progressService = {
         eventType: row.event_type,
         activityType: row.activity_type, // "goal" | "challenge" | "other"
         title: row.activity_title,
+        pointsEarned: row.points_earned,
         category: row.activity_category,
         goalId: row.goal_id,
         challengeId: row.challenge_id,
@@ -240,22 +416,21 @@ const progressService = {
 /**
  * 🧾 Get user progress overview (used in /progress/stats)
  */
-const getProgressOverview = async ({ userId }) => {
-  const stats = await progressService.calculateOverallProgress(userId);
+const getProgressOverview = async ({ userId, timeframe = 'week' }) => {
+  const [overall, weeklyProgress, sessionStats, recentActivity] = await Promise.all([
+    fetchOverallStats(userId),
+    fetchWeeklyProgress(userId, timeframe),
+    fetchSessionStats(userId, timeframe),
+    fetchRecentActivity(userId),
+  ]);
 
   return {
     userId,
-    level: Math.floor(stats.totalPoints / 100) + 1,
-    total_points: stats.totalPoints,
-    completed_challenges: stats.completedChallenges,
-    average_score: stats.averageScore,
-    completion_rate: stats.completionRate,
-    goals_achieved: 0,
-    current_streak: 0,
-    longest_streak: 0,
-    badges: [],
-    skills: [],
-    recent_activity: [],
+    overall,
+    weeklyProgress,
+    sessionStats,
+    recentActivity,
+    skillBreakdown: [], // Placeholder until skills are modeled in progress data
   };
 };
 

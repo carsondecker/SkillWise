@@ -1,14 +1,19 @@
 // src/routes/users.js
 const express = require('express');
 const router = express.Router();
-
+const uploadAvatar = require('../middleware/uploadAvatar');
 const userController = require('../controllers/userController');
 const auth = require('../middleware/auth');
 
 // --------------------------------------------------
 // 🔹 User Management Routes (Protected)
 // --------------------------------------------------
-
+router.put(
+  '/profile/avatar',
+  auth,
+  uploadAvatar.single('avatar'),
+  userController.updateProfileAvatar
+);
 // 🟢 Get current user's profile
 router.get('/profile', auth, userController.getProfile);
 

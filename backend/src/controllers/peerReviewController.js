@@ -1,15 +1,12 @@
 // src/controllers/peerReviewController.js
 const { z } = require('zod');
 const peerReviewService = require('../services/peerReviewService');
+const { peerReviewSchema } = require('../middleware/validation');
 const { asyncHandler } = require('../utils/helpers');
 
-// ✅ Validation Schemas
-const submitReviewSchema = z.object({
-  submissionId: z.string().uuid(),
-  rating: z.number().int().min(1).max(5),
-  feedback: z.string().max(2000).optional(),
-});
-
+// ----------------------------
+// Validation Schemas
+// ----------------------------
 const paginationSchema = z.object({
   limit: z
     .string()
@@ -23,33 +20,50 @@ const paginationSchema = z.object({
     .default('0'),
 });
 
-// ✅ Controller Implementation
+
+// ----------------------------
+// Controller
+// ----------------------------
 const peerReviewController = {
-  // -------------------------
-  // Get reviews assigned to the current user
-  // -------------------------
-  getReviewAssignments: asyncHandler(async (req, res) => {
+  // ---------------------------------------------------
+  // 🟢 1. Get all submissions that belong to the user
+  // ---------------------------------------------------
+  getMySubmissions: asyncHandler(async (req, res) => {
     const userId = req.user?.id;
     const { limit, offset } = paginationSchema.parse(req.query);
 
-    const assignments = await peerReviewService.getAssignments({
-      reviewerId: userId,
+    const submissions = await peerReviewService.getMySubmissions({
+      userId,
       limit,
       offset,
     });
 
-    res.json({ assignments });
+    res.json({ submissions });
+  }),
+  getSubmissionById: asyncHandler(async (req, res) => {
+    const reviewerId = req.user?.id;
+    const submissionId = req.params.id;
+
+    const submission = await peerReviewService.getSubmissionForReviewById({
+      reviewerId,
+      submissionId,
+    });
+
+    res.json({ submission });
   }),
 
-  // -------------------------
-  // Submit a peer review for a submission
-  // -------------------------
+  // ---------------------------------------------------
+  // 🟡 2. Submit a peer review
+  // ---------------------------------------------------
   submitReview: asyncHandler(async (req, res) => {
     const reviewerId = req.user?.id;
-    const payload = submitReviewSchema.parse(req.body);
+    const submissionId = req.params.id;
+
+    const payload = req.validated.body;
 
     const review = await peerReviewService.submitReview({
       reviewerId,
+      submissionId,
       ...payload,
     });
 
@@ -59,36 +73,49 @@ const peerReviewController = {
     });
   }),
 
-  // -------------------------
-  // Get reviews the current user has received on their submissions
-  // -------------------------
-  getReceivedReviews: asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
-    const { limit, offset } = paginationSchema.parse(req.query);
-
-    const received = await peerReviewService.getReceivedReviews({
-      userId,
-      limit,
-      offset,
-    });
-
-    res.json({ received });
-  }),
-
-  // -------------------------
-  // Get review history (reviews the user has submitted)
-  // -------------------------
-  getReviewHistory: asyncHandler(async (req, res) => {
+  // ---------------------------------------------------
+  // 🔵 3. Get queue of submissions awaiting review
+  // ---------------------------------------------------
+  getReviewQueue: asyncHandler(async (req, res) => {
     const reviewerId = req.user?.id;
     const { limit, offset } = paginationSchema.parse(req.query);
 
-    const history = await peerReviewService.getReviewHistory({
+    const queue = await peerReviewService.getReviewQueue({
       reviewerId,
       limit,
       offset,
     });
 
-    res.json({ history });
+    res.json({ queue });
+  }),
+
+  // ---------------------------------------------------
+  // 🟣 4. Get details for one submission needing review
+  // ---------------------------------------------------
+  getReviewDetails: asyncHandler(async (req, res) => {
+    const reviewerId = req.user?.id;
+    const submissionId = req.params.id;
+
+    const details = await peerReviewService.getReviewDetails({
+      reviewerId,
+      submissionId,
+    });
+
+    res.json({ details });
+  }),
+  // ---------------------------------------------------
+  // 🟠 5. Get all peer reviews for a specific submission
+  // ---------------------------------------------------
+  getReviewsForSubmission: asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    const submissionId = req.params.id;
+
+    const reviews = await peerReviewService.getReviewsForSubmission({
+      userId,
+      submissionId,
+    });
+
+    res.json({ reviews });
   }),
 };
 

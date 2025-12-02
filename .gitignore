@@ -122,6 +122,8 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
+.venv/
+venv/
 # Linux
 *~
 

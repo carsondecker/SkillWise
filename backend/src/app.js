@@ -5,6 +5,7 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const Sentry = require('@sentry/node');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
 const crypto = require('crypto');
@@ -18,8 +19,29 @@ const routes = require('./routes/index');
 
 // Create Express app
 const app = express();
+
+// --------------------------------------------------
+// 🛰️ Sentry Monitoring
+// --------------------------------------------------
+const SENTRY_DSN = process.env.SENTRY_DSN;
+const SENTRY_ENVIRONMENT =
+  process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development';
+const SENTRY_TRACES_SAMPLE_RATE = Number(
+  process.env.SENTRY_TRACES_SAMPLE_RATE || '0',
+);
+
+Sentry.init({
+  dsn: SENTRY_DSN,
+  environment: SENTRY_ENVIRONMENT,
+  tracesSampleRate: Number.isFinite(SENTRY_TRACES_SAMPLE_RATE)
+    ? SENTRY_TRACES_SAMPLE_RATE
+    : 0,
+  enabled: Boolean(SENTRY_DSN),
+});
+
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use(cookieParser());
+
 // --------------------------------------------------
 // 🧩 Logger Setup
 // --------------------------------------------------
@@ -61,6 +83,9 @@ app.use(
   }),
 );
 
+// Sentry request handler should go after basic middleware setup
+app.use(Sentry.Handlers.requestHandler());
+
 // --------------------------------------------------
 // 🛡️ Security Middleware
 // --------------------------------------------------
@@ -78,7 +103,6 @@ app.use(
   }),
 );
 
-// Trust proxy (important for rate limiting behind proxies like Heroku)
 app.set('trust proxy', 1);
 
 // --------------------------------------------------
@@ -94,26 +118,32 @@ app.use(
 );
 
 // --------------------------------------------------
-// 🚦 Rate Limiting
+// 🚦 **Improved Rate Limiting**
+// 🔥 EXCLUDES /auth routes entirely
+// 🔥 EXCLUDES OPTIONS so preflight requests don’t count
+// 🔥 Much more relaxed global rate limiting
 // --------------------------------------------------
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 min
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
+
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1-minute window
+  max: 5000,            // allow 500 requests per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    if (req.method === 'OPTIONS') return true;
+    return false;
+  },
   handler: (req, res) => {
     res.status(429).json({
       status: 'fail',
-      error: 'Too many requests, please try again later.',
-      retryAfter: Math.ceil(
-        (parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000) / 1000,
-      ),
+      error: 'Too many requests — relax 😅',
+      retryAfter: 60,
       timestamp: new Date().toISOString(),
     });
   },
 });
 
-app.use(limiter);
+app.use(globalLimiter);
 
 // --------------------------------------------------
 // 📦 Body Parsers
@@ -147,6 +177,15 @@ app.get('/healthz', (req, res) => {
 });
 
 // --------------------------------------------------
+// 🧪 Sentry debug endpoint (non-production)
+// --------------------------------------------------
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug-sentry', () => {
+    throw new Error('Sentry debug endpoint triggered');
+  });
+}
+
+// --------------------------------------------------
 // 🧩 API Routes
 // --------------------------------------------------
 app.use('/api', routes);
@@ -164,18 +203,13 @@ app.use('*', (req, res) => {
 });
 
 // --------------------------------------------------
-// ❗ Global Error Handler
+// ❗ Global Error Handler (Sentry first, then app handler)
 // --------------------------------------------------
+app.use(Sentry.Handlers.errorHandler());
 app.use(errorHandler);
 
-// --------------------------------------------------
-// 🧰 Expose logger
-// --------------------------------------------------
 app.set('logger', logger);
 
-// --------------------------------------------------
-// 🧩 Graceful Startup/Shutdown Logs
-// --------------------------------------------------
 process.on('SIGINT', () => {
   logger.info('🛑 Server shutting down gracefully (SIGINT)');
   process.exit(0);

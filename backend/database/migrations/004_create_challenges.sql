@@ -23,6 +23,36 @@ CREATE TABLE IF NOT EXISTS challenges (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                                                 );
 
+-- ✅ Add goal_id and ai_generated to challenges (if missing)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'challenges' AND column_name = 'goal_id'
+  ) THEN
+ALTER TABLE challenges
+    ADD COLUMN goal_id INTEGER REFERENCES goals(id) ON DELETE CASCADE;
+END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'challenges' AND column_name = 'ai_generated'
+  ) THEN
+ALTER TABLE challenges
+    ADD COLUMN ai_generated BOOLEAN DEFAULT false;
+END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'challenges' AND column_name = 'status'
+  ) THEN
+ALTER TABLE challenges
+    ADD COLUMN status VARCHAR(20)
+        DEFAULT 'pending'
+        CHECK (status IN ('pending','in_progress','in_peer_review','peer_reviewed','completed','failed'));
+END IF;
+END $$;
+
 -- ✅ Create indexes safely
 CREATE INDEX IF NOT EXISTS idx_challenges_category ON challenges(category);
 CREATE INDEX IF NOT EXISTS idx_challenges_difficulty ON challenges(difficulty_level);

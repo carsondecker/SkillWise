@@ -63,34 +63,64 @@ END $$;
 -- -- ===========================================
 CREATE OR REPLACE FUNCTION log_goal_completion_event()
 RETURNS TRIGGER AS $$
+DECLARE
+existing_event_id INT;
 BEGIN
-  -- Only fire when goal changes from incomplete → completed
+  -- Only fire when goal transitions from incomplete → complete
   IF NEW.is_completed = TRUE AND COALESCE(OLD.is_completed, FALSE) = FALSE THEN
-    INSERT INTO progress_events (
-      user_id,
-      event_type,
-      event_data,
-      points_earned,
-      related_goal_id,
-      timestamp_occurred,
-      created_at
-    )
-    VALUES (
-      NEW.user_id,
-      'goal_completed',
-      jsonb_build_object(
-        'goal_id', NEW.id,
-        'title', NEW.title,
-        'category', NEW.category,
-        'difficulty_level', NEW.difficulty_level,
-        'progress_percentage', NEW.progress_percentage,
-        'completed_at', COALESCE(NEW.completion_date, NOW())
-      ),
-      COALESCE(NEW.points_reward, 0),
-      NEW.id,
-      NOW(),
-      NOW()
-    );
+
+    -- Check if a completion event already exists for this user + goal
+SELECT id INTO existing_event_id
+FROM progress_events
+WHERE event_type = 'goal_completed'
+  AND user_id = NEW.user_id
+  AND related_goal_id = NEW.id
+    LIMIT 1;
+
+IF existing_event_id IS NULL THEN
+      -- First-time completion → INSERT
+      INSERT INTO progress_events (
+        user_id,
+        event_type,
+        event_data,
+        points_earned,
+        related_goal_id,
+        timestamp_occurred,
+        created_at
+      )
+      VALUES (
+        NEW.user_id,
+        'goal_completed',
+        jsonb_build_object(
+          'goal_id', NEW.id,
+          'title', NEW.title,
+          'category', NEW.category,
+          'difficulty_level', NEW.difficulty_level,
+          'progress_percentage', NEW.progress_percentage,
+          'completed_at', COALESCE(NEW.completion_date, NOW())
+        ),
+        COALESCE(NEW.points_reward, 0),
+        NEW.id,
+        NOW(),
+        NOW()
+      );
+ELSE
+      -- Goal was completed before → UPDATE existing row
+UPDATE progress_events
+SET
+    event_data = jsonb_build_object(
+            'goal_id', NEW.id,
+            'title', NEW.title,
+            'category', NEW.category,
+            'difficulty_level', NEW.difficulty_level,
+            'progress_percentage', NEW.progress_percentage,
+            'completed_at', COALESCE(NEW.completion_date, NOW())
+                 ),
+    points_earned = COALESCE(NEW.points_reward, 0),
+    timestamp_occurred = NOW(),
+    updated_at = NOW()
+WHERE id = existing_event_id;
+END IF;
 END IF;
 
 RETURN NEW;
@@ -146,6 +176,14 @@ VALUES (
            NOW(),
            NOW()
        );
+-- When a submission is created, update the challenge
+-- status to in_progress ONLY if it is not already.
+-- ================================================
+UPDATE challenges
+SET status = 'in_progress',
+    updated_at = NOW()
+WHERE id = NEW.challenge_id
+  AND status IS DISTINCT FROM 'in_progress';
 RETURN NEW;
 END;
       $$ LANGUAGE plpgsql;

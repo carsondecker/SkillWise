@@ -1,0 +1,151 @@
+.overview-tab {
+  padding: 1rem 0.25rem;
+
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    padding: 1.2rem 1.3rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.06);
+  }
+
+  .glass-card.highlight {
+    background: linear-gradient(140deg, #0f172a, #1d4ed8 55%, #7c3aed);
+    color: #fff;
+    border: none;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+
+    .label, .subtext { color: rgba(255,255,255,0.78); }
+    .value { color: #fff; }
+  }
+
+  .card-meta h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+  }
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .mini-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
+    margin: 0.75rem 0 0.35rem;
+
+    .label {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 0.85rem;
+    }
+    .value {
+      margin: 0.1rem 0 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+  }
+
+  .subtext {
+    margin-top: 0.4rem;
+    color: #475569;
+    font-size: 0.95rem;
+  }
+
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 0.6rem;
+  }
+
+  .activity-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+
+  .activity-item .icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #e0f2fe;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+  }
+
+  .activity-item h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: #0f172a;
+  }
+
+  .activity-item span {
+    display: block;
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  .pill {
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-weight: 700;
+    border: 1px solid #bae6fd;
+  }
+
+  .empty {
+    margin: 0.75rem 0 0;
+    color: #94a3b8;
+  }
+
+  .achievements {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin-top: 0.75rem;
+  }
+
+  .achievement {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+
+    .icon {
+      font-size: 1.4rem;
+    }
+
+    .label {
+      margin: 0;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+
+    .value {
+      margin: 0.15rem 0 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+  }
+}

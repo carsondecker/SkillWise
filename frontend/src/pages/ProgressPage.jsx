@@ -1,80 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 import { motion } from 'framer-motion';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import { apiService } from '../services/api';
 import '../styles/ProgressPage.scss';
 
 const ProgressPage = () => {
   const [progressData, setProgressData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [timeframe, setTimeframe] = useState('week');
 
-  // Mock Data
   useEffect(() => {
-    const mockProgressData = {
-      overall: {
-        totalPoints: 450,
-        level: 5,
-        experiencePoints: 1250,
-        nextLevelXP: 1500,
-        completedGoals: 8,
-        completedChallenges: 15,
-        currentStreak: 7,
-        longestStreak: 12,
-      },
-      recentActivity: [
-        {
-          id: 1,
-          type: 'challenge_completed',
-          title: 'Build a React Component',
-          points: 50,
-          timestamp: '2025-10-02T10:30:00Z',
-        },
-        {
-          id: 2,
-          type: 'goal_progress',
-          title: 'Master Frontend Development',
-          progress: 75,
-          timestamp: '2025-10-02T09:15:00Z',
-        },
-        {
-          id: 3,
-          type: 'achievement_earned',
-          title: 'First Week Streak',
-          points: 25,
-          timestamp: '2025-10-01T16:45:00Z',
-        },
-      ],
-      weeklyProgress: [
-        { day: 'Mon', points: 30, timeSpent: 45 },
-        { day: 'Tue', points: 50, timeSpent: 60 },
-        { day: 'Wed', points: 0, timeSpent: 0 },
-        { day: 'Thu', points: 75, timeSpent: 90 },
-        { day: 'Fri', points: 40, timeSpent: 55 },
-        { day: 'Sat', points: 60, timeSpent: 75 },
-        { day: 'Sun', points: 35, timeSpent: 40 },
-      ],
-      skillBreakdown: [
-        { skill: 'JavaScript', level: 4, progress: 80 },
-        { skill: 'React', level: 3, progress: 65 },
-        { skill: 'CSS', level: 5, progress: 90 },
-        { skill: 'Node.js', level: 2, progress: 40 },
-        { skill: 'Database', level: 3, progress: 55 },
-      ],
+    const fetchProgress = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const { data } = await apiService.progress.getProgress({ timeframe });
+        setProgressData(data?.progress || {});
+      } catch (err) {
+        console.error('Failed to load progress', err);
+        setError(
+          err?.response?.data?.message ||
+            'Unable to load your progress right now. Please try again.'
+        );
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setTimeout(() => {
-      setProgressData(mockProgressData);
-      setLoading(false);
-    }, 1000);
+    fetchProgress();
   }, [timeframe]);
 
   if (loading) return <LoadingSpinner message="Loading your progress..." />;
+  if (error)
+    return (
+      <div className="progress-page error-state">
+        <h2>Could not load progress</h2>
+        <p>{error}</p>
+      </div>
+    );
+  if (!progressData) return null;
 
   const fadeIn = (delay = 0) => ({
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.6, delay },
   });
+
+  const overall = progressData.overall || {};
+  const weeklyProgress = progressData.weeklyProgress || [];
+  const recentActivity = progressData.recentActivity || [];
+  const sessionStats = progressData.sessionStats || [];
+  const skillBreakdown = progressData.skillBreakdown || [];
+
+  const formatDayLabel = (dateString) =>
+    new Date(dateString).toLocaleDateString(undefined, { weekday: 'short' });
+
+  const formatDateTime = (value) =>
+    value
+      ? new Date(value).toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      : '';
 
   return (
     <div className="progress-page">
@@ -90,27 +81,27 @@ const ProgressPage = () => {
             {
               icon: '🎯',
               label: 'Total Points',
-              value: progressData.overall.totalPoints,
+              value: overall.totalPoints || 0,
             },
             {
               icon: '⭐',
               label: 'Current Level',
-              value: `Level ${progressData.overall.level}`,
+              value: `Level ${overall.level || 1}`,
             },
             {
               icon: '✅',
               label: 'Goals Completed',
-              value: progressData.overall.completedGoals,
+              value: overall.completedGoals || 0,
             },
             {
               icon: '🚀',
               label: 'Challenges Done',
-              value: progressData.overall.completedChallenges,
+              value: overall.completedChallenges || 0,
             },
             {
               icon: '🔥',
               label: 'Day Streak',
-              value: progressData.overall.currentStreak,
+              value: overall.currentStreak || 0,
             },
           ].map((stat, i) => (
             <motion.div key={i} className="stat-card" {...fadeIn(i * 0.1)}>
@@ -126,23 +117,25 @@ const ProgressPage = () => {
                         initial={{ width: 0 }}
                         animate={{
                           width: `${
-                            (progressData.overall.experiencePoints /
-                              progressData.overall.nextLevelXP) *
-                            100
+                            overall.nextLevelXP
+                              ? Math.min(
+                                100,
+                                ((overall.experiencePoints || 0) / overall.nextLevelXP) * 100
+                              )
+                              : 0
                           }%`,
                         }}
                         transition={{ duration: 1, ease: 'easeOut' }}
                       />
                     </div>
                     <small>
-                      {progressData.overall.experiencePoints}/
-                      {progressData.overall.nextLevelXP} XP
+                      {overall.experiencePoints || 0}/{overall.nextLevelXP || 0} XP
                     </small>
                   </>
                 )}
                 {stat.label === 'Day Streak' && (
                   <small>
-                    Longest: {progressData.overall.longestStreak} days
+                    Longest: {overall.longestStreak || 0} days
                   </small>
                 )}
               </div>
@@ -162,13 +155,11 @@ const ProgressPage = () => {
                 onChange={(e) => setTimeframe(e.target.value)}
               >
                 <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="year">This Year</option>
               </select>
             </div>
 
             <div className="weekly-chart">
-              {progressData.weeklyProgress.map((day, index) => (
+              {weeklyProgress.map((day, index) => (
                 <motion.div
                   key={index}
                   className="day-column"
@@ -176,13 +167,15 @@ const ProgressPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.1, duration: 0.6 }}
                 >
-                  <div className="day-label">{day.day}</div>
+                  <div className="day-label">
+                    {day.day || formatDayLabel(day.date)}
+                  </div>
                   <motion.div
                     className="day-bar"
                     initial={{ height: 0 }}
                     animate={{ height: `${Math.max(day.points / 2, 5)}px` }}
                     transition={{ delay: 0.3 + index * 0.1, duration: 0.6 }}
-                    title={`${day.points} points, ${day.timeSpent} minutes`}
+                    title={`${day.points} points, ${day.timeSpentMinutes || 0} minutes`}
                   />
                   <div className="day-points">{day.points}</div>
                 </motion.div>
@@ -193,9 +186,9 @@ const ProgressPage = () => {
           <motion.div className="recent-activity-section" {...fadeIn(0.3)}>
             <h2>Recent Activity</h2>
             <div className="activity-list">
-              {progressData.recentActivity.map((activity, i) => (
+              {recentActivity.map((activity, i) => (
                 <motion.div
-                  key={activity.id}
+                  key={activity.id || i}
                   className="activity-item"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -205,6 +198,9 @@ const ProgressPage = () => {
                     {activity.type === 'challenge_completed' && '🚀'}
                     {activity.type === 'goal_progress' && '🎯'}
                     {activity.type === 'achievement_earned' && '🏆'}
+                    {!['challenge_completed', 'goal_progress', 'achievement_earned'].includes(
+                      activity.type
+                    ) && '📌'}
                   </div>
                   <div className="activity-content">
                     <h4>{activity.title}</h4>
@@ -222,11 +218,51 @@ const ProgressPage = () => {
           </motion.div>
         </div>
 
+        <motion.div className="sessions-section" {...fadeIn(0.35)}>
+          <div className="section-header">
+            <h2>Sessions</h2>
+            <p>Time spent and challenges completed per session</p>
+          </div>
+          <div className="sessions-grid">
+            {sessionStats.length === 0 && (
+              <div className="empty-state">No sessions logged yet.</div>
+            )}
+            {sessionStats.map((session, index) => (
+              <motion.div
+                key={session.sessionId || index}
+                className="session-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 + index * 0.05, duration: 0.5 }}
+              >
+                <div className="session-meta">
+                  <h4>{formatDateTime(session.startedAt)}</h4>
+                  <span>{session.sessionId}</span>
+                </div>
+                <div className="session-stats">
+                  <div>
+                    <strong>{session.durationMinutes} min</strong>
+                    <p>Time spent</p>
+                  </div>
+                  <div>
+                    <strong>{session.challengesCompleted}</strong>
+                    <p>Challenges</p>
+                  </div>
+                  <div>
+                    <strong>{session.pointsEarned}</strong>
+                    <p>Points</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
         {/* 🧠 Skill Breakdown */}
         <motion.div className="skills-section" {...fadeIn(0.4)}>
           <h2>Skill Breakdown</h2>
           <div className="skills-grid">
-            {progressData.skillBreakdown.map((skill, index) => (
+            {skillBreakdown.map((skill, index) => (
               <motion.div
                 key={index}
                 className="skill-item"

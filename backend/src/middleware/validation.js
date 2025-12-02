@@ -98,6 +98,7 @@ const challengeSchema = z.object({
     tags: z.array(z.string().min(1)).default([]),
 
     learning_objectives: z.array(z.string().min(1)).default([]),
+    ai_generated: z.boolean().default(false),
 
     // created_by comes from backend (req.user)
     created_by: z.number().int().optional(),
@@ -119,6 +120,66 @@ const challengeUpdateSchema = z.object({
     prerequisites: z.array(z.string().min(1)).optional(),
     tags: z.array(z.string().min(1)).optional(),
     learning_objectives: z.array(z.string().min(1)).optional(),
+  }),
+});
+// =======================================================
+// 🤖 AI-generated Challenge Schema (strict validation)
+// =======================================================
+const aiGeneratedChallengeSchema = z.object({
+  title: z.string().min(1).max(255),
+  description: z.string().min(1).max(5000),
+  instructions: z.string().min(1).max(5000),
+  category: z.string().min(1).max(100),
+  difficulty_level: z.enum(['easy', 'medium', 'hard']),
+  points_reward: z.number().int().min(0).max(100),
+  estimated_time_minutes: z.number().int().min(30).max(180),
+  max_attempts: z.number().int().min(1).max(5),
+  requires_peer_review: z.boolean(),
+  is_active: z.boolean(),
+  tags: z.array(z.string()).default([]),
+  prerequisites: z.array(z.string()).default([]),
+  learning_objectives: z.array(z.string()).default([]),
+});
+// ================================
+// ✅ PEER REVIEW SUBMISSION SCHEMA
+// ================================
+const peerReviewSchema = z.object({
+  body: z.object({
+    reviewee_id: z.number().int().positive({
+      message: 'reviewee_id must be a valid positive number',
+    }),
+
+    review_text: z
+      .string()
+      .min(10, 'Review text must be at least 10 characters')
+      .max(5000, 'Review text too long'),
+
+    rating: z
+      .number()
+      .int()
+      .min(1, 'Rating must be between 1 and 5')
+      .max(5, 'Rating must be between 1 and 5'),
+
+    criteria_scores: z.object({
+      clarity: z.number().int().min(1).max(5),
+      correctness: z.number().int().min(1).max(5),
+      creativity: z.number().int().min(1).max(5),
+      completeness: z.number().int().min(1).max(5),
+    }),
+
+    time_spent_minutes: z
+      .number()
+      .int()
+      .min(0, 'Time spent cannot be negative')
+      .max(600, 'Time spent cannot exceed 600 minutes'),
+
+    is_anonymous: z.boolean().default(true),
+
+    is_completed: z.boolean().default(true),
+
+    completed_at: z
+      .string()
+      .datetime('completed_at must be a valid ISO timestamp'),
   }),
 });
 /**
@@ -169,6 +230,7 @@ const registerValidation = validate(registerSchema);
 const goalValidation = validate(goalSchema);
 const challengeValidation = validate(challengeSchema);
 const challengeUpdateValidation = validate(challengeUpdateSchema);
+const peerReviewValidation = validate(peerReviewSchema);
 
 module.exports = {
   validate,
@@ -177,11 +239,14 @@ module.exports = {
   goalValidation,
   challengeValidation,
   challengeUpdateValidation,
+  peerReviewValidation,
   schemas: {
     loginSchema,
     registerSchema,
     goalSchema,
     challengeSchema,
     challengeUpdateSchema,
+    aiGeneratedChallengeSchema,
+    peerReviewSchema,
   },
 };

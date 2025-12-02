@@ -10,7 +10,7 @@ class Challenge {
       SELECT id, title, description, instructions, category, difficulty_level,
              points_reward, max_attempts, estimated_time_minutes,
              requires_peer_review, is_active, tags, learning_objectives,
-             prerequisites, created_at, status, goal_id
+             prerequisites, created_at, status, goal_id, created_by
       FROM challenges
       WHERE is_active = true AND created_by = $1
       ORDER BY created_at DESC
@@ -22,7 +22,7 @@ class Challenge {
       SELECT id, title, description, instructions, category, difficulty_level,
              points_reward, max_attempts, estimated_time_minutes,
              requires_peer_review, is_active, tags, learning_objectives,
-             prerequisites, created_at, status, goal_id
+             prerequisites, created_at, status, goal_id, created_by
       FROM challenges
       WHERE is_active = true
       ORDER BY created_at DESC
@@ -37,12 +37,24 @@ class Challenge {
   static async findById (id) {
     const query = `
       SELECT id, title, description, instructions, category, difficulty_level, points_reward,max_attempts,
-             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at, status
+             estimated_time_minutes, requires_peer_review, is_active, tags, learning_objectives,prerequisites, created_at, status, goal_id, created_by
       FROM challenges
       WHERE id = $1
     `;
     const result = await db.query(query, [id]);
     return result.rows[0];
+  }
+
+  static async findLatestSubmissions (challengeId) {
+    const query = `
+      SELECT *
+      FROM submissions
+      WHERE challenge_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    const result = await db.query(query, [challengeId]);
+    return result.rows;
   }
 
   static async findByDifficulty (difficulty) {
@@ -126,15 +138,15 @@ class Challenge {
       description,
       instructions,
       category,
-      difficulty_level = 'medium',
-      points_reward = 10,
+      difficulty_level,
+      points_reward ,
       estimated_time_minutes,
-      prerequisites = [],
-      max_attempts = 3,
-      requires_peer_review = false,
+      prerequisites,
+      max_attempts ,
+      requires_peer_review,
       is_active = true,
-      tags = [],
-      learning_objectives = [],
+      tags,
+      learning_objectives ,
       status,
     } = data;
 

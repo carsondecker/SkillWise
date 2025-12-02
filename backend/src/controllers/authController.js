@@ -26,7 +26,6 @@ const authController = {
         role: user.role,
       });
 
-      await authService.storeRefreshToken(user.id, refreshToken);
       setAuthCookies(res, accessToken, refreshToken);
 
       res.status(201).json({
@@ -37,7 +36,9 @@ const authController = {
           lastName: user.last_name,
           email: user.email,
         },
-        tokens: { accessToken, refreshToken },
+        accessToken,
+        // In non-production envs return refresh token too so SPAs can fall back if cookies are blocked
+        ...(process.env.NODE_ENV !== 'production' && { refreshToken }),
       });
     } catch (error) {
       next(error);
@@ -55,7 +56,6 @@ const authController = {
         password,
       );
 
-      await authService.storeRefreshToken(user.id, refreshToken);
       setAuthCookies(res, accessToken, refreshToken);
 
       res.json({
@@ -66,7 +66,8 @@ const authController = {
           lastName: user.last_name,
           email: user.email,
         },
-        tokens: { accessToken, refreshToken },
+        accessToken,
+        ...(process.env.NODE_ENV !== 'production' && { refreshToken }),
       });
     } catch (error) {
       next(error);
@@ -103,7 +104,10 @@ const authController = {
   // -------------------------
   refreshToken: asyncHandler(async (req, res, next) => {
     try {
-      const refreshToken = req.cookies?.refreshToken;
+      const refreshToken =
+        req.cookies?.refreshToken ||
+        req.body?.refreshToken ||
+        req.headers['x-refresh-token'];
       if (!refreshToken)
         throw new AppError('No refresh token provided', 401, 'NO_TOKEN');
 

@@ -1,0 +1,114 @@
+.peer-card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 18px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+  transition: all .25s ease;
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  &__author {
+    display: flex;
+    gap: .7rem;
+    .peer-card__avatar {
+      font-size: 1.8rem;
+    }
+    h4 { font-weight: 700; }
+    p { font-size: .85rem; color: #6b7280; }
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+  }
+
+  &__difficulty {
+    padding: .2rem .7rem;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: .75rem;
+
+    &.diff-easy { background: #22c55e; }
+    &.diff-medium { background: #f59e0b; }
+    &.diff-hard { background: #ef4444; }
+  }
+
+  &__category {
+    background: #e0e7ff;
+    color: #1e3a8a;
+    padding: .25rem .6rem;
+    border-radius: 8px;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+
+  &__body {
+    margin: 1rem 0;
+    p { color: #374151; }
+
+    &__code {
+      background: #f3f4f6;
+      padding: .8rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    border-radius: 10px;
+    padding: .6rem 1.2rem;
+    color: white;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: .25s;
+
+    &:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+  }
+
+  &__btn-secondary {
+    background: #e5e7eb;
+    padding: .6rem 1.2rem;
+    border-radius: 10px;
+    color: #374151;
+    font-weight: 600;
+    border: none;
+  }
+}
+.peer-card__avatar-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.peer-card__avatar-fallback {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #1e3a8a;
+  color: white;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}

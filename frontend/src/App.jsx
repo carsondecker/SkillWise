@@ -23,6 +23,8 @@ import NotFoundPage from './pages/NotFoundPage';
 import ErrorPage from './pages/ErrorPage';
 import Topbar from './components/common/TopBar';
 import ChallengeSubmissionPage from './pages/ChallengeSubmissionPage';
+import PeerReviewDetailPage from "./pages/PeerReviewDetailPage";
+import StreakStar from "./components/common/StreakStar";
 
 /* ==============================
    🔹 Split into two components
@@ -38,6 +40,7 @@ function AppContent() {
   return (
     <>
       {!hideTopbar && <Topbar />}
+      {user && !hideTopbar && <StreakStar />}
 
       <Routes>
         {/* Public routes */}
@@ -110,6 +113,14 @@ function AppContent() {
               <ProfilePage key={user?.id || 'guest'} />
             </ProtectedRoute>
           }
+        />
+        <Route
+          path="/peer-review/:submissionId"
+          element={
+            <ProtectedRoute>
+              <PeerReviewDetailPage key={user?.id || 'guest'} />
+            </ProtectedRoute>
+        }
         />
 
         {/* Catch-all */}

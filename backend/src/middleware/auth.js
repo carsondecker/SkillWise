@@ -46,13 +46,8 @@ const auth = async (req, res, next) => {
         ),
       );
     } else if (error.name === 'TokenExpiredError') {
-      return next(
-        new AppError(
-          'Your token has expired! Please log in again.',
-          401,
-          'TOKEN_EXPIRED',
-        ),
-      );
+      req.tokenExpired = true;
+      return next(); // allow refresh middleware to run
     }
     return next(error);
   }

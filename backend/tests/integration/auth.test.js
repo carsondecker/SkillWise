@@ -37,8 +37,8 @@ describe('🧪 Authentication Integration Tests', () => {
       });
 
     expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('user');
     expect(res.body.user).toHaveProperty('email', userPayload.email);
-    expect(res.body.tokens).toHaveProperty('accessToken');
   });
 
   test('❌ Fail to login with invalid password', async () => {

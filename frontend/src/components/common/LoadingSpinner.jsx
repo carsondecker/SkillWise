@@ -2,7 +2,7 @@
 import React from 'react';
 import Lottie from 'lottie-react';
 import loadingAnimation from '../../assets/animations/loading.json'; // 👈 You’ll add this file
-import '../../styles/components/LoadingSpinner.scss';
+import '../../styles/components/Common/LoadingSpinner.scss';
 
 const LoadingSpinner = ({ size = 'medium', message = 'Loading...' }) => {
   const sizeMap = {

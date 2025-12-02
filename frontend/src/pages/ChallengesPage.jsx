@@ -21,6 +21,7 @@ const ChallengesPage = () => {
     search: '',
   });
 
+
   // 🔹 Fetch challenges from API
   useEffect(() => {
     const fetchChallenges = async () => {
@@ -168,6 +169,9 @@ const ChallengesPage = () => {
                 key={challenge.id}
                 challenge={challenge}
                 onEdit={handleEdit}
+                onDelete={(id) =>
+                  setChallenges((prev) => prev.filter((c) => c.id !== id))
+                }
               />
             ))}
           </div>

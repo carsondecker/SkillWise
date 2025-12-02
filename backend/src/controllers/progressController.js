@@ -17,6 +17,10 @@ const analyticsQuerySchema = z.object({
     .default('weekly'),
 });
 
+const overviewQuerySchema = z.object({
+  timeframe: z.enum(['week', 'month', 'year']).default('week'),
+});
+
 const paginationSchema = z.object({
   limit: z
     .string()
@@ -37,9 +41,11 @@ const progressController = {
   // -------------------------
   getProgress: asyncHandler(async (req, res) => {
     const userId = req.user?.id;
+    const { timeframe } = overviewQuerySchema.parse(req.query);
 
     const progressOverview = await progressService.getProgressOverview({
       userId,
+      timeframe,
     });
     res.json({ progress: progressOverview });
   }),

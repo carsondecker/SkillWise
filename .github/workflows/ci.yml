@@ -118,25 +118,31 @@ jobs:
           DATABASE_URL: postgresql://skillwise_user:skillwise_pass@localhost:5444/skillwise_test_db
 
       # -------------------------
-      # 9️⃣ Install frontend dependencies
+      # 9️⃣ Run backend unit tests (DB-less)
+      # -------------------------
+      - name: 🧩 Run Backend Unit Tests
+        run: cd backend && SKIP_DB_SETUP=true npm run test:unit -- --ci
+
+      # -------------------------
+      # 🔟 Install frontend dependencies
       # -------------------------
       - name: 📥 Install frontend dependencies
         run: cd frontend && npm ci
 
       # -------------------------
-      # 🔟 Run frontend lint
+      # 11️⃣ Run frontend lint
       # -------------------------
       - name: 🔍 Run Frontend Linter
         run: cd frontend && npm run lint || echo "⚠️ Lint warnings ignored for CI"
 
       # -------------------------
-      # 11️⃣ Run frontend unit tests
+      # 12️⃣ Run frontend unit tests
       # -------------------------
       - name: 🧩 Run Frontend Unit Tests
-        run: cd frontend && npm test -- --watchAll=false || echo "No unit tests"
+        run: cd frontend && CI=true npm test -- --watch=false --passWithNoTests
 
       # -------------------------
-      # 12️⃣ Run Cypress E2E (uses real dev DB)
+      # 13️⃣ Run Cypress E2E (uses real dev DB)
       # -------------------------
       - name: 🌐 Run Cypress E2E Tests
         uses: cypress-io/github-action@v6
@@ -151,7 +157,7 @@ jobs:
           JWT_SECRET: supersecretaccess
           JWT_REFRESH_SECRET: supersecretrefresh
       # -------------------------
-      # 13️⃣ Upload Cypress screenshots on failure
+      # 14️⃣ Upload Cypress screenshots on failure
       # -------------------------
       - name: 📸 Upload Cypress Screenshots (if failed)
         if: failure()

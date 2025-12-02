@@ -26,29 +26,42 @@
   .review-tabs {
     display: flex;
     justify-content: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    gap: 1.4rem;
+    margin-bottom: 2.5rem;
+    position: relative;
 
     .tab-button {
-      padding: 0.7rem 1.4rem;
+      position: relative;
+      padding: 0.75rem 1.6rem;
       font-weight: 600;
       border: none;
       border-radius: 12px;
-      background: #e5e7eb;
-      color: #374151;
+      background: #f1f5f9;
+      color: #475569;
       cursor: pointer;
       transition: all 0.25s ease;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      font-size: 0.95rem;
 
       &:hover {
-        background: #dbeafe;
+        background: #e2e8f0;
         color: #1e3a8a;
       }
 
       &.active {
-        background: linear-gradient(135deg, #2563eb, #1e3a8a);
+        background: #1e3a8a;
         color: #fff;
-        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+        box-shadow: 0 6px 16px rgba(30, 58, 138, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .tab-count {
+        background: white;
+        color: #1e3a8a;
+        padding: 0.15rem 0.5rem;
+        border-radius: 8px;
+        margin-left: 0.5rem;
+        font-weight: 700;
+        font-size: 0.8rem;
       }
     }
   }
@@ -276,6 +289,23 @@
           justify-content: space-between;
           align-items: flex-start;
           margin-bottom: 1rem;
+          .btn-secondary{
+            background: #e5e7eb;
+            border: none;
+            border-radius: 10px;
+            padding: 0.4rem 0.9rem;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+
+            &:hover {
+              background: #8e9093;
+              cursor: pointer;
+              color: #fff;
+            }
+
+          }
 
           .submission-meta {
             display: flex;
@@ -290,10 +320,19 @@
               font-weight: 600;
               font-size: 0.75rem;
             }
+            .category-badge.peer-reviewed{
+              background: #bbf7d0;
+              color: #065f46;
+              border-radius: 8px;
+              padding: 0.3rem 0.6rem;
+              font-weight: 600;
+              font-size: 0.75rem;
+            }
 
             .difficulty-badge {
-              color: #fff;
+              color: #000000;
               border-radius: 8px;
+              border: 1.5px solid #9ca3af;
               padding: 0.3rem 0.6rem;
               font-weight: 600;
               font-size: 0.75rem;

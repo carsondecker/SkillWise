@@ -43,6 +43,24 @@ const userController = {
     res.json({ user: toCamelCase(user) });
   }),
 
+  updateProfileAvatar: asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Build public URL to file
+    const fileUrl = `/uploads/avatars/${req.file.filename}`;
+
+    const updatedUser = await userService.updateAvatar(userId, fileUrl);
+
+    res.json({
+      message: 'Profile image updated successfully',
+      profileImage: fileUrl,
+      user: toCamelCase(updatedUser),
+    });
+  }),
   // ✏️ Update user profile
   updateProfile: asyncHandler(async (req, res) => {
     const userId = req.user?.id;

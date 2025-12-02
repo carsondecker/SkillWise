@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS goals (
     target_completion_date DATE,
     is_completed BOOLEAN DEFAULT false,
     completion_date TIMESTAMP WITH TIME ZONE,
-                                                                                       progress_percentage INTEGER DEFAULT 0 CHECK (progress_percentage >= 0 AND progress_percentage <= 100),
+    progress_percentage INTEGER DEFAULT 0 CHECK (progress_percentage >= 0 AND progress_percentage <= 100),
     points_reward INTEGER DEFAULT 0,
     is_public BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
