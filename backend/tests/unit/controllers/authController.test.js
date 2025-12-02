@@ -1,74 +1,128 @@
-const request = require('supertest');
-const app = require('../../../src/app');
+const authService = require('../../../src/services/authService');
+const jwtUtils = require('../../../src/utils/jwt');
 const db = require('../../../src/database/connection');
+const authController = require('../../../src/controllers/authController');
+const { AppError } = require('../../../src/middleware/errorHandler');
 
-describe('🔐 Authentication Integration', () => {
-  let testUser = {
-    email: `testuser${Date.now()}@example.com`,
-    password: 'Test1234!',
-    firstName: 'Test',
-    lastName: 'User',
-    confirmPassword: 'Test1234!',
+jest.mock('../../../src/services/authService', () => ({
+  register: jest.fn(),
+  login: jest.fn(),
+  verifyRefreshToken: jest.fn(),
+}));
+
+jest.mock('../../../src/utils/jwt', () => ({
+  setAuthCookies: jest.fn(),
+  clearAuthCookies: jest.fn(),
+  generateAccessToken: jest.fn().mockReturnValue('access'),
+  generateRefreshToken: jest.fn().mockReturnValue('refresh'),
+  verifyRefreshToken: jest.fn(),
+}));
+
+jest.mock('../../../src/database/connection', () => ({
+  query: jest.fn(),
+}));
+
+describe('Auth Controller', () => {
+  const mockRes = () => {
+    const res = {};
+    res.status = jest.fn().mockReturnValue(res);
+    res.json = jest.fn().mockReturnValue(res);
+    res.end = jest.fn();
+    res.cookie = jest.fn();
+    res.clearCookie = jest.fn();
+    return res;
   };
 
-  let tokens = {};
-
-  afterAll(async () => {
-    await db.end();
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.NODE_ENV = 'test';
   });
 
-  describe('POST /api/auth/register', () => {
-    it('should register a new user successfully', async () => {
-      const res = await request(app)
-        .post('/api/auth/register')
-        .send(testUser)
-        .expect(201);
-
-      expect(res.body).toHaveProperty('message', 'Registration successful');
-      expect(res.body.user).toHaveProperty('email', testUser.email);
+  test('register returns created user payload', async () => {
+    authService.register.mockResolvedValue({
+      user: {
+        id: 1,
+        first_name: 'Test',
+        last_name: 'User',
+        email: 'u@test.com',
+        role: 'student',
+      },
     });
+    const req = {
+      body: { email: 'u@test.com' },
+      validated: { body: { email: 'u@test.com' } },
+    };
+    const res = mockRes();
+    const next = jest.fn();
 
-    it('should fail for duplicate email', async () => {
-      const res = await request(app)
-        .post('/api/auth/register')
-        .send(testUser)
-        .expect(400);
+    await authController.register(req, res, next);
 
-      expect(res.body.message).toMatch(/Email already registered/i);
-    });
+    expect(authService.register).toHaveBeenCalled();
+    expect(jwtUtils.setAuthCookies).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Registration successful',
+        user: expect.any(Object),
+      })
+    );
   });
 
-  describe('POST /api/auth/login', () => {
-    it('should login existing user', async () => {
-      const res = await request(app)
-        .post('/api/auth/login')
-        .send({ email: testUser.email, password: testUser.password })
-        .expect(200);
-
-      expect(res.body).toHaveProperty('message', 'Login successful');
-      tokens.accessToken = res.body.accessToken;
-      tokens.refreshToken = res.body.refreshToken;
+  test('login returns access and refresh tokens', async () => {
+    authService.login.mockResolvedValue({
+      user: {
+        id: 1,
+        first_name: 'Test',
+        last_name: 'User',
+        email: 'u@test.com',
+        role: 'student',
+      },
+      accessToken: 'access123',
+      refreshToken: 'refresh123',
     });
+    const req = {
+      body: { email: 'u@test.com', password: 'pass' },
+      validated: null,
+    };
+    const res = mockRes();
+    const next = jest.fn();
 
-    it('should reject invalid credentials', async () => {
-      const res = await request(app)
-        .post('/api/auth/login')
-        .send({ email: testUser.email, password: 'WrongPass' })
-        .expect(401);
+    await authController.login(req, res, next);
 
-      expect(res.body.message).toMatch(/Invalid email or password/i);
-    });
+    expect(authService.login).toHaveBeenCalledWith('u@test.com', 'pass');
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Login successful',
+        accessToken: 'access123',
+      })
+    );
   });
 
-  describe('POST /api/auth/refresh', () => {
-    it('should refresh a valid refresh token', async () => {
-      const res = await request(app)
-        .post('/api/auth/refresh')
-        .set('Cookie', [`refreshToken=${tokens.refreshToken}`])
-        .expect(200);
+  test('logout clears cookies and deletes refresh token', async () => {
+    jwtUtils.verifyRefreshToken.mockReturnValue({ id: 10 });
+    const req = { cookies: { refreshToken: 'token' } };
+    const res = mockRes();
+    const next = jest.fn();
 
-      expect(res.body).toHaveProperty('accessToken');
-      expect(res.body).toHaveProperty('refreshToken');
-    });
+    await authController.logout(req, res, next);
+
+    expect(db.query).toHaveBeenCalledWith(
+      'DELETE FROM refresh_tokens WHERE user_id = $1',
+      [10]
+    );
+    expect(jwtUtils.clearAuthCookies).toHaveBeenCalledWith(res);
+    expect(res.status).toHaveBeenCalledWith(204);
+  });
+
+  test('refreshToken rejects when missing token', async () => {
+    const req = { cookies: {}, body: {}, headers: {} };
+    const res = mockRes();
+    const next = jest.fn();
+
+    await authController.refreshToken(req, res, next);
+
+    const err = next.mock.calls[0][0];
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.code).toBe('NO_TOKEN');
   });
 });

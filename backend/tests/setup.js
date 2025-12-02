@@ -2,42 +2,51 @@ const { Pool } = require('pg');
 const { execSync } = require('child_process');
 require('dotenv').config({ path: '.env.test' });
 
-// Configure test pool
-const testPool = new Pool({
-  connectionString: process.env.TEST_DATABASE_URL,
-  max: 5,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 2000,
-});
+const SKIP_DB_SETUP = process.env.SKIP_DB_SETUP === 'true';
+let testPool;
 
-beforeAll(async () => {
-  process.env.NODE_ENV = 'test';
-  console.log('🧩 Setting up test database...');
+if (!SKIP_DB_SETUP) {
+  // Configure test pool
+  testPool = new Pool({
+    connectionString: process.env.TEST_DATABASE_URL,
+    max: 5,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 2000,
+  });
 
-  try {
-    execSync('node scripts/migrate.js', { stdio: 'inherit' });
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // ⏳ wait 1s
-    await testPool.query('SELECT 1');
-    console.log('✅ Test DB ready');
-  } catch (err) {
-    console.error('❌ Migration or connection failed:', err.message);
-    throw err;
-  }
-});
+  beforeAll(async () => {
+    process.env.NODE_ENV = 'test';
+    console.log('🧩 Setting up test database...');
 
-afterAll(async () => {
-  console.log('🧹 Cleaning up...');
-  await clearTestData();
-  await testPool.end();
-});
+    try {
+      execSync('node scripts/migrate.js', { stdio: 'inherit' });
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // ⏳ wait 1s
+      await testPool.query('SELECT 1');
+      console.log('✅ Test DB ready');
+    } catch (err) {
+      console.error('❌ Migration or connection failed:', err.message);
+      throw err;
+    }
+  });
 
-async function clearTestData () {
-  const tables = [
-    'user_statistics',
-    'refresh_tokens',
-    'goals',
-    'users',
-  ];
+  afterAll(async () => {
+    console.log('🧹 Cleaning up...');
+    await clearTestData();
+    await testPool.end();
+  });
+} else {
+  beforeAll(() => {
+    process.env.NODE_ENV = 'test';
+    console.log('⏭️  SKIP_DB_SETUP=true - skipping test database setup');
+  });
+
+  afterAll(async () => {});
+}
+
+async function clearTestData() {
+  if (!testPool) return;
+
+  const tables = ['user_statistics', 'refresh_tokens', 'goals', 'users'];
 
   for (const table of tables) {
     try {

@@ -1,27 +1,32 @@
-// TODO: Implement AI service unit tests
-const aiService = require('../../src/services/aiService');
+const db = require('../../../src/database/connection');
+const { AppError } = require('../../../src/middleware/errorHandler');
+
+jest.mock('../../../src/database/connection', () => ({
+  query: jest.fn(),
+}));
+
+const aiService = require('../../../src/services/aiService');
 
 describe('AIService', () => {
-  describe('generateFeedback', () => {
-    test('should generate meaningful feedback', async () => {
-      // TODO: Implement test with mocked OpenAI
-      expect(true).toBe(true);
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
+    delete process.env.OPENAI_API_KEY;
+  });
 
-    test('should handle API errors gracefully', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+  describe('suggestChallenges', () => {
+    test('throws when OpenAI key is missing', async () => {
+      await expect(aiService.suggestChallenges({})).rejects.toBeInstanceOf(
+        AppError
+      );
     });
   });
 
-  describe('generateHints', () => {
-    test('should provide contextual hints', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true);
+  describe('gradeChallengeSubmission', () => {
+    test('requires challengeId input', async () => {
+      await expect(
+        aiService.gradeChallengeSubmission({ userId: 1 })
+      ).rejects.toBeInstanceOf(AppError);
+      expect(db.query).not.toHaveBeenCalled();
     });
   });
-
-  // TODO: Add more test cases
 });
-
-module.exports = {};
