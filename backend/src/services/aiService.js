@@ -25,6 +25,23 @@ const getClient = () => {
   return instance;
 };
 
+const buildMockChallenge = (goal, difficulty) => ({
+  title: `${goal.title} Practice Challenge`,
+  description: `Hands-on practice derived from goal: ${goal.description || goal.title}`,
+  instructions:
+    '1) Draft a solution outline. 2) Implement a minimal version. 3) Add one test. 4) Reflect on improvements.',
+  category: goal.category || 'general',
+  difficulty_level: difficulty || 'medium',
+  points_reward: 20,
+  estimated_time_minutes: 45,
+  max_attempts: 3,
+  requires_peer_review: false,
+  is_active: true,
+  tags: ['practice', 'self-paced'],
+  prerequisites: [],
+  learning_objectives: ['apply knowledge', 'iterate quickly'],
+});
+
 // Utility to parse OpenAI responses safely
 function safeJSON (text) {
   try {
@@ -35,6 +52,20 @@ function safeJSON (text) {
   }
 }
 const generateOneChallengeAgentic = async (goal, userId, difficulty) => {
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
+  // 🛟 If AI is not configured, return a deterministic mock challenge
+  if (!process.env.OPENAI_API_KEY) {
+    return {
+      ...buildMockChallenge(goal, difficulty),
+      goal_id: goal.id,
+      created_by: userId,
+      ai_generated: false,
+      difficulty_level: difficulty || 'medium',
+      source: 'mock-fallback',
+    };
+  }
+
   let attempts = 0;
   const maxAttempts = 4; // initial try + 3 retries
 
@@ -46,7 +77,7 @@ const generateOneChallengeAgentic = async (goal, userId, difficulty) => {
 
       const aiClient = getClient();
       const response = await aiClient.chat.completions.create({
-        model: process.env.OPENAI_MODEL,
+        model,
         messages: [
           {
             role: 'system',
@@ -83,12 +114,18 @@ const generateOneChallengeAgentic = async (goal, userId, difficulty) => {
         `⚠️ AI challenge parse error, retrying... (attempt ${attempts}): ${err.message}`,
       );
       if (attempts >= maxAttempts) {
-        throw new Error('AI failed to generate a valid challenge after several attempts');
+        console.warn('⚠️ Falling back to mock challenge after AI failures.');
+        return {
+          ...buildMockChallenge(goal, difficulty),
+          goal_id: goal.id,
+          created_by: userId,
+          ai_generated: false,
+          difficulty_level: difficulty || 'medium',
+          source: 'mock-after-failures',
+        };
       }
     }
   }
-
-  throw new Error('AI failed to generate a valid challenge after several attempts');
 };
 const buildAIChallengePrompt = (goal, difficulty) => `
 You are generating a SkillWise learning challenge.

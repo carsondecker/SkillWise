@@ -46,13 +46,8 @@ router.put(
   challengeController.updateChallenge,
 );
 
-// 🔴 Delete challenge (Admin only)
-router.delete(
-  '/:id',
-  auth,
-  restrictTo('admin'),
-  challengeController.deleteChallenge,
-);
+// 🔴 Delete challenge (Admin or owner)
+router.delete('/:id', auth, challengeController.deleteChallenge);
 
 
 // 🟢 Mark a challenge as complete (User)

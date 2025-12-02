@@ -169,6 +169,9 @@ const ChallengesPage = () => {
                 key={challenge.id}
                 challenge={challenge}
                 onEdit={handleEdit}
+                onDelete={(id) =>
+                  setChallenges((prev) => prev.filter((c) => c.id !== id))
+                }
               />
             ))}
           </div>

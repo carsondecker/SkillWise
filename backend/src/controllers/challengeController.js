@@ -228,6 +228,14 @@ const challengeController = {
   deleteChallenge: asyncHandler(async (req, res, next) => {
     try {
       const id = parseInt(req.params.id, 10);
+      const challenge = await challengeService.getChallengeById(id);
+
+      const isOwner = challenge?.created_by === req.user?.id;
+      const isAdmin = req.user?.role === 'admin';
+      if (!isOwner && !isAdmin) {
+        throw new AppError('Unauthorized to delete this challenge', 403);
+      }
+
       await challengeService.deleteChallenge({ id });
       res.status(204).end();
     } catch (error) {

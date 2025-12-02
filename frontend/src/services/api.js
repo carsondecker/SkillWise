@@ -236,6 +236,7 @@ export const apiService = {
     getById: (id) => api.get(`/challenges/${id}`),
     create: (data) => api.post('/challenges', data),
     update: (id, data) => api.put(`/challenges/${id}`, data),
+    delete: (id) => api.delete(`/challenges/${id}`),
     markAsComplete: (id) => api.patch(`/challenges/${id}/complete`),
     submitForPeerReview: (id) => api.patch(`/challenges/${id}/submitForPeerReview`),
     getLatestSubmissions: (id) => api.get(`/challenges/${id}/latest-submissions`),

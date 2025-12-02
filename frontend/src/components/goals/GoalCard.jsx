@@ -154,17 +154,6 @@ const GoalCard = ({ goal, onUpdated, onDeleted }) => {
               </motion.button>
 
               <motion.button
-                id={`goal-delete-btn-${id}`}
-                className="btn-delete"
-                whileHover={!is_completed ? { scale: 1.05 } : {}}
-                whileTap={!is_completed ? { scale: 0.95 } : {}}
-                onClick={handleDelete}
-                disabled={loading || is_completed}
-              >
-                🗑️ Delete
-              </motion.button>
-
-              <motion.button
                 id={`goal-close-btn-${id}`}
                 className="btn-secondary"
                 whileHover={{ scale: 1.05 }}

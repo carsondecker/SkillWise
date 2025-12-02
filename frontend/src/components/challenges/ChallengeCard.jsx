@@ -3,13 +3,16 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { apiService } from '../../services/api';
 import '../../styles/components/Challenge/ChallengeCard.scss';
 
-const ChallengeCard = ({ challenge, onEdit }) => {
+const ChallengeCard = ({ challenge, onEdit, onDelete }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const {
+    id,
+    created_by,
     title,
     difficulty_level,
     points_reward,
@@ -20,6 +23,7 @@ const ChallengeCard = ({ challenge, onEdit }) => {
   const isCompleted = status === "completed";
   const isInPeerReview = status === "in_peer_review";
   const isPeerReviewed = status === "peer_reviewed";
+  const isPending = status === 'pending';
 
   return (
     <motion.div
@@ -80,6 +84,26 @@ const ChallengeCard = ({ challenge, onEdit }) => {
             onClick={() => onEdit?.(challenge)}
           >
             ✏️ Edit
+          </motion.button>
+        )}
+
+        {(isPending && (user?.role === 'admin' || user?.id === created_by)) && (
+          <motion.button
+            className="btn-delete"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={async () => {
+              if (!window.confirm('Delete this challenge?')) return;
+              try {
+                await apiService.challenges.delete(id);
+                onDelete?.(id);
+              } catch (err) {
+                console.error('Failed to delete challenge', err);
+                alert('Could not delete challenge.');
+              }
+            }}
+          >
+            🗑️ Delete
           </motion.button>
         )}
       </div>
